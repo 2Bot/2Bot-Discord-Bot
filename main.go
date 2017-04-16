@@ -13,16 +13,15 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-// Variables used for command line parameters
 var (
 	Token string
+	emojiRegex = regexp.MustCompile("<:.*?:(.*?)>")
+ 	userIDRegex = regexp.MustCompile("<@!?([0-9]*)>")
+ 	reply = map[string]string{
+		"kiddo": "mulia vs lulia :thinking:",
+		"censored": "stuff",
+	}
 )
-var emojiRegex = regexp.MustCompile("<:.*?:(.*?)>")
-var userIDRegex = regexp.MustCompile("<@!?([0-9]*)>")
-var reply = map[string]string{
-	S"kiddo": "mulia vs lulia :thinking:",
-	"jizz": ":weary: :sweat_drops:",
-}
 
 func init() {
 	flag.StringVar(&Token, "t", "", "Bot Token")
@@ -37,7 +36,7 @@ func main() {
 		return
 	}
 
-	// Register the messageCreate func as a callback for MessageCreate events.
+	//Register event handlers
 	dg.AddHandler(messageCreate)
 	dg.AddHandler(joined)
 	dg.AddHandler(online)
@@ -110,8 +109,15 @@ func messageCreate(s *discordgo.Session, event *discordgo.MessageCreate) {
 				}
 			}
 
-			if memberStruct.Nick == "" {nick = "None"}else{nick = memberStruct.Nick}
-			if len(roleNames) == 0 {roleNames = append(roleNames, "None")}
+			if memberStruct.Nick == "" {
+				nick = "None"
+			}else{
+				nick = memberStruct.Nick
+			}
+			
+			if len(roleNames) == 0 {
+				roleNames = append(roleNames, "None")
+			}
 
 			s.ChannelMessageSendEmbed(event.ChannelID, &discordgo.MessageEmbed{
 					Color:       s.State.UserColor(userID, event.ChannelID),
@@ -146,25 +152,25 @@ func joined(s *discordgo.Session, event *discordgo.GuildCreate) {
 	}
 	for _, channel := range event.Guild.Channels {
 		if channel.ID == event.Guild.ID {
-			//s.ChannelMessageSend(channel.ID, "Waddup mah niggas. Its ya boi Pepe Cheeze on the line!")
+			s.ChannelMessageSend(channel.ID, "Waddup mah bois. Its ya boi Pepe Cheeze on the line!")
 			return
 		}
 	}
 }
 
 func online(s *discordgo.Session, event *discordgo.Ready){
-	s.UpdateStatus(0, "with your mom xd")
+	s.UpdateStatus(0, "with your stuff xd")
 }
 
 func membPresChange(s *discordgo.Session, event *discordgo.PresenceUpdate) {
 	for _, guild := range s.State.Guilds {
 		for _, channel := range guild.Channels {
 			if channel.ID == guild.ID && event.GuildID == guild.ID{
-			//	memberStruct, _ := s.State.Member(guild.ID, event.User.ID)
+				memberStruct, _ := s.State.Member(guild.ID, event.User.ID)
 				if event.Presence.Nick != "" {
-				//	s.ChannelMessageSend(channel.ID, fmt.Sprintf("`%s is now %s`", event.Presence.Nick, event.Status))
+					s.ChannelMessageSend(channel.ID, fmt.Sprintf("`%s is now %s`", event.Presence.Nick, event.Status))
 				}else{
-				//	s.ChannelMessageSend(channel.ID, fmt.Sprintf("`%s is now %s`", memberStruct.User, event.Status))
+					s.ChannelMessageSend(channel.ID, fmt.Sprintf("`%s is now %s`", memberStruct.User, event.Status))
 				}
 			}
 		}
