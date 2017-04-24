@@ -18,6 +18,7 @@ import (
 	"encoding/xml"
 	"strconv"
 	"github.com/PuerkitoBio/goquery"
+    "net/url"
 )
 
 type Config struct {
@@ -46,9 +47,9 @@ var (
 		"bigMoji [emoji]":"Sends a large version of the emoji as an image.\nShorthand available by excluding 'bigMoji'",
 		"userStats [user]":"Sends some basic details of the given user. \nIf no [user] is supplied, the command callers details are shown instead.",	
 		"help":"Prints this useful help text :D",
-		"r34 [search]":"For all your saucy needs",
+		"r34 [search]":"Searches rule34.xxx for all your saucy needs",
 		"info":"Sends some basic details of 2Bot",
-		"ibsearch":"even saucier",
+		"ibsearch":"Searches ibsearch.xxx for an even large amount of \"stuff\" to satisfy your needs",
 	}
 	helpKeys = []string{}
 )
@@ -383,23 +384,37 @@ func messageCreate(s *discordgo.Session, event *discordgo.MessageCreate) {
 								},					
 					})
 			}else if command == commandList[5]{
-				doc, err := goquery.NewDocument(fmt.Sprintf("https://ibsearch.xxx/api/v1/images.html?key=2480CFA681A7A882CB33C0E4BA00A812C6F906A6&q=%s&random:", msgList[1]))
+				URL, err := url.Parse("https://ibsearch.xxx")
+				if err != nil {
+					panic("boom")
+				}
+				URL.Path += "/api/v1/images.html"
+				par := url.Values{}
+				par.Add("q", msgList[1]+" random:")
+				par.Add("limit", "1")
+				par.Add("key", "2480CFA681A7A882CB33C0E4BA00A812C6F906A6")
+				URL.RawQuery = par.Encode()
+
+				doc, err := goquery.NewDocument(URL.String())
 				if err != nil {
 					fmt.Println(err)
 				}
-
-				prev := 1
-				doc.Find("table tr").Each(func(_ int,tr *goquery.Selection)  {
+				
+				//this count is so naive..has to be a better way
+				count := 0
+				doc.Find("table tr").Each(func(_ int, tr *goquery.Selection)  {
 					// For each <tr> found, find the <td>s inside
 					tr.Find("td[colspan*=\"3\"]").Each(func(_ int, td *goquery.Selection){
-						if (strings.HasSuffix(td.Text(), ".gif") || strings.HasSuffix(td.Text(), ".png") || strings.HasSuffix(td.Text(), ".jpg")) && prev == 1 {
-							prev++
-							//test++
-							//fmt.Println(fmt.Sprintf("Fetching https://im1.ibsearch.xxx/%s", td.Text()))	
+						if (strings.HasSuffix(td.Text(), ".gif") || strings.HasSuffix(td.Text(), ".png") || strings.HasSuffix(td.Text(), ".jpg")) {	
+							count++
 							s.ChannelMessageSend(event.ChannelID, fmt.Sprintf("https://im1.ibsearch.xxx/%s", td.Text()))	
 						}
 					})
 				})
+				//yuk
+				if count == 0 {
+					s.ChannelMessageSend(event.ChannelID, "No results ¯\\_(ツ)_/¯")
+				}
 			}
 		}
 	}
