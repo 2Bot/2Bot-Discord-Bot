@@ -398,13 +398,13 @@ func messageCreate(s *discordgo.Session, event *discordgo.MessageCreate) {
 					}
 				}
 
-				finalQuery := ""
+				finalQuery := " "
 				commands := []string{"rating","format"}
 					
 				for _,item1 := range commands{
 					for i,item2 := range queries {
 						if strings.Contains(item1, item2){
-							finalQuery += " "+strings.Replace(queryList[i+1], " ", "",-1)+" "
+							finalQuery += strings.Replace(queryList[i+1], " ", "",-1)+" "
 						}
 					}
 				}
@@ -416,7 +416,7 @@ func messageCreate(s *discordgo.Session, event *discordgo.MessageCreate) {
 				}
 				URL.Path += "/api/v1/images.html"
 				par := url.Values{}
-				par.Add("q", strings.TrimSpace(queryList[0])+" "+finalQuery+" random:")
+				par.Add("q", strings.TrimSpace(queryList[0])+finalQuery+"random:")
 				par.Add("limit", "1")
 				par.Add("key", "2480CFA681A7A882CB33C0E4BA00A812C6F906A6")
 				URL.RawQuery = par.Encode()
@@ -450,7 +450,8 @@ func messageCreate(s *discordgo.Session, event *discordgo.MessageCreate) {
 					s.ChannelMessageDelete(event.ChannelID, event.Message.ID)
 					s.ChannelMessageDelete(event.ChannelID, msg.ID)
 					return
-				}else{
+				}
+				
 					fmt.Println("is a number below 100 and above 1")
 					list,_ := s.ChannelMessages(event.ChannelID, purgeAmount,"","","")
 					purgeList := []string{}
@@ -464,7 +465,7 @@ func messageCreate(s *discordgo.Session, event *discordgo.MessageCreate) {
 						time.Sleep(time.Second*5)				
 						s.ChannelMessageDelete(event.ChannelID, msg.ID)					
 					}
-				}
+				
 			}
 		}
 	}
