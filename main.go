@@ -42,14 +42,15 @@ var (
 	emojiRegex = regexp.MustCompile("<:.*?:(.*?)>")
  	userIDRegex = regexp.MustCompile("<@!?([0-9]*)>")
 
-	commandList = []string{"bigMoji","userStats","help","r34","info","ibsearch"}
+	commandList = []string{"bigMoji","userStats","help","r34","info","ibsearch", "purge"}
 	helpText = map[string]string{
 		"bigMoji [emoji]":"Sends a large version of the emoji as an image.\nShorthand available by excluding 'bigMoji'",
 		"userStats [user]":"Sends some basic details of the given user. \nIf no [user] is supplied, the command callers details are shown instead.",	
 		"help":"Prints this useful help text :D",
 		"r34 [search]":"Searches rule34.xxx for all your saucy needs",
 		"info":"Sends some basic details of 2Bot",
-		"ibsearch":"Searches ibsearch.xxx for an even large amount of \"stuff\" to satisfy your needs",
+		"ibsearch":"Searches ibsearch.xxx for an even large amount of \"stuff\" to satisfy your needs.\nExtra search parameters supported are: rating, format.\nExample: `!owo ibsearch Pokemon | rating=s | format=png`\nEach parameter must be seperated by a |\nAny amount of spacing between = works",
+		"purge [n]":"Purges the n last messages in the channel",
 	}
 	helpKeys = []string{}
 )
@@ -372,7 +373,7 @@ func messageCreate(s *discordgo.Session, event *discordgo.MessageCreate) {
 						IconURL: 	discordgo.EndpointUserAvatar(s.State.User.ID, s.State.User.Avatar),
 					},
 					Footer: 	 &discordgo.MessageEmbedFooter{
-						Text: 	 	"Brought to you by 2Bot. Last Bot reboot: " + lastReboot+ " GMT", 
+						Text: 	 	"Brought to you by 2Bot.\nLast Bot reboot: " + lastReboot+ " GMT", 
 					},
 					Fields: 	 []*discordgo.MessageEmbedField {
 									&discordgo.MessageEmbedField{Name: "Bot Name:", Value: codeBlock(s.State.User.Username), Inline: true},
@@ -383,14 +384,39 @@ func messageCreate(s *discordgo.Session, event *discordgo.MessageCreate) {
 									&discordgo.MessageEmbedField{Name: "Server Count", Value: codeBlock(strconv.Itoa(len(s.State.Guilds))), Inline: true},								
 								},					
 					})
+
+			//IBSEARCH
 			}else if command == commandList[5]{
+
+				queryList := strings.Split(strings.TrimPrefix(event.Content, c.Prefix+" ibsearch"), "|")
+
+				var queries []string
+				for i,item := range queryList {
+					//queryList[i] = strings.TrimSpace(item)
+					if strings.Contains(item,"=") {
+						queries = append(queries,strings.TrimSpace(strings.Split(queryList[i],"=")[0]))
+					}
+				}
+
+				finalQuery := ""
+				commands := []string{"rating","format"}
+					
+				for _,item1 := range commands{
+					for i,item2 := range queries {
+						if strings.Contains(item1, item2){
+							finalQuery += " "+strings.Replace(queryList[i+1], " ", "",-1)+" "
+						}
+					}
+				}
+				
 				URL, err := url.Parse("https://ibsearch.xxx")
 				if err != nil {
-					panic("boom")
+					fmt.Println("IBSearch error", err)
+					return
 				}
 				URL.Path += "/api/v1/images.html"
 				par := url.Values{}
-				par.Add("q", msgList[1]+" random:")
+				par.Add("q", strings.TrimSpace(queryList[0])+" "+finalQuery+" random:")
 				par.Add("limit", "1")
 				par.Add("key", "2480CFA681A7A882CB33C0E4BA00A812C6F906A6")
 				URL.RawQuery = par.Encode()
@@ -403,7 +429,7 @@ func messageCreate(s *discordgo.Session, event *discordgo.MessageCreate) {
 				//this count is so naive..has to be a better way
 				count := 0
 				doc.Find("table tr").Each(func(_ int, tr *goquery.Selection)  {
-					// For each <tr> found, find the <td>s inside
+					//For each <tr> found, find the <td>s inside
 					tr.Find("td[colspan*=\"3\"]").Each(func(_ int, td *goquery.Selection){
 						if (strings.HasSuffix(td.Text(), ".gif") || strings.HasSuffix(td.Text(), ".png") || strings.HasSuffix(td.Text(), ".jpg")) {	
 							count++
@@ -414,6 +440,30 @@ func messageCreate(s *discordgo.Session, event *discordgo.MessageCreate) {
 				//yuk
 				if count == 0 {
 					s.ChannelMessageSend(event.ChannelID, "No results ¯\\_(ツ)_/¯")
+				}
+			}else if command == commandList[6] && len(msgList) == 2 {
+				purgeAmount,err1:= strconv.Atoi(msgList[1])
+				fmt.Println(err1, purgeAmount)
+				if (purgeAmount > 100 || purgeAmount < 1) || err1 != nil {
+					msg,_ := s.ChannelMessageSend(event.ChannelID, "Number has to be between 1 and 100 inclusive :rolling_eyes:")
+					time.Sleep(time.Second*5)				
+					s.ChannelMessageDelete(event.ChannelID, event.Message.ID)
+					s.ChannelMessageDelete(event.ChannelID, msg.ID)
+					return
+				}else{
+					fmt.Println("is a number below 100 and above 1")
+					list,_ := s.ChannelMessages(event.ChannelID, purgeAmount,"","","")
+					purgeList := []string{}
+					for _,msg := range list {
+						purgeList = append(purgeList, msg.ID)
+					}
+
+					err := s.ChannelMessagesBulkDelete(event.ChannelID, purgeList)
+					if err == nil {
+						msg,_ := s.ChannelMessageSend(event.ChannelID, "Successfully deleted :ok_hand:")
+						time.Sleep(time.Second*5)				
+						s.ChannelMessageDelete(event.ChannelID, msg.ID)					
+					}
 				}
 			}
 		}
