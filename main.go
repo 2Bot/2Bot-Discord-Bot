@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"github.com/PuerkitoBio/goquery"
     "net/url"
+	"runtime"	
 )
 
 type Config struct {
@@ -37,6 +38,7 @@ var c *Config
 var r34 Rule34
 
 var (
+	m runtime.MemStats	
 	lastReboot string
 	Token string
 	emojiRegex = regexp.MustCompile("<:.*?:(.*?)>")
@@ -175,14 +177,14 @@ func messageCreate(s *discordgo.Session, event *discordgo.MessageCreate) {
 		if event.Author.ID == s.State.User.ID || event.Author.Bot {
 			return
 		}
-
+		runtime.ReadMemStats(&m)
 		msgList := strings.Fields(strings.TrimPrefix(event.Content, c.Prefix))
 
 		if len(msgList) > 0 {
 			command := strings.TrimSpace(msgList[0])
-			channelInGuild, _ := s.Channel(event.ChannelID)
-			guildDetails, _   := s.Guild(channelInGuild.GuildID)
-			roleStruct 		  := guildDetails.Roles
+			channelInGuild, chanErr := s.Channel(event.ChannelID); if chanErr != nil { fmt.Println(chanErr); return}
+			guildDetails, guildErr   := s.Guild(channelInGuild.GuildID); if guildErr != nil { fmt.Println(guildErr); return}
+			roleStruct := guildDetails.Roles
 			submatch := emojiRegex.FindStringSubmatch(msgList[0])
 
 			//EMOJI 
@@ -231,8 +233,7 @@ func messageCreate(s *discordgo.Session, event *discordgo.MessageCreate) {
 
 				user, error := s.User(userID); if error != nil { return }
 
-				memberStruct, _ := s.State.Member(channelInGuild.GuildID, user.ID)
-
+				memberStruct, membErr := s.State.Member(channelInGuild.GuildID, user.ID); if membErr != nil { fmt.Println(membErr); return }
 				var roleNames []string
 
 				for _, role := range memberStruct.Roles {
@@ -314,7 +315,7 @@ func messageCreate(s *discordgo.Session, event *discordgo.MessageCreate) {
 				s.ChannelFileSend(event.ChannelID, "haramaf.jpg", img)
 
 			//SET PREFIX
-			}else if command == "setPrefix" && (event.Author.ID == "149612775587446784") && len(msgList) > 1{
+			}else if command == "setPrefix" && (event.Author.ID == "149612775587446784"){
 				c.Prefix = msgList[1]
 				msg,_ := s.ChannelMessageSend(event.ChannelID, ":ok_hand: | All done! Prefix changed!")
 				err := saveConfig(); if err != nil { fmt.Println(err); return }
@@ -377,11 +378,13 @@ func messageCreate(s *discordgo.Session, event *discordgo.MessageCreate) {
 					},
 					Fields: 	 []*discordgo.MessageEmbedField {
 									&discordgo.MessageEmbedField{Name: "Bot Name:", Value: codeBlock(s.State.User.Username), Inline: true},
+									&discordgo.MessageEmbedField{Name: "Creator:", Value: codeBlock("Strum355#1180"), Inline: true},
 									&discordgo.MessageEmbedField{Name: "Creation Date:", Value: codeBlock(creationTime), Inline: true},
-									&discordgo.MessageEmbedField{Name: "Creator:", Value: "```Strum355#1180```", Inline: true},
-									&discordgo.MessageEmbedField{Name: "Programming Language", Value: "```Go```", Inline: true},
-									&discordgo.MessageEmbedField{Name: "Library", Value: "```Discordgo```", Inline: true},	
-									&discordgo.MessageEmbedField{Name: "Server Count", Value: codeBlock(strconv.Itoa(len(s.State.Guilds))), Inline: true},								
+									&discordgo.MessageEmbedField{Name: "Prefix:", Value: codeBlock(c.Prefix), Inline: true},									
+									&discordgo.MessageEmbedField{Name: "Programming Language:", Value: codeBlock("Go"), Inline: true},
+									&discordgo.MessageEmbedField{Name: "Library:", Value: codeBlock("Discordgo"), Inline: true},	
+									&discordgo.MessageEmbedField{Name: "Server Count:", Value: codeBlock(strconv.Itoa(len(s.State.Guilds))), Inline: true},
+									&discordgo.MessageEmbedField{Name: "Memory Usage:", Value: codeBlock(strconv.Itoa(int(m.Alloc /1024/1024))+"MB"), Inline: true },
 								},					
 					})
 
@@ -443,7 +446,6 @@ func messageCreate(s *discordgo.Session, event *discordgo.MessageCreate) {
 				}
 			}else if command == commandList[6] && len(msgList) == 2 {
 				purgeAmount,err1:= strconv.Atoi(msgList[1])
-				fmt.Println(err1, purgeAmount)
 				if (purgeAmount > 100 || purgeAmount < 1) || err1 != nil {
 					msg,_ := s.ChannelMessageSend(event.ChannelID, "Number has to be between 1 and 100 inclusive :rolling_eyes:")
 					time.Sleep(time.Second*5)				
@@ -451,21 +453,22 @@ func messageCreate(s *discordgo.Session, event *discordgo.MessageCreate) {
 					s.ChannelMessageDelete(event.ChannelID, msg.ID)
 					return
 				}
-				
-					fmt.Println("is a number below 100 and above 1")
-					list,_ := s.ChannelMessages(event.ChannelID, purgeAmount,"","","")
-					purgeList := []string{}
-					for _,msg := range list {
-						purgeList = append(purgeList, msg.ID)
-					}
+				list,_ := s.ChannelMessages(event.ChannelID, purgeAmount,"","","")
+				purgeList := []string{}
+				for _,msg := range list {
+					purgeList = append(purgeList, msg.ID)
+				}
 
-					err := s.ChannelMessagesBulkDelete(event.ChannelID, purgeList)
-					if err == nil {
-						msg,_ := s.ChannelMessageSend(event.ChannelID, "Successfully deleted :ok_hand:")
-						time.Sleep(time.Second*5)				
-						s.ChannelMessageDelete(event.ChannelID, msg.ID)					
-					}
-				
+				err := s.ChannelMessagesBulkDelete(event.ChannelID, purgeList)
+				if err != nil {
+					msg,_ := s.ChannelMessageSend(event.ChannelID, "Dont have permissions to delete messages :(")
+					time.Sleep(time.Second*5)				
+					s.ChannelMessageDelete(event.ChannelID, msg.ID)		
+					return					
+				}
+				msg,_ := s.ChannelMessageSend(event.ChannelID, "Successfully deleted :ok_hand:")
+				time.Sleep(time.Second*5)				
+				s.ChannelMessageDelete(event.ChannelID, msg.ID)
 			}
 		}
 	}
