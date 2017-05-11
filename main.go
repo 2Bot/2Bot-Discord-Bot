@@ -29,6 +29,7 @@ import (
 type server struct {
 	Nsfw bool `json:"nsfw"`
 	ID string `json:"server_id"`
+	LogChannel string `json:"log_channel"`
 }
 
 type config struct {
@@ -54,7 +55,7 @@ var (
 	emojiRegex = regexp.MustCompile("<:.*?:(.*?)>")
  	userIDRegex = regexp.MustCompile("<@!?([0-9]*)>")
 	servers []string
-	commandList = []string{"help","info","bigMoji","userStats","r34","ibsearch","encode", "setNsfw","purge"}
+	commandList = []string{"help","info","bigMoji","userStats","r34","ibsearch","encode", "setNsfw","purge","logChannel"}
 	helpText = map[string]string{
 		"bigMoji":"Args: [emoji]\nSends a large version of the emoji as an image.\nShorthand available by excluding 'bigMoji'",
 		"userStats":"Args: [@user]\nSends some basic details of the given user. \nIf no [user] is supplied, the command callers details are shown instead.",	
@@ -65,8 +66,10 @@ var (
 		"purge":"Args: [number]\nADMIN\nPurges the n last messages in the channel, max 100 and cannot be older than 14 days",
 		"encode": "Args: [text] [method]\nencodes [text] to/using [method]. Supported methods: MD5, Bcrypt, SHA256, Base64",
 		"setNsfw": "ADMIN\nEnables or disables NSFW commands such as r34 and ibsearch",
+		"logChannel": "Args: [channel ID]\nADMIN\nChanges the log channel to the channel with the given ID. Default is main channel",
 	//	"yt": "Args: [url]\nPlays the given youtube video in a voice channel",
 	}
+	status = map[discordgo.Status]string{"dnd":"busy","online":"Online","idle":"Idle","offline":"Offline"}
 )
 
 func init() {
@@ -110,9 +113,11 @@ func loadConfig(s *discordgo.Session) {
 	file, err := ioutil.ReadFile("config.json"); if err != nil { log(err.Error()); return }
 	json.Unmarshal(file, &c)
 
-	if c.Prefix == ""{
-		c.Prefix = "!owo "
-		err := saveConfig(); if err != nil { log(err.Error()); return }
+	for _, guild := range c.Servers {
+		if guild.LogChannel == "" {
+			guild.LogChannel = guild.ID
+			saveConfig()
+		}
 	}
 	s.UpdateStatus(0, c.Game)
 	return
@@ -293,6 +298,19 @@ func messageCreate(s *discordgo.Session, event *discordgo.MessageCreate) {
 				s.ChannelFileSend(event.ChannelID, "haramaf.jpg", img)
 			}else if command == "setPrefix" && event.Author.ID == "149612775587446784" { //SET PREFIX
 				msgPrefix(msgList, s, event)
+			}else if command == "logChannel" && event.Author.ID == guildDetails.OwnerID && len(msgList) == 2 {
+				for _, guild := range c.Servers {
+					if guildDetails.ID == guild.ID {
+						for _, channel := range guildDetails.Channels {
+							if msgList[1] == channel.ID {
+								guild.LogChannel = msgList[1]
+								s.ChannelMessageSend(event.ChannelID, fmt.Sprintf("Log channel changed to %s", channel.Name))
+								saveConfig()
+							}
+						}
+
+					}
+				}
 			}else if command == "setNsfw" {
 				if event.Author.ID == guildDetails.OwnerID {
 					nsfw = !nsfw
@@ -688,17 +706,19 @@ func online(s *discordgo.Session, event *discordgo.Ready) {
 }
 
 func membPresChange(s *discordgo.Session, event *discordgo.PresenceUpdate) {
-/*	for _, guild := range s.State.Guilds {
-		for _, channel := range guild.Channels {
-			if channel.ID == guild.ID && event.GuildID == guild.ID{
-				memberStruct, _ := s.State.Member(guild.ID, event.User.ID)
-				if event.Presence.Nick != "" {
-					s.ChannelMessageSend(channel.ID, fmt.Sprintf("`%s is now %s`", event.Presence.Nick, event.Status))
-				}else{
-					s.ChannelMessageSend(channel.ID, fmt.Sprintf("`%s is now %s`", memberStruct.User, event.Status))
+	for _, guild := range s.State.Guilds {
+		for _, confGuild := range c.Servers {
+			for _, channel := range guild.Channels {
+				if channel.ID == confGuild.LogChannel && event.GuildID == guild.ID{
+					memberStruct, _ := s.State.Member(guild.ID, event.User.ID)
+					if event.Presence.Nick != "" {
+						s.ChannelMessageSend(channel.ID, fmt.Sprintf("`%s is now %s`", event.Presence.Nick, status[event.Status]))
+					}else{
+						s.ChannelMessageSend(channel.ID, fmt.Sprintf("`%s is now %s`", memberStruct.User, status[event.Status]))
+					}
 				}
 			}
 		}
-	}*/
+	}
 	return
 }
