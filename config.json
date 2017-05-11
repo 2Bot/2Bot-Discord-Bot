@@ -1,0 +1,18 @@
+{
+  "game": "!xd help",
+  "prefix": "!xd ",
+  "Servers": [
+    {
+      "nsfw": true,
+      "server_id": "302190349454016513"
+    },
+    {
+      "nsfw": false,
+      "server_id": "118456055842734083"
+    },
+    {
+      "nsfw": false,
+      "server_id": "312292616089894924"
+    }
+  ]
+}

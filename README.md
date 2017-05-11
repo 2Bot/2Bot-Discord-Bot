@@ -6,4 +6,5 @@
 My home-grown Discord Bot
 </div>
 <a href="https://discordapp.com/api/oauth2/authorize?client_id=301819949683572738&scope=bot&permissions=11264">Click here to invite it to your server!</a>
-If you ever run into problems with the bot, or have any questions, add me on Discord: Strum355#1180
+<p>If you ever run into problems with the bot, or have any questions, add me on Discord: Strum355#1180</p>
+<p>Join the <a href="https://discord.gg/9T34Y6u">server</a> for support amongst other things!</p>
