@@ -27,9 +27,15 @@ import (
 	"runtime"	
 )
 
+type server struct {
+	Nsfw bool `json:"nsfw"`
+	ID string `json:"server_id"`
+}
+
 type config struct {
 	Game string `json:"game"`
 	Prefix string `json:"prefix"`
+	Servers []*server
 } 
 
 type rule34 struct {
@@ -48,8 +54,8 @@ var (
 	token string
 	emojiRegex = regexp.MustCompile("<:.*?:(.*?)>")
  	userIDRegex = regexp.MustCompile("<@!?([0-9]*)>")
-
-	commandList = []string{"bigMoji","userStats","help","r34","info","ibsearch", "purge","encode"}
+	servers []string
+	commandList = []string{"bigMoji","userStats","help","r34","info","ibsearch", "purge","encode","setNSFW"}
 	helpText = map[string]string{
 		"bigMoji [emoji]":"Sends a large version of the emoji as an image.\nShorthand available by excluding 'bigMoji'",
 		"userStats [user]":"Sends some basic details of the given user. \nIf no [user] is supplied, the command callers details are shown instead.",	
@@ -59,6 +65,7 @@ var (
 		"ibsearch":"Searches ibsearch.xxx for an even large amount of \"stuff\" to satisfy your needs.\nExtra search parameters supported are: rating, format.\nExample: `!owo ibsearch Pokemon | rating=s | format=png`\nEach parameter must be seperated by a |\nAny amount of spacing between = works",
 		"purge [n]":"Purges the n last messages in the channel",
 		"encode [method] [text]": "encodes [text] to/using [method]. Supported bases: MD5, Bcrypt, SHA256, Base64",
+		"setNSFW": "Enables or disables NSFW commands such as r34 and ibsearch",
 	}
 	helpKeys = []string{}
 )
@@ -88,6 +95,7 @@ func main() {
 	dg.AddHandler(joined)
 	dg.AddHandler(online)
 	dg.AddHandler(membPresChange)
+	dg.AddHandler(kicked)
 
 	// Open a websocket connection to Discord and begin listening.
 	err = dg.Open()
@@ -113,6 +121,16 @@ func loadConfig(s *discordgo.Session) {
 		err := saveConfig(); if err != nil { fmt.Println("Save config file error"); return }
 	}
 	s.UpdateStatus(0, c.Game)
+	return
+}
+
+func saveConfig() error {
+	out, err := json.MarshalIndent(&c, "", "  ")
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile("config.json", out, 0777); if err != nil { return err }
+	return nil
 }
 
 func randRange(min, max int) int {
@@ -123,6 +141,20 @@ func randRange(min, max int) int {
     return rand.Intn(max - min) + min
 }
 
+func findIndex(s []string, f string) int {
+	for i,j := range s {
+		if(j == f){
+			return i
+		}
+	}
+	return -1
+}
+
+func remove(s []string, i int) []string {
+    s[i] = s[len(s)-1]
+    return s[:len(s)-1]
+}
+
 func getCreationTime(ID string) (t time.Time, err error) {
     i, err := strconv.ParseInt(ID, 10, 64)
     if err != nil {
@@ -131,15 +163,6 @@ func getCreationTime(ID string) (t time.Time, err error) {
     timestamp := (i >> 22) + 1420070400000
     t = time.Unix(timestamp/1000, 0)
     return
-}
-
-func saveConfig() error {
-	out, err := json.Marshal(&c)
-	if err != nil {
-		return err
-	}
-	err = ioutil.WriteFile("config.json", out, 0777); if err != nil { return err }
-	return nil
 }
 
 func codeSeg(s ...string) string {
@@ -158,7 +181,44 @@ func codeBlock(s ...string) string {
 	return ret+"```"
 }
 
-//
+func isIn(a string, list []string) bool {
+    for _, b := range list {
+        if b == a {
+            return true
+        }
+    }
+    return false
+}
+
+//https://stackoverflow.com/questions/19374219/how-to-find-the-difference-between-two-slices-of-strings-in-golang
+func difference(slice1 []string, slice2 []string) []string {
+    var diff []string
+
+    // Loop two times, first to find slice1 strings not in slice2,
+    // second loop to find slice2 strings not in slice1
+    for i := 0; i < 2; i++ {
+        for _, s1 := range slice1 {
+            found := false
+            for _, s2 := range slice2 {
+                if s1 == s2 {
+                    found = true
+                    break
+                }
+            }
+            // String not found. We add it to return slice
+            if !found {
+                diff = append(diff, s1)
+            }
+        }
+        // Swap the slices, only if it was the first loop
+        if i == 0 {
+            slice1, slice2 = slice2, slice1
+        }
+    }
+
+    return diff
+}
+
 func emojiFile(s string) string {
 	found := ""
 	filename := ""
@@ -192,17 +252,24 @@ func messageCreate(s *discordgo.Session, event *discordgo.MessageCreate) {
 			guildDetails, err   := s.Guild(channelInGuild.GuildID); if err != nil { fmt.Println(err); return}
 			submatch := emojiRegex.FindStringSubmatch(msgList[0])
 
+			nsfw := false
+			for _,guild := range c.Servers {
+				if(guild.ID==guildDetails.ID){
+					nsfw = guild.Nsfw
+				}
+			}
+			
 			if command == commandList[0] || len(submatch) != 0 || emojiFile(msgList[0]) != "" { //EMOJI 
 				msgEmoji(msgList, submatch, command, s, event)
 			}else if command == commandList[1] { //USER STATS			
 				msgUserStats(msgList, channelInGuild, guildDetails, s, event)
 			}else if command == commandList[2] { //HELP
 				msgHelp(s, event)
-			}else if command == commandList[3] { //RULE34
+			}else if command == commandList[3] && nsfw { //RULE34
 				msgRule34(msgList, s, event)
 			}else if command == commandList[4] { //INFO
 				msgInfo(s, event)			
-			}else if command == commandList[5] { //IBSEARCH
+			}else if command == commandList[5] && nsfw { //IBSEARCH
 				msgIbsearch(s, event)
 			}else if command == commandList[6] && len(msgList) == 2 { //PURGE
 				msgPurge(msgList, s, event)
@@ -222,6 +289,19 @@ func messageCreate(s *discordgo.Session, event *discordgo.MessageCreate) {
 				s.ChannelFileSend(event.ChannelID, "haramaf.jpg", img)
 			}else if command == "setPrefix" && event.Author.ID == "149612775587446784" { //SET PREFIX
 				msgPrefix(msgList, s, event)
+			}else if command == commandList[8] {
+				if event.Author.ID == guildDetails.OwnerID {
+					nsfw = !nsfw
+					for _,guild := range c.Servers {
+						if(guild.ID==guildDetails.ID){
+							guild.Nsfw = nsfw
+						}
+					}
+					s.ChannelMessageSend(event.ChannelID, fmt.Sprintf("NSFW enabled: %t", nsfw))
+					saveConfig()
+				} else {
+					s.ChannelMessageSend(event.ChannelID, "Sorry, only the owner can do this")
+				}
 			}
 		}
 	}
@@ -322,13 +402,13 @@ func msgSetGame(s *discordgo.Session, event *discordgo.MessageCreate) {
 	game := strings.TrimPrefix(event.Content, c.Prefix+" setGame ")
 	s.UpdateStatus(0, fmt.Sprintf("%s", game))
 
-	msg, _ := s.ChannelMessageSend(event.ChannelID, ":ok_hand: | Game changed successfully!")
+	s.ChannelMessageSend(event.ChannelID, ":ok_hand: | Game changed successfully!")
 
-	time.Sleep(time.Second*5)
+/*	time.Sleep(time.Second*5)
 
 	s.ChannelMessageDelete(event.ChannelID, event.ID)
 	s.ChannelMessageDelete(event.ChannelID, msg.ID)
-
+*/
 	c.Game = game
 	err := saveConfig(); if err != nil { fmt.Println(err); return}
 
@@ -357,13 +437,13 @@ func msgHelp(s *discordgo.Session, event *discordgo.MessageCreate) {
 
 func msgPrefix(msgList []string, s *discordgo.Session, event *discordgo.MessageCreate) {
 	c.Prefix = msgList[1]
-	msg,_ := s.ChannelMessageSend(event.ChannelID, ":ok_hand: | All done! Prefix changed!")
+	s.ChannelMessageSend(event.ChannelID, ":ok_hand: | All done! Prefix changed!")
 	err := saveConfig(); if err != nil { fmt.Println(err); return }
-	time.Sleep(time.Second*5)
+/*	time.Sleep(time.Second*5)
 
 	s.ChannelMessageDelete(event.ChannelID, event.ID)
 	s.ChannelMessageDelete(event.ChannelID, msg.ID)
-
+*/
 	return
 }
 
@@ -536,18 +616,70 @@ func joined(s *discordgo.Session, event *discordgo.GuildCreate) {
 	if event.Guild.Unavailable {
 		return
 	}
-	fmt.Println("Joined:", event.Guild.Name)
 
-/*	for _, channel := range event.Guild.Channels {
-		if channel.ID == event.Guild.ID {
-			s.ChannelMessageSend(channel.ID, "Hey, its 2Bot! I")
-			return
-		}
-	}*/
+	for _, guild := range c.Servers {
+		servers = append(servers, guild.ID)
+	}
+	//servers = append(servers, event.Guild.ID)
+
+	if(!isIn(event.Guild.ID, servers)) {
+		fmt.Println("true")
+		c.Servers = append(c.Servers, &server {
+			ID: event.Guild.ID,
+			Nsfw: false,
+		})
+	}
+	saveConfig()
+
+	fmt.Println("Joined server", event.Guild.ID, event.Guild.Name)
+	return
 }
 
-func online(s *discordgo.Session, event *discordgo.Ready){
+func kicked(s *discordgo.Session, event *discordgo.GuildDelete) {
+	if !event.Unavailable {
+		fmt.Println("Kicked from", event.ID, event.Name)
+		/*err := os.Truncate("servers.dat", 0); if err != nil { fmt.Println(err); return }
+		file, err := os.OpenFile("servers.dat", os.O_RDWR, os.ModeAppend); if err != nil { fmt.Println(err); return }
+		defer file.Close()
+		id := findIndex(servers, event.ID)
+		servers = remove(servers, id)
+		for _, server := range servers {
+			file.Write([]byte(server+"\n"))
+		}*/
+	}
+	return
+}
+
+func online(s *discordgo.Session, event *discordgo.Ready) {
 	loadConfig(s)
+
+
+
+	saveConfig()
+
+/*	currServers := []string{}
+	file, err := os.OpenFile("servers.dat", os.O_APPEND|os.O_RDWR, os.ModeAppend); if err != nil { fmt.Println(err); return }
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	//loads all previously stored server IDs
+	for scanner.Scan() {
+		servers = append(servers, scanner.Text())
+	}
+
+	for _,guild := range event.Guilds {
+		//stores all servers 
+		currServers = append(currServers, guild.ID)
+
+		//if bot has been added to server while offline, add to list of stored server IDs
+		//and write to file
+		if !isIn(guild.ID, servers){
+			servers = append(servers, guild.ID)
+			_, err := file.Write([]byte(guild.ID+"\n")); if err != nil { fmt.Println(err); return }
+			err = file.Sync(); if err != nil { fmt.Println(err); return }
+		}
+	}*/
+	return	
 }
 
 func membPresChange(s *discordgo.Session, event *discordgo.PresenceUpdate) {
@@ -563,4 +695,5 @@ func membPresChange(s *discordgo.Session, event *discordgo.PresenceUpdate) {
 			}
 		}
 	}*/
+	return
 }
