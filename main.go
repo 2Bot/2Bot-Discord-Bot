@@ -164,6 +164,13 @@ func remove(s []string, i int) []string {
     return s[:len(s)-1]
 }
 
+func min(a, b int) int {
+    if a < b {
+        return a
+    }
+    return b
+}
+
 func getCreationTime(ID string) (t time.Time, err error) {
     i, err := strconv.ParseInt(ID, 10, 64)
     if err != nil {
@@ -315,7 +322,6 @@ func messageCreate(s *discordgo.Session, event *discordgo.MessageCreate) {
 						if guildDetails.ID == guild.ID {
 							for _, channel := range guildDetails.Channels {
 								if msgList[1] == channel.ID {
-									fmt.Println("ok")
 									guild.LogChannel = msgList[1]
 									s.ChannelMessageSend(event.ChannelID, fmt.Sprintf("Log channel changed to %s", channel.Name))
 									saveConfig()
@@ -640,7 +646,7 @@ func msgPurge(msgList []string, s *discordgo.Session, event *discordgo.MessageCr
 		s.ChannelMessageDelete(event.ChannelID, msg.ID)
 		return
 	}
-	list,_ := s.ChannelMessages(event.ChannelID, purgeAmount+1,"","","")
+	list,_ := s.ChannelMessages(event.ChannelID, min(purgeAmount+1, 100),"","","")
 	purgeList := []string{}
 	for _,msg := range list {
 		purgeList = append(purgeList, msg.ID)
