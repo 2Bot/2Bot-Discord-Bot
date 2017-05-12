@@ -5,7 +5,9 @@
     {
       "nsfw": false,
       "server_id": "312292616089894924",
-      "log_channel": "312352242504040448"
+      "log_channel": "312352242504040448",
+      "server_prefix": "!xd ",
+      "log_active": false
     }
   ]
 }
