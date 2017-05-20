@@ -47,8 +47,8 @@ type rule34 struct {
 	} `xml:"post"`	
 }
 
-var c *config
-var r34 *rule34
+var c = &config{}
+var r34 = &rule34{}
 var buffer = make([][]byte, 0)
 
 var (
@@ -118,7 +118,7 @@ func main() {
 
 func loadConfig(s *discordgo.Session) {
 	file, err := ioutil.ReadFile("config.json"); if err != nil { log(err.Error()); return }
-	json.Unmarshal(file, &c)
+	json.Unmarshal(file, c)
 	for _, guild := range c.Servers {
 		if guild.LogChannel == "" {
 			guild.LogChannel = guild.ID
@@ -130,7 +130,7 @@ func loadConfig(s *discordgo.Session) {
 }
 
 func saveConfig() error {
-	out, err := json.MarshalIndent(&c, "", "  ")
+	out, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
 		return err
 	}
@@ -537,7 +537,7 @@ func msgRule34(msgList []string, s *discordgo.Session, event *discordgo.MessageC
 		defer resp.Body.Close()
 		body, err := ioutil.ReadAll(resp.Body); if err != nil { log(err.Error()); return }
 
-		err = xml.Unmarshal(body, &r34); if err != nil { log(err.Error()); return }
+		err = xml.Unmarshal(body, r34); if err != nil { log(err.Error()); return }
 
 		var url string
 		if r34.PostCount == 0 {
@@ -639,26 +639,35 @@ func msgIbsearch(s *discordgo.Session, event *discordgo.MessageCreate, prefix st
 
 func msgPurge(msgList []string, s *discordgo.Session, event *discordgo.MessageCreate) {
 	purgeAmount,err := strconv.Atoi(msgList[1])
-	if (purgeAmount > 100 || purgeAmount < 1) || err != nil {
-		msg,_ := s.ChannelMessageSend(event.ChannelID, "Number has to be between 1 and 100 inclusive")
-		time.Sleep(time.Second*5)				
-		s.ChannelMessageDelete(event.ChannelID, event.Message.ID)
-		s.ChannelMessageDelete(event.ChannelID, msg.ID)
+	if err != nil {
 		return
 	}
-	list,_ := s.ChannelMessages(event.ChannelID, min(purgeAmount+1, 100),"","","")
-	purgeList := []string{}
-	for _,msg := range list {
-		purgeList = append(purgeList, msg.ID)
+
+	loop := purgeAmount / 100
+	for i := 0; i <= loop; i++ {
+		if purgeAmount > 0 {
+			del := min(purgeAmount, 100)
+			list, err := s.ChannelMessages(event.ChannelID, del,"","",""); if err != nil { log(err.Error()); return }
+
+			if len(list) == 0 {
+				break
+			}
+			purgeList := []string{}
+			for _,msg := range list {
+				purgeList = append(purgeList, msg.ID)
+			}
+
+			err = s.ChannelMessagesBulkDelete(event.ChannelID, purgeList)
+			if err != nil {
+				msg,_ := s.ChannelMessageSend(event.ChannelID, "Dont have permissions or messages are older than 14 days :(")
+				time.Sleep(time.Second*5)				
+				s.ChannelMessageDelete(event.ChannelID, msg.ID)		
+				return					
+			}
+			purgeAmount -= 100
+		}
 	}
 
-	err = s.ChannelMessagesBulkDelete(event.ChannelID, purgeList)
-	if err != nil {
-		msg,_ := s.ChannelMessageSend(event.ChannelID, "Dont have permissions or messages are older than 14 days :(")
-		time.Sleep(time.Second*5)				
-		s.ChannelMessageDelete(event.ChannelID, msg.ID)		
-		return					
-	}
 	msg,_ := s.ChannelMessageSend(event.ChannelID, "Successfully deleted :ok_hand:")
 	time.Sleep(time.Second*5)				
 	s.ChannelMessageDelete(event.ChannelID, msg.ID)

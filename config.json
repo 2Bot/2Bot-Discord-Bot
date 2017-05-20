@@ -3,10 +3,17 @@
   "prefix": "!xd ",
   "Servers": [
     {
-      "nsfw": false,
+      "nsfw": true,
       "server_id": "312292616089894924",
       "log_channel": "312352242504040448",
       "server_prefix": "!xd ",
+      "log_active": true
+    },
+    {
+      "nsfw": false,
+      "server_id": "193638572111298560",
+      "log_channel": "193638572111298560",
+      "server_prefix": "",
       "log_active": false
     }
   ]
