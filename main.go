@@ -147,7 +147,18 @@ func randRange(min, max int) int {
 }
 
 func log(s ...string) {
-	fmt.Println(time.Now().Format(time.RFC822)[:15], strings.Join(s, " "))
+	var f *os.File
+	if _, err := os.Stat("err.log"); err == nil {
+		f, err = os.OpenFile("err.log", os.O_APPEND|os.O_WRONLY, os.ModeAppend); if err != nil { fmt.Println(err); return }
+		defer f.Close()
+	} else {
+		f, err = os.Create("err.log"); if err != nil { fmt.Println(err); return }
+		defer f.Close()
+	}
+	out := []byte(time.Now().Format(time.RFC822)[:15] + " " + strings.Join(s, " ")+"\n")
+	_, err := f.Write(out); if err != nil { fmt.Println(err); return }
+	//fmt.Println(time.Now().Format(time.RFC822)[:15], strings.Join(s, " "))
+	return
 }
 
 func findIndex(s []string, f string) int {
@@ -199,9 +210,7 @@ func codeBlock(s ...string) string {
 
 func isIn(a string, list []string) bool {
     for _, b := range list {
-        if b == a {
-            return true
-        }
+        if b == a { return true }
     }
     return false
 }
