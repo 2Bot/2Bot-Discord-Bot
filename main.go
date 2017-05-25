@@ -49,7 +49,7 @@ type rule34 struct {
 
 var c = &config{}
 var r34 = &rule34{}
-var buffer = make([][]byte, 0)
+//var buffer = make([][]byte, 0)
 
 var (
 	m runtime.MemStats	
@@ -58,8 +58,9 @@ var (
 	emojiRegex = regexp.MustCompile("<:.*?:(.*?)>")
  	userIDRegex = regexp.MustCompile("<@!?([0-9]*)>")
 	servers []string
-	commandList = []string{"help","info","bigMoji","whois","r34","ibsearch","encode", "setNsfw","purge","logChannel","setPrefix","logging"}
+	commandList = []string{"help","info","bigMoji","whois","git","r34","ibsearch","encode", "setNsfw","purge","logChannel","setPrefix","logging"}
 	helpText = map[string]string{
+		"git":"Sends the link to 2Bots Github, where you can view the source, post issues, read the wiki and more!",
 		"bigMoji":"Args: [emoji]\nSends a large version of the emoji as an image.\nShorthand available by excluding 'bigMoji'\nExample: !owo :smile:",
 		"whois":"Args: [@user]\nSends some basic details of the given user \nIf no [user] is supplied, the command callers details are shown instead\nExample: !owo whois @Strum355#1180",	
 		"help":"Prints this useful help text :D",
@@ -117,7 +118,7 @@ func main() {
 }
 
 func loadConfig(s *discordgo.Session) {
-	file, err := ioutil.ReadFile("config.json"); if err != nil { log(err.Error()); return }
+	file, err := ioutil.ReadFile("config.json"); if err != nil { log("Config open err", err.Error()); return }
 	json.Unmarshal(file, c)
 	for _, guild := range c.Servers {
 		if guild.LogChannel == "" {
@@ -125,17 +126,15 @@ func loadConfig(s *discordgo.Session) {
 			saveConfig()
 		}
 	}
-	err = s.UpdateStatus(0, c.Game); if err != nil { log(err.Error()) }
+	err = s.UpdateStatus(0, c.Game); if err != nil { log("Update status err:", err.Error()) }
 	return
 }
 
-func saveConfig() error {
-	out, err := json.MarshalIndent(c, "", "  ")
-	if err != nil {
-		return err
-	}
-	err = ioutil.WriteFile("config.json", out, 0777); if err != nil { return err }
-	return nil
+func saveConfig() {
+	out, err := json.MarshalIndent(c, "", "  "); if err != nil { log("Config marshall err:", err.Error()) }
+
+	err = ioutil.WriteFile("config.json", out, 0777); if err != nil { log("Save config err:", err.Error()) }
+	return
 }
 
 func randRange(min, max int) int {
@@ -296,8 +295,8 @@ func messageCreate(s *discordgo.Session, event *discordgo.MessageCreate) {
 
 		if len(msgList) > 0 {
 			command := suffix+msgList[0]
-			channelInGuild, err := s.Channel(event.ChannelID); if err != nil { log(err.Error()); return}
-			guildDetails, err   := s.Guild(channelInGuild.GuildID); if err != nil { log(err.Error()); return}
+			channelInGuild, err := s.Channel(event.ChannelID); if err != nil { log("channelInGuild err:", err.Error()); return}
+			guildDetails, err   := s.Guild(channelInGuild.GuildID); if err != nil { log("guildDetails err:", err.Error()); return}
 			submatch := emojiRegex.FindStringSubmatch(msgList[0])
 			nsfw := false
 			for _,guild := range c.Servers {
@@ -318,7 +317,7 @@ func messageCreate(s *discordgo.Session, event *discordgo.MessageCreate) {
 			}else if command =="ibsearch" && (nsfw || strings.HasPrefix(channelInGuild.Name, "nsfw")) { //IBSEARCH
 				msgIbsearch(s, event, prefix)
 			}else if command == "purge" && len(msgList) == 2 { //PURGE
-				msgPurge(msgList, s, event)
+				msgPurge(msgList, s, event, guildDetails)
 			} else if command == "encode" && len(msgList) > 2 { //ENCODE
 				msgEncode(msgList, s, event, prefix)
 			}else if command == "yt" && len(msgList) == 2 {
@@ -373,11 +372,13 @@ func messageCreate(s *discordgo.Session, event *discordgo.MessageCreate) {
 			}else if command == "setGame" && (event.Author.ID == "149612775587446784") { //SET GAME
 				msgSetGame(s, event, prefix)
 			}else if command == "haf" { //HARAM AF
-				img, err := os.Open("images/haram.jpg"); if err != nil { log(err.Error()); return }
+				img, err := os.Open("images/haram.jpg"); if err != nil { log("haram.jpg err:", err.Error()); return }
 				defer img.Close()
 				s.ChannelFileSend(event.ChannelID, "haramaf.jpg", img)
 			}else if command == "ownerPrefix" && event.Author.ID == "149612775587446784" { //SET PREFIX
 				msgPrefix(msgList, s, event)
+			}else if command == "git" {
+				s.ChannelMessageSend(event.ChannelID, "Check me out here :smile: https://github.com/Strum355/2Bot-Discord-Bot")
 			}
 		}
 	}
@@ -391,14 +392,14 @@ func msgEmoji(msgList, submatch []string, command string, s *discordgo.Session, 
 		submatch := emojiRegex.FindStringSubmatch(msgList[1])
 		if len(submatch) != 0 {
 			emojiID := submatch[1]
-			resp, err := http.Get(fmt.Sprintf("https://cdn.discordapp.com/emojis/%s.png", emojiID)); if err != nil { log(err.Error()); return }
+			resp, err := http.Get(fmt.Sprintf("https://cdn.discordapp.com/emojis/%s.png", emojiID)); if err != nil { log("BM custom emoji err:", err.Error()); return }
 			defer resp.Body.Close()		
 			s.ChannelFileSend(event.ChannelID, "emoji.png", resp.Body)
 			s.ChannelMessageDelete(event.ChannelID, event.ID)			
 		} else {
 			emoji := emojiFile(msgList[1])
 			if emoji != "" {
-				file, err := os.Open(fmt.Sprintf("emoji/%s.png", emoji)); if err != nil { log(err.Error()); return }
+				file, err := os.Open(fmt.Sprintf("emoji/%s.png", emoji)); if err != nil { log("BM in-built emoji err:", err.Error()); return }
 				defer file.Close()
 				s.ChannelFileSend(event.ChannelID, "emoji.png", file)
 				s.ChannelMessageDelete(event.ChannelID, event.ID)				
@@ -409,14 +410,14 @@ func msgEmoji(msgList, submatch []string, command string, s *discordgo.Session, 
 		submatch := emojiRegex.FindStringSubmatch(msgList[0])
 		if len(submatch) != 0 {
 			emojiID := submatch[1]
-			resp, err := http.Get(fmt.Sprintf("https://cdn.discordapp.com/emojis/%s.png", emojiID)); if err != nil { log(err.Error()); return }
+			resp, err := http.Get(fmt.Sprintf("https://cdn.discordapp.com/emojis/%s.png", emojiID)); if err != nil { log("!BM custom emoji err:", err.Error()); return }
 			defer resp.Body.Close()					
 			s.ChannelFileSend(event.ChannelID, "emoji.png", resp.Body)
 			s.ChannelMessageDelete(event.ChannelID, event.ID)
 		} else {
 			emoji := emojiFile(msgList[0])
 			if emoji != "" {
-				file, err := os.Open(fmt.Sprintf("emoji/%s.png", emoji)); if err != nil { log(err.Error()); return }
+				file, err := os.Open(fmt.Sprintf("emoji/%s.png", emoji)); if err != nil { log("!BM in-built emoji err:", err.Error()); return }
 				defer file.Close()
 				s.ChannelFileSend(event.ChannelID, "emoji.png", file)
 				s.ChannelMessageDelete(event.ChannelID, event.ID)				
@@ -441,9 +442,9 @@ func msgUserStats(msgList []string, channelInGuild *discordgo.Channel, guildDeta
 		userID = event.Author.ID
 	}
 
-	user, err := s.User(userID); if err != nil { log(err.Error()); return }
+	user, err := s.User(userID); if err != nil { log("user struct err:", err.Error()); return }
 
-	memberStruct, err := s.State.Member(channelInGuild.GuildID, user.ID); if err != nil { log(err.Error()); return }
+	memberStruct, err := s.State.Member(channelInGuild.GuildID, user.ID); if err != nil { log("memberStruct err:", err.Error()); return }
 	var roleNames []string
 
 	for _, role := range memberStruct.Roles {
@@ -498,7 +499,7 @@ func msgSetGame(s *discordgo.Session, event *discordgo.MessageCreate, prefix str
 	s.ChannelMessageDelete(event.ChannelID, msg.ID)
 */
 	c.Game = game
-	err := saveConfig(); if err != nil { log(err.Error()); return}
+	saveConfig()
 
 	return
 }
@@ -526,7 +527,7 @@ func msgHelp(s *discordgo.Session, event *discordgo.MessageCreate, prefix string
 func msgPrefix(msgList []string, s *discordgo.Session, event *discordgo.MessageCreate) {
 	c.Prefix = msgList[1]
 	s.ChannelMessageSend(event.ChannelID, ":ok_hand: | All done! Prefix changed!")
-	err := saveConfig(); if err != nil { log(err.Error()); return }
+	saveConfig()
 /*	time.Sleep(time.Second*5)
 
 	s.ChannelMessageDelete(event.ChannelID, event.ID)
@@ -542,18 +543,18 @@ func msgRule34(msgList []string, s *discordgo.Session, event *discordgo.MessageC
 		for _, word := range msgList[1:] {
 			query += "+"+word
 		}
-		resp, err := http.Get(fmt.Sprintf("https://rule34.xxx/index.php?page=dapi&s=post&q=index&tags=%s",query)); if err != nil { log(err.Error()); return }
+		resp, err := http.Get(fmt.Sprintf("https://rule34.xxx/index.php?page=dapi&s=post&q=index&tags=%s",query)); if err != nil { log("R34 response err:", err.Error()); return }
 		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body); if err != nil { log(err.Error()); return }
+		body, err := ioutil.ReadAll(resp.Body); if err != nil { log("R34 response body err:", err.Error()); return }
 
-		err = xml.Unmarshal(body, r34); if err != nil { log(err.Error()); return }
+		err = xml.Unmarshal(body, r34); if err != nil { log("R34 xml unmarshal err:", err.Error()); return }
 
 		var url string
 		if r34.PostCount == 0 {
 			s.ChannelMessageSend(event.ChannelID, "No results ¯\\_(ツ)_/¯")
 		} else {	
 			url = "https:"+r34.Posts[randRange(0,len(r34.Posts)-1)].URL
-			resp, err := http.Get(url); if err != nil { log(err.Error()); return }
+			resp, err := http.Get(url); if err != nil { log("R34 image response err:", err.Error()); return }
 			defer resp.Body.Close()	
 
 			s.ChannelMessageSend(event.ChannelID, fmt.Sprintf("%s searched for `%s` \n%s", event.Author.Username, strings.Replace(query, "+"," ",-1), url))
@@ -627,7 +628,7 @@ func msgIbsearch(s *discordgo.Session, event *discordgo.MessageCreate, prefix st
 	par.Add("key", "2480CFA681A7A882CB33C0E4BA00A812C6F906A6")
 	URL.RawQuery = par.Encode()
 
-	doc, err := goquery.NewDocument(URL.String()); if err != nil { log(err.Error()); return }
+	doc, err := goquery.NewDocument(URL.String()); if err != nil { log("IBsearch goquery response err:", err.Error()); return }
 
 	found := false
 	doc.Find("table tr").Each(func(_ int, tr *goquery.Selection) {
@@ -646,7 +647,7 @@ func msgIbsearch(s *discordgo.Session, event *discordgo.MessageCreate, prefix st
 	return
 }
 
-func msgPurge(msgList []string, s *discordgo.Session, event *discordgo.MessageCreate) {
+func msgPurge(msgList []string, s *discordgo.Session, event *discordgo.MessageCreate, guildDetails *discordgo.Guild) {
 	purgeAmount,err := strconv.Atoi(msgList[1])
 	if err != nil {
 		return
@@ -656,7 +657,7 @@ func msgPurge(msgList []string, s *discordgo.Session, event *discordgo.MessageCr
 	for i := 0; i <= loop; i++ {
 		if purgeAmount > 0 {
 			del := min(purgeAmount, 100)
-			list, err := s.ChannelMessages(event.ChannelID, del,"","",""); if err != nil { log(err.Error()); return }
+			list, err := s.ChannelMessages(event.ChannelID, del,"","",""); if err != nil { log(guildDetails.Name, guildDetails.ID, "Purge populate message list err:", err.Error()); return }
 
 			if len(list) == 0 {
 				break
@@ -676,7 +677,6 @@ func msgPurge(msgList []string, s *discordgo.Session, event *discordgo.MessageCr
 			purgeAmount -= 100
 		}
 	}
-
 	msg,_ := s.ChannelMessageSend(event.ChannelID, "Successfully deleted :ok_hand:")
 	time.Sleep(time.Second*5)				
 	s.ChannelMessageDelete(event.ChannelID, msg.ID)
@@ -686,7 +686,8 @@ func msgPurge(msgList []string, s *discordgo.Session, event *discordgo.MessageCr
 
 func msgEncode(msgList []string, s *discordgo.Session, event *discordgo.MessageCreate, prefix string) {
 	base := msgList[1]		
-	text := strings.TrimPrefix(event.Content, fmt.Sprintf("%s encode %s ", prefix, base))
+	text := strings.TrimPrefix(event.Content, fmt.Sprintf("%sencode %s ", prefix, base))
+	fmt.Println(text)
 	switch base {
 		case "base64":
 			s.ChannelTyping(event.ChannelID)										
@@ -694,7 +695,7 @@ func msgEncode(msgList []string, s *discordgo.Session, event *discordgo.MessageC
 			s.ChannelMessageSend(event.ChannelID, output)
 		case "bcrypt":
 			s.ChannelTyping(event.ChannelID)					
-			output, err:= bcrypt.GenerateFromPassword([]byte(text), 14); if err != nil {log(err.Error()); return}
+			output, err:= bcrypt.GenerateFromPassword([]byte(text), 14); if err != nil {log("Bcrypt err:", err.Error()); return}
 			s.ChannelMessageSend(event.ChannelID, string(output))
 		case "md5":
 			s.ChannelTyping(event.ChannelID)					
@@ -843,7 +844,7 @@ func membPresChange(s *discordgo.Session, event *discordgo.PresenceUpdate) {
 		/*					if event.Presence.Nick != "" {
 								s.ChannelMessageSend(channel.ID, fmt.Sprintf("`%s is now %s`", event.Presence.Nick, status[event.Status]))
 							}else{*/
-								_, err := s.ChannelMessageSend(channel.ID, fmt.Sprintf("`%s is now %s`", memberStruct.User, status[event.Status])); if err != nil { log(err.Error()); return}
+								s.ChannelMessageSend(channel.ID, fmt.Sprintf("`%s is now %s`", memberStruct.User, status[event.Status]))
 							// }
 						}
 					}
