@@ -54,7 +54,14 @@ func loadCommands(){
 	commMap[l(infoComm.name)] 		= infoComm
 	commMap[l(r34Comm.name)] 		= r34Comm
 	commMap[l(logChannel.name)]		= logChannel
+	commMap[l(gitComm.name)] 		= gitComm
+	commMap[l(announceComm.name)]	= announceComm
+	commMap[l(bigMoji.name)]		= bigMoji
 	commMap[l(nsfwComm.name)]		= nsfwComm
+	commMap[l(joinMsg.name)] 		= joinMsg
+	commMap[l(loggingComm.name)]	= loggingComm
+
+
 }
 
 func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, command string, msgList []string) {
