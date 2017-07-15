@@ -1,23 +1,27 @@
-package main 
+package main
 
 import (
+	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"strconv"
 	"time"
-	"fmt"
 )
 
 func msgPurge(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	guildDetails, err := guildDetails(m.ChannelID, s)
-	if err != nil { 
+	if err != nil {
 		return
 	}
 
-	if len(msglist) < 2 && m.Author.ID != guildDetails.OwnerID {
+	if m.Author.ID != guildDetails.OwnerID || m.Author.ID != noah {
+		s.ChannelMessageSend(m.ChannelID, "Sorry, only the owner can do this")
+		return
+	}
+	if len(msglist) < 2 {
 		return
 	}
 
-	purgeAmount,err := strconv.Atoi(msglist[1])
+	purgeAmount, err := strconv.Atoi(msglist[1])
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("How do i delete %s messages O.o Please only give numbers!", msglist[1]))
 		return
@@ -29,26 +33,30 @@ func msgPurge(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 	for i := 0; i <= loop; i++ {
 		if purgeAmount > 0 {
 			del := min(purgeAmount, 100)
-			list, err := s.ChannelMessages(m.ChannelID, del,"","",""); if err != nil { log(true, guildDetails.Name, guildDetails.ID, "Purge populate message list err:", err.Error()); return }
+			list, err := s.ChannelMessages(m.ChannelID, del, "", "", "")
+			if err != nil {
+				log(true, guildDetails.Name, guildDetails.ID, "Purge populate message list err:", err.Error())
+				return
+			}
 
 			if len(list) == 0 {
 				break
 			}
 			purgeList := []string{}
-			for _,msg := range list {
+			for _, msg := range list {
 				purgeList = append(purgeList, msg.ID)
 			}
 
 			err = s.ChannelMessagesBulkDelete(m.ChannelID, purgeList)
 			if err != nil {
 				s.ChannelMessageSend(m.ChannelID, "Dont have permissions or messages are older than 14 days :(")
-				return					
+				return
 			}
 			purgeAmount -= 100
 		}
 	}
-	msg,_ := s.ChannelMessageSend(m.ChannelID, "Successfully deleted :ok_hand:")
-	time.Sleep(time.Second*5)				
+	msg, _ := s.ChannelMessageSend(m.ChannelID, "Successfully deleted :ok_hand:")
+	time.Sleep(time.Second * 5)
 	s.ChannelMessageDelete(m.ChannelID, msg.ID)
 
 	return

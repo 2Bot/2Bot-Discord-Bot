@@ -1,4 +1,4 @@
-package main 
+package main
 
 import (
 	"github.com/bwmarrin/discordgo"
@@ -10,20 +10,20 @@ func msgAvatar(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 
 	if len(msglist) > 1 {
 		submatch := userIDRegex.FindStringSubmatch(msglist[1])
-		if len(submatch) != 0 { 
-			userID = submatch[1] 
+		if len(submatch) != 0 {
+			userID = submatch[1]
 		}
-		
+
 		user, err := s.User(userID)
-		if err != nil { 
+		if err != nil {
 			s.ChannelMessageSend(m.ChannelID, "User not found :/")
-			return 
+			return
 		}
 
 		resp, err := http.Get(discordgo.EndpointUserAvatar(user.ID, user.Avatar))
-		if err != nil { 
+		if err != nil {
 			log(true, "Error getting user avatar", err.Error())
-			return 
+			return
 		}
 		defer resp.Body.Close()
 
@@ -31,15 +31,15 @@ func msgAvatar(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 	} else {
 		userID = m.Author.ID
 		user, err := s.User(userID)
-		if err != nil { 
+		if err != nil {
 			log(true, "Avatar user struct", err.Error())
-			return 
+			return
 		}
 
 		resp, err := http.Get(discordgo.EndpointUserAvatar(m.Author.ID, m.Author.Avatar))
-		if err != nil { 
+		if err != nil {
 			log(true, err.Error())
-			return 
+			return
 		}
 		defer resp.Body.Close()
 

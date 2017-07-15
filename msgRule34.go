@@ -1,11 +1,11 @@
-package main 
+package main
 
 import (
-	"github.com/bwmarrin/discordgo"
-	"fmt"
-	"net/http"
-	"io/ioutil"
 	"encoding/xml"
+	"fmt"
+	"github.com/bwmarrin/discordgo"
+	"io/ioutil"
+	"net/http"
 	"strings"
 )
 
@@ -16,13 +16,13 @@ func msgRule34(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 
 	var r34 = rule34{}
 	var query string
-		
+
 	s.ChannelTyping(m.ChannelID)
 
 	for _, word := range msglist[1:] {
-		query += "+"+word
+		query += "+" + word
 	}
-	page, err := http.Get(fmt.Sprintf("https://rule34.xxx/index.php?page=dapi&s=post&q=index&tags=%s",query))
+	page, err := http.Get(fmt.Sprintf("https://rule34.xxx/index.php?page=dapi&s=post&q=index&tags=%s", query))
 	if err != nil {
 		log(true, "R34 response err:", err.Error())
 		return
@@ -33,7 +33,7 @@ func msgRule34(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 		return
 	}
 	defer page.Body.Close()
-	
+
 	body, err := ioutil.ReadAll(page.Body)
 	if err != nil {
 		log(true, "R34 response body err:", err.Error())
@@ -41,24 +41,24 @@ func msgRule34(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 	}
 
 	err = xml.Unmarshal(body, &r34)
-	if err != nil { 
+	if err != nil {
 		log(true, "R34 xml unmarshal err:", err.Error())
-		return 
+		return
 	}
 
 	var url string
 	if r34.PostCount == 0 {
 		s.ChannelMessageSend(m.ChannelID, "No results ¯\\_(ツ)_/¯")
-	} else {	
-		url = "https:"+r34.Posts[randRange(0,len(r34.Posts)-1)].URL
+	} else {
+		url = "https:" + r34.Posts[randRange(0, len(r34.Posts)-1)].URL
 		resp, err := http.Get(url)
-		if err != nil { 
+		if err != nil {
 			log(true, "R34 image response err:", err.Error())
-			return 
+			return
 		}
-		defer resp.Body.Close()	
+		defer resp.Body.Close()
 
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s searched for `%s` \n%s", m.Author.Username, strings.Replace(query, "+"," ",-1), url))
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s searched for `%s` \n%s", m.Author.Username, strings.Replace(query, "+", " ", -1), url))
 	}
 
 	return

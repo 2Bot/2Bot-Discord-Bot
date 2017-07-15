@@ -1,34 +1,43 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/bwmarrin/discordgo"
+	"io/ioutil"
+	"math/rand"
+	"net/http"
 	"os"
 	"os/signal"
-	"syscall"
-	"strings"
 	"regexp"
-	"encoding/json"
-	"io/ioutil"
-	"github.com/bwmarrin/discordgo"
-	"time"
-	"math/rand"
 	"strconv"
-	"net/http"
-	"bytes"
+	"strings"
+	"syscall"
+	"time"
 )
 
-var c = &config{}
-//var buffer = make([][]byte, 0)
+const (
+	happyEmoji string = "https://cdn.discordapp.com/emojis/332968429210435585.png"
+	thinkEmoji string = "https://cdn.discordapp.com/emojis/333694872802426880.png"
+	reviewChan string = "334092230845267988"
+	noah       string = "149612775587446784"
+	logChan    string = "312352242504040448"
+)
 
 var (
-	lastReboot string
-	token string
-	emojiRegex = regexp.MustCompile("<:.*?:(.*?)>")
- 	userIDRegex = regexp.MustCompile("<@!?([0-9]*)>")
-	status = map[discordgo.Status]string{"dnd":"busy","online":"online","idle":"idle","offline":"offline"}
-	//Discord Bots, cool kidz only, social experiment, discord go			
-	blacklist = []string{"110373943822540800", "272873324705742848", "244133074328092673",  "118456055842734083"}
+	c             = &config{}
+	u             = &users{}
+	q             = &imageQueue{}
+	lastReboot    string
+	token         string
+	emojiRegex    = regexp.MustCompile("<:.*?:(.*?)>")
+	userIDRegex   = regexp.MustCompile("<@!?([0-9]*)>")
+	fileNameRegex = regexp.MustCompile(`/`)
+	status        = map[discordgo.Status]string{"dnd": "busy", "online": "online", "idle": "idle", "offline": "offline"}
+	//Discord Bots, cool kidz only, social experiment, discord go
+	blacklist = []string{"110373943822540800", "272873324705742848", "244133074328092673", "118456055842734083"}
 )
 
 func init() {
@@ -40,26 +49,33 @@ func init() {
 }
 
 func main() {
-	loadConfig()
+	err := loadConfig()
+	if err != nil {
+		log(true, "Error loading config", err.Error())
+		fmt.Println("Error loading config")
+		return
+	}
+
+	loadUsers()
+	loadQueue()
 
 	// Create a new Discord session using the provided bot token.
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
-		fmt.Println("error creating Discord session,", err)
+		fmt.Println("Error creating Discord session,", err)
 		return
 	}
 
 	// Open a websocket connection to Discord and begin listening.
 	err = dg.Open()
 	if err != nil {
-		fmt.Println("error opening connection,", err)
+		fmt.Println("Error opening connection,", err)
 		return
 	}
 	defer dg.Close()
 
-	//Register event handlers
+	//Register handlers
 	dg.AddHandler(messageCreate)
-	// dg.AddHandler(messageDelete)
 	dg.AddHandler(joined)
 	dg.AddHandler(membPresChange)
 	dg.AddHandler(kicked)
@@ -67,57 +83,41 @@ func main() {
 
 	loadCommands()
 	setInitialGame(dg)
-	//go postServerCount()
 
-	log(false, "\n",`/*********BOT RESTARTED*********\`)	
+	go postServerCount()
+	go setQueuedImageHandlers(dg)
+
+	log(false, "\n", `/*********BOT RESTARTED*********\`)
 
 	// Wait here until CTRL-C or other term signal is received.
 	fmt.Println("Bot is now running. Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
-	<-sc 
+	<-sc
 }
 
-func loadConfig() {
-	c.Servers = make(map[string]*server)
-	file, err := ioutil.ReadFile("config.json")
-	if err != nil { 
-		log(true,"Config open err", err.Error())
-		return 
-	}
-
-	json.Unmarshal(file, c)
-	for gID, guild := range c.Servers {
-		if guild.LogChannel == "" {
-			guild.LogChannel = gID
-			saveConfig()
-		}
-	}
-	return
-}
-
-func postServerCount(){
+func postServerCount() {
 	for {
 		sCount := activeServerCount()
-		url 	 := "https://bots.discord.pw/api/bots/301819949683572738/stats"
-		jsonStr  := []byte(`{"server_count":22}`)
+		url := "https://bots.discord.pw/api/bots/301819949683572738/stats"
+		jsonStr := []byte(`{"server_count":39}`)
 		req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
 
 		req.Header.Set("Authorization", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySUQiOiIxNDk2MTI3NzU1ODc0NDY3ODQiLCJyYW5kIjo4NiwiaWF0IjoxNDk3Nzk5MTkyfQ.chZmx9j84Yr0k22C46ftY8f_N2xS880KeXYFNLs3Dgs")
 		req.Header.Set("Content-Type", "application/json")
 
 		client := &http.Client{}
-		_, err  = client.Do(req)
+		_, err = client.Do(req)
 		if err != nil {
 			log(true, "bots.discord.pw error", err.Error())
 		}
 		log(true, "POSTed"+strconv.Itoa(sCount)+"to bots.discord.pw")
-		time.Sleep(time.Hour*24)
+		time.Sleep(time.Hour * 24)
 	}
 }
 
 func activeServerCount() (sCount int) {
-	for _,g := range c.Servers {
+	for _, g := range c.Servers {
 		if !g.Kicked {
 			sCount++
 		}
@@ -133,66 +133,135 @@ func setInitialGame(s *discordgo.Session) {
 	return
 }
 
-func saveConfig(){
+func loadConfig() error {
+	c.Servers = make(map[string]*server)
+	file, err := ioutil.ReadFile("config.json")
+	if err != nil {
+		log(true, "Config open err", err.Error())
+		return err
+	}
+
+	json.Unmarshal(file, c)
+	c.Game = "!owo help"
+	c.Prefix = "!owo "
+	for gID, guild := range c.Servers {
+		if guild.LogChannel == "" {
+			guild.LogChannel = gID
+			saveConfig()
+		}
+	}
+	return nil
+}
+
+func saveConfig() {
 	out, err := json.MarshalIndent(c, "", "  ")
-	if err != nil { 
+	if err != nil {
 		log(true, "Config marshall err:", err.Error())
 		return
 	}
-	
+
 	err = ioutil.WriteFile("config.json", out, 0777)
-	if err != nil { 
-		log(true, "Save config err:", err.Error()) 
+	if err != nil {
+		log(true, "Save config err:", err.Error())
+	}
+	return
+}
+
+func loadUsers() error {
+	u.User = make(map[string]*user)
+	file, err := ioutil.ReadFile("users.json")
+	if err != nil {
+		fmt.Println(true, "Users open err", err.Error())
+		return err
+	}
+
+	json.Unmarshal(file, u)
+	return nil
+}
+
+func saveUsers() {
+	out, err := json.MarshalIndent(u, "", "  ")
+	if err != nil {
+		log(true, "Users marshall err:", err.Error())
+		return
+	}
+
+	err = ioutil.WriteFile("users.json", out, 0777)
+	if err != nil {
+		log(true, "Save user err:", err.Error())
+	}
+	return
+}
+
+func loadQueue() error {
+	q.QueuedMsgs = make(map[string]*queuedImage)
+	file, err := ioutil.ReadFile("queue.json")
+	if err != nil {
+		fmt.Println(true, "Queue open err", err.Error())
+		return err
+	}
+
+	json.Unmarshal(file, q)
+	return nil
+}
+
+func saveQueue() {
+	out, err := json.MarshalIndent(q, "", "  ")
+	if err != nil {
+		fmt.Println(true, "Queue marshall err:", err.Error())
+		return
+	}
+
+	err = ioutil.WriteFile("queue.json", out, 0777)
+	if err != nil {
+		log(true, "Save queue err:", err.Error())
 	}
 	return
 }
 
 func randRange(min, max int) int {
-    rand.Seed(time.Now().Unix())
+	rand.Seed(time.Now().Unix())
 	if max == 0 {
 		return 0
 	}
-    return rand.Intn(max - min) + min
+	return rand.Intn(max-min) + min
 }
 
 func log(timed bool, s ...string) {
 	var f *os.File
-	var out []byte
+	var out string
 	var time1 string
 
-	if _, err := os.Stat("err.log"); err == nil {
-		f, err = os.OpenFile("err.log", os.O_APPEND|os.O_WRONLY, os.ModeAppend)
-		if err != nil {
-			fmt.Println(err)
-			return 
-		}
-		defer f.Close()
-	} else {
-		f, err = os.Create("err.log")
-		if err != nil { 
-			fmt.Println(err)
-			return 
-		}
-		defer f.Close()
+	f, err := os.OpenFile("err.log", os.O_APPEND|os.O_WRONLY, os.ModeAppend)
+	if err != nil {
+		fmt.Println(err.Error())
 	}
+	defer f.Close()
 
 	if timed {
-		time1 = time.Now().Format(time.RFC822)[:15]+" "
+		time1 = time.Now().Format(time.RFC822)[:15] + " "
 	}
 
-	out = []byte(time1 + strings.Join(s, " ")+"\n")
+	out = time1 + strings.Join(s, " ") + "\n"
 
-	_, err := f.Write(out)
-	if err != nil { 
-		fmt.Println(err)
-		return 
+	//if nothing failed so far, we can try to write
+	//to file
+	if err == nil {
+		_, err = f.Write([]byte(out))
+		//if nothing failed, we can return
+		if err == nil {
+			return
+		}
 	}
+
+	//if all else fails, print log to console
+	fmt.Println(err.Error() + "\n" + out)
 	return
 }
 
 func findIndex(s []string, f string) int {
-	for i,j := range s {
-		if(j == f){
+	for i, j := range s {
+		if j == f {
 			return i
 		}
 	}
@@ -200,25 +269,25 @@ func findIndex(s []string, f string) int {
 }
 
 func remove(s []string, i int) []string {
-    s[i] = s[len(s)-1]
-    return s[:len(s)-1]
+	s[i] = s[len(s)-1]
+	return s[:len(s)-1]
 }
 
 func min(a, b int) int {
-    if a < b {
-        return a
-    }
-    return b
+	if a < b {
+		return a
+	}
+	return b
 }
 
 func getCreationTime(ID string) (t time.Time, err error) {
-    i, err := strconv.ParseInt(ID, 10, 64)
-    if err != nil {
-        return
-    }
-    timestamp := (i >> 22) + 1420070400000
-    t = time.Unix(timestamp/1000, 0)
-    return
+	i, err := strconv.ParseInt(ID, 10, 64)
+	if err != nil {
+		return
+	}
+	timestamp := (i >> 22) + 1420070400000
+	t = time.Unix(timestamp/1000, 0)
+	return
 }
 
 func codeSeg(s ...string) string {
@@ -226,7 +295,7 @@ func codeSeg(s ...string) string {
 	for _, i := range s {
 		ret += i
 	}
-	return ret+"`"
+	return ret + "`"
 }
 
 func codeBlock(s ...string) string {
@@ -234,18 +303,29 @@ func codeBlock(s ...string) string {
 	for _, i := range s {
 		ret += i
 	}
-	return ret+"```"
+	return ret + "```"
 }
 
 func isIn(a string, list []string) bool {
-    for _, b := range list {
-        if b == a { return true }
-    }
-    return false
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
+}
+
+func isInMap(a string, aMap map[string]string) bool {
+	for key := range aMap {
+		if a == key {
+			return true
+		}
+	}
+	return false
 }
 
 func trimSlice(s []string) (ret []string) {
-	for _,i := range s {
+	for _, i := range s {
 		ret = append(ret, strings.TrimSpace(i))
 	}
 	return
@@ -270,122 +350,179 @@ func emojiFile(s string) string {
 	return found
 }
 
-func guildDetails(id string, s *discordgo.Session) (*discordgo.Guild, error){
+func guildDetails(id string, s *discordgo.Session) (*discordgo.Guild, error) {
 	channelInGuild, err := s.State.Channel(id)
 	if err != nil {
-		log(true, "channelInGuild err:", err.Error()) 
+		log(true, "channelInGuild err:", err.Error())
 		return nil, err
 	}
 	guildDetails, err := s.State.Guild(channelInGuild.GuildID)
-	if err != nil { 
+	if err != nil {
 		log(true, "guildDetails err:", err.Error())
 		return nil, err
 	}
 	return guildDetails, nil
 }
 
-func messageCreate(s *discordgo.Session, event *discordgo.MessageCreate) {
-	if event.Author.ID == s.State.User.ID || event.Author.Bot {
+func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
+	if m.Author.ID == s.State.User.ID || m.Author.Bot {
 		return
 	}
 
-	guildDetails, err := guildDetails(event.ChannelID, s)
+	guildDetails, err := guildDetails(m.ChannelID, s)
 	if err != nil {
 		return
 	}
 
 	var prefix string
-	if prefix = c.Servers[guildDetails.ID].Prefix; prefix == "" {
-		prefix = c.Prefix
+	if _, ok := c.Servers[guildDetails.ID]; ok {
+		if prefix = c.Servers[guildDetails.ID].Prefix; prefix == "" {
+			prefix = c.Prefix
+		}
 	}
 
-	if strings.HasPrefix(event.Content, prefix) {
-		//code seg checks if extra whitespace is between prefix and command. Not allowed, nope :} 
+	if strings.HasPrefix(m.Content, prefix) {
+		//code seg checks if extra whitespace is between prefix and command. Not allowed, nope :}
 		//would break prefixes without trailing whitespace otherwise
 		var command string
-
+		if len([]rune(strings.TrimPrefix(m.Content, prefix))) < 1 {
+			log(true, "Uh oh why did the run cast break")
+			return
+		}
 		//casted to rune to index, cant index strings :(
-		if string([]rune(strings.TrimPrefix(event.Content, prefix))[0]) == " " {
+		if string([]rune(strings.TrimPrefix(m.Content, prefix))[0]) == " " {
 			command += " "
 		}
+		msgList := strings.Fields(strings.TrimPrefix(m.Content, prefix))
 
-		msgList := strings.Fields(strings.TrimPrefix(event.Content, prefix))
-		//fmt.Println(strings.Join(msgList, ", "))
 		if len(msgList) > 0 {
 			command += msgList[0]
-			parseCommand(s, event, command, msgList)
+			parseCommand(s, m, command, msgList)
 		}
 	}
 	return
 }
 
+func setQueuedImageHandlers(s *discordgo.Session) {
+	for imgNum := range q.QueuedMsgs {
+		imgNumInt, err := strconv.Atoi(imgNum)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		fimageReview(s, q, imgNumInt)
+	}
+}
 
-func joined(s *discordgo.Session, event *discordgo.GuildCreate) {
-	if event.Guild.Unavailable {
+func joined(s *discordgo.Session, m *discordgo.GuildCreate) {
+	if m.Guild.Unavailable {
 		return
 	}
 
-	if guild, ok := c.Servers[event.Guild.ID]; !ok && !guild.Kicked {
-		c.Servers[event.Guild.ID] = &server {
-			LogChannel: event.Guild.ID,
-			Log: false,
-			Nsfw: false,
-			JoinMessage: []string{"false", "Welcome %s", event.Guild.ID},
-		}
+	guildDetails, err := s.State.Guild(m.Guild.ID)
+	if err != nil {
+		log(true, "Join guild struct", err.Error())
+		return
 	}
 
-	c.Servers[event.Guild.ID].Kicked = false
+	user, err := s.User(guildDetails.OwnerID)
+	if err != nil {
+		log(true, "Joined user struct err", err.Error())
+	}
 
+	if _, ok := c.Servers[m.Guild.ID]; !ok {
+		s.ChannelMessageSendEmbed(logChan, &discordgo.MessageEmbed{
+			Color: 65280,
+			Footer: &discordgo.MessageEmbedFooter{
+				Text: "Brought to you by 2Bot :)\nLast Bot reboot: " + lastReboot + " GMT",
+			},
+
+			Fields: []*discordgo.MessageEmbedField{
+				&discordgo.MessageEmbedField{Name: "Name:", Value: guildDetails.Name, Inline: true},
+				&discordgo.MessageEmbedField{Name: "User Count:", Value: strconv.Itoa(guildDetails.MemberCount), Inline: true},
+				&discordgo.MessageEmbedField{Name: "Region:", Value: guildDetails.Region, Inline: true},
+				&discordgo.MessageEmbedField{Name: "Channel Count:", Value: strconv.Itoa(len(guildDetails.Channels)), Inline: true},
+				&discordgo.MessageEmbedField{Name: "ID:", Value: guildDetails.ID, Inline: true},
+				&discordgo.MessageEmbedField{Name: "Owner:", Value: user.Username + "#" + user.Discriminator, Inline: true},
+			},
+		})
+
+		c.Servers[m.Guild.ID] = &server{
+			LogChannel:  m.Guild.ID,
+			Log:         false,
+			Nsfw:        false,
+			JoinMessage: [3]string{"false", "", ""},
+		}
+
+		log(true, "Joined server", m.Guild.ID, m.Guild.Name)
+	}
+
+	c.Servers[m.Guild.ID].Kicked = false
 	saveConfig()
 
-	log(true, "Joined server", event.Guild.ID, event.Guild.Name)
 	return
 }
 
-func kicked(s *discordgo.Session, event *discordgo.GuildDelete) {
-	if !event.Unavailable {
-		log(true, "Kicked from", event.Guild.ID, event.Name)
-		c.Servers[event.Guild.ID].Kicked = true;
-		saveConfig() 
+func kicked(s *discordgo.Session, m *discordgo.GuildDelete) {
+	if !m.Unavailable {
+		s.ChannelMessageSendEmbed(logChan, &discordgo.MessageEmbed{
+			Color: 16711680,
+			Footer: &discordgo.MessageEmbedFooter{
+				Text: "Brought to you by 2Bot :)\nLast Bot reboot: " + lastReboot + " GMT",
+			},
+			Fields: []*discordgo.MessageEmbedField{
+				&discordgo.MessageEmbedField{Name: "Name:", Value: m.Name, Inline: true},
+				&discordgo.MessageEmbedField{Name: "ID:", Value: m.Guild.ID, Inline: true},
+			},
+		})
+
+		log(true, "Kicked from", m.Guild.ID, m.Name)
+		c.Servers[m.Guild.ID].Kicked = true
+		saveConfig()
 	}
 	return
 }
 
-func membPresChange(s *discordgo.Session, event *discordgo.PresenceUpdate) {
-	if guild, ok := c.Servers[event.GuildID]; ok && !guild.Kicked{
+func membPresChange(s *discordgo.Session, m *discordgo.PresenceUpdate) {
+	if guild, ok := c.Servers[m.GuildID]; ok && !guild.Kicked {
 		if guild.Log {
-			guildDetails, err   := s.State.Guild(event.GuildID)
-			if err != nil { 
-				 log(true, "guildDetails err:", err.Error())
-				 return
+			guildDetails, err := s.State.Guild(m.GuildID)
+			if err != nil {
+				log(true, "guildDetails err:", err.Error())
+				return
 			}
 
-			memberStruct, err := s.State.Member(event.GuildID, event.User.ID)
-			if err != nil { 
-				log(true, guildDetails.Name, event.GuildID, err.Error())
-				return 
+			memberStruct, err := s.State.Member(m.GuildID, m.User.ID)
+			if err != nil {
+				log(true, guildDetails.Name, m.GuildID, err.Error())
+				return
 			}
 
-			s.ChannelMessageSend(guild.LogChannel, fmt.Sprintf("`%s is now %s`", memberStruct.User, status[event.Status]))
+			s.ChannelMessageSend(guild.LogChannel, fmt.Sprintf("`%s is now %s`", memberStruct.User, status[m.Status]))
 		}
 	}
 	return
 }
 
-func membJoin(s *discordgo.Session, event *discordgo.GuildMemberAdd){
-	if guild, ok := c.Servers[event.GuildID]; ok && !guild.Kicked{
+func membJoin(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
+	if guild, ok := c.Servers[m.GuildID]; ok && !guild.Kicked {
 		if len(guild.JoinMessage) == 3 {
-			if isBool,_ := strconv.ParseBool(guild.JoinMessage[0]); isBool && guild.JoinMessage[1] != "" {
-				guildDetails, err := s.State.Guild(event.GuildID)
-				if err != nil { 
+			isBool, err := strconv.ParseBool(guild.JoinMessage[0])
+			if err != nil {
+				log(true, "Config join msg bool err", err.Error())
+				return
+			}
+			if isBool && guild.JoinMessage[1] != "" {
+				guildDetails, err := s.State.Guild(m.GuildID)
+				if err != nil {
 					log(true, "guildDetails err:", err.Error())
 					return
-				}			
+				}
 
-				membStruct, err := s.User(event.User.ID)
-				if err != nil { 
-					log(true,  guildDetails.Name, event.GuildID, err.Error())
-					return 
+				membStruct, err := s.User(m.User.ID)
+				if err != nil {
+					log(true, guildDetails.Name, m.GuildID, err.Error())
+					return
 				}
 
 				message := strings.Replace(guild.JoinMessage[1], "%s", membStruct.Mention(), -1)

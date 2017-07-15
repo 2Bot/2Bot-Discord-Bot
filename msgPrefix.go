@@ -1,19 +1,24 @@
 package main
 
 import (
+	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"strings"
-	"fmt"
 )
-
 
 func msgPrefix(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	guildDetails, err := guildDetails(m.ChannelID, s)
-	if err != nil { 
+	if err != nil {
 		return
-	}	
-	
-	if len(msglist) < 2 || m.Author.ID != guildDetails.OwnerID {
+	}
+
+	if len(msglist) < 2 {
+		s.ChannelMessageSend(m.ChannelID, "No prefix given :/")
+		return
+	}
+
+	if m.Author.ID != guildDetails.OwnerID || m.Author.ID != noah {
+		s.ChannelMessageSend(m.ChannelID, "Sorry, only the owner can do this")
 		return
 	}
 
@@ -31,7 +36,7 @@ func msgPrefix(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 				space = " "
 				msg = "with"
 			}
-			guild.Prefix = parts[0]+space
+			guild.Prefix = parts[0] + space
 			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Prefix changed to %s %s a trailing space", codeSeg(guild.Prefix), msg))
 			saveConfig()
 		}
@@ -40,7 +45,7 @@ func msgPrefix(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 }
 
 func msgGlobalPrefix(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	if m.Author.ID != "149612775587446784" && len(msglist) < 2 {
+	if m.Author.ID != noah && len(msglist) < 2 {
 		return
 	}
 
@@ -55,7 +60,7 @@ func msgGlobalPrefix(s *discordgo.Session, m *discordgo.MessageCreate, msglist [
 			msg = "with"
 		}
 
-		c.Prefix = parts[0]+space
+		c.Prefix = parts[0] + space
 
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(":ok_hand: | All done! Prefix changed to %s %s trailing space!", c.Prefix, msg))
 		saveConfig()
