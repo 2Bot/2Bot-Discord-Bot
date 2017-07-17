@@ -111,7 +111,7 @@ func postServerCount() {
 		if err != nil {
 			log(true, "bots.discord.pw error", err.Error())
 		}
-		log(true, "POSTed"+strconv.Itoa(sCount)+"to bots.discord.pw")
+		log(true, "POSTed "+strconv.Itoa(sCount)+" to bots.discord.pw")
 		time.Sleep(time.Hour * 24)
 	}
 }
@@ -142,8 +142,6 @@ func loadConfig() error {
 	}
 
 	json.Unmarshal(file, c)
-	c.Game = "!owo help"
-	c.Prefix = "!owo "
 	for gID, guild := range c.Servers {
 		if guild.LogChannel == "" {
 			guild.LogChannel = gID
@@ -410,7 +408,7 @@ func setQueuedImageHandlers(s *discordgo.Session) {
 			fmt.Println(err)
 			continue
 		}
-		fimageReview(s, q, imgNumInt)
+		go fimageReview(s, q, imgNumInt)
 	}
 }
 

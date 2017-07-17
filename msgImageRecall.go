@@ -75,7 +75,8 @@ func fimageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 		return
 	}
 
-	imgURL, err := url.Parse("https://sushishader.eu/2Bot/images/" + filename)
+	escapedFile := url.PathEscape(filename)
+	imgURL, err := url.Parse("https://sushishader.eu/2Bot/images/" + escapedFile)
 	if err != nil {
 		log(true, "Error parsing img url", err.Error())
 		s.ChannelMessageSend(m.ChannelID, "Error getting the image :( Please pester Strum355#1180 about this")
@@ -88,7 +89,7 @@ func fimageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 		s.ChannelMessageSend(m.ChannelID, "Error getting the image :( Please pester Strum355#1180 about this")
 		return
 	} else if resp.StatusCode != http.StatusOK {
-		log(true, "Non 200 status code", err.Error())
+		log(true, "Non 200 status code")
 		s.ChannelMessageSend(m.ChannelID, "Error getting the image :( Please pester Strum355#1180 about this")
 		return
 	}
@@ -106,6 +107,7 @@ func fimageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 
 func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	c.CurrImg++
+	saveConfig()
 	currentImageNumber := c.CurrImg
 
 	if len(m.Attachments) == 0 {
@@ -310,6 +312,11 @@ func fimageReview(s *discordgo.Session, queue *imageQueue, currentImageNumber in
 					saveUsers()
 					saveQueue()
 
+					err := os.Remove(tempFilepath)
+					if err != nil {
+						log(true, "Error deleting temp image", err.Error())
+					}
+
 					//Make PM channel to inform user that image was rejected
 					channel, err := s.UserChannelCreate(imgInQueue.AuthorID)
 					//Couldnt make PM channel
@@ -413,7 +420,8 @@ func fimageList(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 
 		success := true
 		for i, img := range files {
-			imgURL, err := url.Parse("https://sushishader.eu/2Bot/images/" + img)
+			escapedFile := url.PathEscape(img)
+			imgURL, err := url.Parse("https://sushishader.eu/2Bot/images/" + escapedFile)
 			if err != nil {
 				log(true, "Error parsing img url", err.Error())
 				success = false

@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func msgPurge(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
+func msgPurge(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {	
 	guildDetails, err := guildDetails(m.ChannelID, s)
 	if err != nil {
 		return
@@ -17,9 +17,16 @@ func msgPurge(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 		s.ChannelMessageSend(m.ChannelID, "Sorry, only the owner can do this")
 		return
 	}
+	
 	if len(msglist) < 2 {
+		s.ChannelMessageSend(m.ChannelID, "Gotta specify a number of messages to delete~")
 		return
 	}
+
+/*	var userToPurge string
+	if len(msglist) == 3 {
+		userToPurge = msglist[2]
+	}*/
 
 	purgeAmount, err := strconv.Atoi(msglist[1])
 	if err != nil {
@@ -27,15 +34,16 @@ func msgPurge(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 		return
 	}
 
-	s.ChannelMessageDelete(m.ChannelID, m.ID)
+	s.ChannelMessageDelete(m.ChannelID, m.Message.ID)
 
 	loop := purgeAmount / 100
 	for i := 0; i <= loop; i++ {
 		if purgeAmount > 0 {
 			del := min(purgeAmount, 100)
-			list, err := s.ChannelMessages(m.ChannelID, del, "", "", "")
+			list, err := s.ChannelMessages(m.ChannelID, del, "", "", "")						
 			if err != nil {
 				log(true, guildDetails.Name, guildDetails.ID, "Purge populate message list err:", err.Error())
+				s.ChannelMessageSend(m.ChannelID, "There was a problem purging the chat :(")
 				return
 			}
 
