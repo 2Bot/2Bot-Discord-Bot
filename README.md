@@ -1,4 +1,4 @@
-![2Bot Icon](http://www.resizr.com/resized/33b0.png)
+![2Bot Icon](https://sushishader.eu/2Bot/2Bot-half.png)
 
 2Bot-Discord-Bot
 ================
