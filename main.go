@@ -436,12 +436,12 @@ func joined(s *discordgo.Session, m *discordgo.GuildCreate) {
 			},
 
 			Fields: []*discordgo.MessageEmbedField{
-				&discordgo.MessageEmbedField{Name: "Name:", Value: guildDetails.Name, Inline: true},
-				&discordgo.MessageEmbedField{Name: "User Count:", Value: strconv.Itoa(guildDetails.MemberCount), Inline: true},
-				&discordgo.MessageEmbedField{Name: "Region:", Value: guildDetails.Region, Inline: true},
-				&discordgo.MessageEmbedField{Name: "Channel Count:", Value: strconv.Itoa(len(guildDetails.Channels)), Inline: true},
-				&discordgo.MessageEmbedField{Name: "ID:", Value: guildDetails.ID, Inline: true},
-				&discordgo.MessageEmbedField{Name: "Owner:", Value: user.Username + "#" + user.Discriminator, Inline: true},
+				{Name: "Name:", Value: guildDetails.Name, Inline: true},
+				{Name: "User Count:", Value: strconv.Itoa(guildDetails.MemberCount), Inline: true},
+				{Name: "Region:", Value: guildDetails.Region, Inline: true},
+				{Name: "Channel Count:", Value: strconv.Itoa(len(guildDetails.Channels)), Inline: true},
+				{Name: "ID:", Value: guildDetails.ID, Inline: true},
+				{Name: "Owner:", Value: user.Username + "#" + user.Discriminator, Inline: true},
 			},
 		})
 
@@ -469,8 +469,8 @@ func kicked(s *discordgo.Session, m *discordgo.GuildDelete) {
 				Text: "Brought to you by 2Bot :)\nLast Bot reboot: " + lastReboot + " GMT",
 			},
 			Fields: []*discordgo.MessageEmbedField{
-				&discordgo.MessageEmbedField{Name: "Name:", Value: m.Name, Inline: true},
-				&discordgo.MessageEmbedField{Name: "ID:", Value: m.Guild.ID, Inline: true},
+				{Name: "Name:", Value: m.Name, Inline: true},
+				{Name: "ID:", Value: m.Guild.ID, Inline: true},
 			},
 		})
 
