@@ -55,7 +55,8 @@ var (
 		"Args: none\n\nLinks 2Bots github page.\n\nExample:\n`!owo git`",
 		false, false, msgGit}
 	purgeComm = command{"purge",
-		"Args: [number]\n\nPurges 'number' amount of messages.\nAdmin only\n\nExample:\n!owo purge 300",
+		"Args: [number] [@user]\n\nPurges 'number' amount of messages. Optionally, purge only the messages from a given user!\nAdmin only\n\nExample:\n`!owo purge 300`\n"+
+		"Example 2:\n`!owo purge 300 @Strum355#1180`",
 		false, true, msgPurge}
 	prefixComm = command{"setPrefix",
 		"Args: [prefix] | [whitespace?]\n\nSets the servers prefix to 'prefix'\nAdmin only.\n\nExample:\n`!owo setPrefix . | false`\nNew Example command:\n`.help`",
