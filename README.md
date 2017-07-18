@@ -1,6 +1,6 @@
 # Strum355/2Bot-Discord-Bot
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/Strum355/2Bot-Discord-Bot)](https://goreportcard.com/report/github.com/Strum355/2Bot-Discord-Bot)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Strum355/2Bot-Discord-Bot)](https://goreportcard.com/report/github.com/Strum355/2Bot-Discord-Bot) [![Website](https://img.shields.io/badge/discord-2Bot%20Server-blue.svg)](https://discord.gg/9T34Y6u)
 
 ![2Bot Icon](https://sushishader.eu/2Bot/2Bot-half.png)
 
