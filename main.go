@@ -1,3 +1,20 @@
+/*
+	Copyright (C) 2017  Noah Santschi-Cooney
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 package main
 
 import (
@@ -5,7 +22,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/bwmarrin/discordgo"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -16,6 +32,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 const (
@@ -436,12 +454,12 @@ func joined(s *discordgo.Session, m *discordgo.GuildCreate) {
 			},
 
 			Fields: []*discordgo.MessageEmbedField{
-				&discordgo.MessageEmbedField{Name: "Name:", Value: guildDetails.Name, Inline: true},
-				&discordgo.MessageEmbedField{Name: "User Count:", Value: strconv.Itoa(guildDetails.MemberCount), Inline: true},
-				&discordgo.MessageEmbedField{Name: "Region:", Value: guildDetails.Region, Inline: true},
-				&discordgo.MessageEmbedField{Name: "Channel Count:", Value: strconv.Itoa(len(guildDetails.Channels)), Inline: true},
-				&discordgo.MessageEmbedField{Name: "ID:", Value: guildDetails.ID, Inline: true},
-				&discordgo.MessageEmbedField{Name: "Owner:", Value: user.Username + "#" + user.Discriminator, Inline: true},
+				{Name: "Name:", Value: guildDetails.Name, Inline: true},
+				{Name: "User Count:", Value: strconv.Itoa(guildDetails.MemberCount), Inline: true},
+				{Name: "Region:", Value: guildDetails.Region, Inline: true},
+				{Name: "Channel Count:", Value: strconv.Itoa(len(guildDetails.Channels)), Inline: true},
+				{Name: "ID:", Value: guildDetails.ID, Inline: true},
+				{Name: "Owner:", Value: user.Username + "#" + user.Discriminator, Inline: true},
 			},
 		})
 
@@ -469,8 +487,8 @@ func kicked(s *discordgo.Session, m *discordgo.GuildDelete) {
 				Text: "Brought to you by 2Bot :)\nLast Bot reboot: " + lastReboot + " GMT",
 			},
 			Fields: []*discordgo.MessageEmbedField{
-				&discordgo.MessageEmbedField{Name: "Name:", Value: m.Name, Inline: true},
-				&discordgo.MessageEmbedField{Name: "ID:", Value: m.Guild.ID, Inline: true},
+				{Name: "Name:", Value: m.Name, Inline: true},
+				{Name: "ID:", Value: m.Guild.ID, Inline: true},
 			},
 		})
 
