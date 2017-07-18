@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func msgPurge(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {	
+func msgPurge(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	guildDetails, err := guildDetails(m.ChannelID, s)
 	if err != nil {
 		return
@@ -17,16 +17,21 @@ func msgPurge(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 		s.ChannelMessageSend(m.ChannelID, "Sorry, only the owner can do this")
 		return
 	}
-	
+
 	if len(msglist) < 2 {
 		s.ChannelMessageSend(m.ChannelID, "Gotta specify a number of messages to delete~")
 		return
 	}
 
-/*	var userToPurge string
+	var userToPurge string
 	if len(msglist) == 3 {
-		userToPurge = msglist[2]
-	}*/
+		submatch := userIDRegex.FindStringSubmatch(msglist[2])
+		if len(submatch) == 0 {
+			s.ChannelMessageSend(m.ChannelID, "Couldn't find that user :(")
+			return
+		}
+		userToPurge = submatch[1]
+	}
 
 	purgeAmount, err := strconv.Atoi(msglist[1])
 	if err != nil {
@@ -36,13 +41,30 @@ func msgPurge(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 
 	s.ChannelMessageDelete(m.ChannelID, m.Message.ID)
 
+	if userToPurge == "" {
+		standardPurge(purgeAmount, s, m)
+	} else {
+
+		err = userPurge(purgeAmount, s, m, userToPurge)
+	}
+
+	if err == nil {
+		msg, _ := s.ChannelMessageSend(m.ChannelID, "Successfully deleted :ok_hand:")
+		time.Sleep(time.Second * 5)
+		s.ChannelMessageDelete(m.ChannelID, msg.ID)
+	}
+	return
+}
+
+func standardPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCreate) {
 	loop := purgeAmount / 100
+	outOfDate := false
 	for i := 0; i <= loop; i++ {
 		if purgeAmount > 0 {
 			del := min(purgeAmount, 100)
-			list, err := s.ChannelMessages(m.ChannelID, del, "", "", "")						
+			list, err := s.ChannelMessages(m.ChannelID, del, "", "", "")
 			if err != nil {
-				log(true, guildDetails.Name, guildDetails.ID, "Purge populate message list err:", err.Error())
+				log(true, "Purge populate message list err:", err.Error())
 				s.ChannelMessageSend(m.ChannelID, "There was a problem purging the chat :(")
 				return
 			}
@@ -50,22 +72,87 @@ func msgPurge(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 			if len(list) == 0 {
 				break
 			}
-			purgeList := []string{}
+
+			var purgeList []string
 			for _, msg := range list {
+				then, _ := msg.Timestamp.Parse()
+				timeSince := time.Since(then)
+
+				if timeSince.Hours()/24 >= 14 {
+					outOfDate = true
+					break
+				}
+
 				purgeList = append(purgeList, msg.ID)
 			}
 
 			err = s.ChannelMessagesBulkDelete(m.ChannelID, purgeList)
 			if err != nil {
-				s.ChannelMessageSend(m.ChannelID, "Dont have permissions or messages are older than 14 days :(")
+				s.ChannelMessageSend(m.ChannelID, "Dont have permissions to delete messages :(")
 				return
 			}
+
+			if outOfDate {
+				break
+			}
+
 			purgeAmount -= 100
 		}
 	}
-	msg, _ := s.ChannelMessageSend(m.ChannelID, "Successfully deleted :ok_hand:")
-	time.Sleep(time.Second * 5)
-	s.ChannelMessageDelete(m.ChannelID, msg.ID)
+}
 
-	return
+func userPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCreate, userToPurge string) error {
+	var totalPurged int
+	outOfDate := false
+
+	for totalPurged < purgeAmount {
+		del := min(purgeAmount, 100)
+		var purgeList []string
+
+		for len(purgeList) < del {
+			list, err := s.ChannelMessages(m.ChannelID, 100, "", "", "")
+			if err != nil {
+				log(true, "Purge populate message list err:", err.Error())
+				s.ChannelMessageSend(m.ChannelID, "There was a problem purging the chat :(")
+				return err
+			}
+
+			if len(list) == 0 {
+				break
+			}
+
+			for _, msg := range list {
+				if len(purgeList) >= del {
+					break
+				}
+
+				if msg.Author.ID == userToPurge {
+					then, _ := msg.Timestamp.Parse()
+					timeSince := time.Since(then)
+
+					if timeSince.Hours()/24 >= 14 {
+						outOfDate = true
+						break
+					}
+
+					purgeList = append(purgeList, msg.ID)
+				}
+			}
+
+			if outOfDate || len(list) < 100 {
+				break
+			}
+		}
+
+		err := s.ChannelMessagesBulkDelete(m.ChannelID, purgeList)
+		if err != nil {
+			s.ChannelMessageSend(m.ChannelID, "Dont have permissions to delete messages :( \n"+err.Error())
+			return err
+		}
+
+		purgeAmount -= 100
+		totalPurged += del
+	}
+
+	return nil
 }

@@ -35,7 +35,7 @@ var (
 		"Args: none\n\nSome info about 2Bot.\n\nExample:\n`!owo info`",
 		false, false, msgInfo}
 	bigMoji = command{"bigMoji",
-		"Args: [emoji]\n\nSends a large image of the given emoji.\nCommand 'bigMoji' can be exlcuded for shorthand.\n\nExample:\n`!owo :smile:`\nor\n`!owo bigMoji :smile:`",
+		"Args: [emoji]\n\nSends a large image of the given emoji.\nCommand 'bigMoji' can be excluded for shorthand.\n\nExample:\n`!owo :smile:`\nor\n`!owo bigMoji :smile:`",
 		false, false, msgEmoji}
 	logChannel = command{"logChannel",
 		"Args: [channelID]\n\nSets the log channel to the given channel.\nAdmin only.\n\nExample:\n`!owo logChannel 312292616089894924`",

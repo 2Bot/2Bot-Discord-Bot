@@ -19,7 +19,7 @@
       "server_prefix": "",
       "log_active": false,
       "kicked": false,
-      "nsfw": false,
+      "nsfw": true,
       "join": [
         "false",
         "",

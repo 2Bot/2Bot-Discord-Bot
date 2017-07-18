@@ -11,6 +11,22 @@ import (
 )
 
 func msgIbsearch(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
+	guildDetails, err := guildDetails(m.ChannelID, s)
+	if err != nil {
+		return
+	}
+
+	channel, err := s.State.Channel(m.ChannelID)
+	if err != nil {
+		log(true, "Channel error", err.Error())
+		return
+	}
+
+	if !c.Servers[guildDetails.ID].Nsfw && !strings.HasPrefix(channel.Name, "nsfw") {
+		s.ChannelMessageSend(m.ChannelID, "NSFW is disabled on this server~")
+		return
+	}
+
 	if len(msglist) < 2 {
 		return
 	}
