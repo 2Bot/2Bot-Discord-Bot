@@ -74,11 +74,11 @@ func msgUserStats(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 			Text: "Brought to you by 2Bot :)",
 		},
 		Fields: []*discordgo.MessageEmbedField{
-			&discordgo.MessageEmbedField{Name: "Username:", Value: user.Username, Inline: true},
-			&discordgo.MessageEmbedField{Name: "Nickname:", Value: nick, Inline: true},
-			&discordgo.MessageEmbedField{Name: "Joined Server:", Value: memberStruct.JoinedAt[:10], Inline: false},
-			&discordgo.MessageEmbedField{Name: "Roles:", Value: strings.Join(roleNames, ", "), Inline: true},
-			&discordgo.MessageEmbedField{Name: "ID:", Value: user.ID, Inline: true},
+			{Name: "Username:", Value: user.Username, Inline: true},
+			{Name: "Nickname:", Value: nick, Inline: true},
+			{Name: "Joined Server:", Value: memberStruct.JoinedAt[:10], Inline: false},
+			{Name: "Roles:", Value: strings.Join(roleNames, ", "), Inline: true},
+			{Name: "ID Number:", Value: user.ID, Inline: true},
 		},
 	})
 

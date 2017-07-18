@@ -53,15 +53,15 @@ func msgInfo(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
 			Text: "Brought to you by 2Bot :)\nLast Bot reboot: " + lastReboot + " GMT",
 		},
 		Fields: []*discordgo.MessageEmbedField{
-			&discordgo.MessageEmbedField{Name: "Bot Name:", Value: codeBlock(s.State.User.Username), Inline: true},
-			&discordgo.MessageEmbedField{Name: "Creator:", Value: codeBlock("Strum355#1180"), Inline: true},
-			&discordgo.MessageEmbedField{Name: "Creation Date:", Value: codeBlock(creationTime), Inline: true},
-			&discordgo.MessageEmbedField{Name: "Global Prefix:", Value: codeBlock(c.Prefix), Inline: true},
-			&discordgo.MessageEmbedField{Name: "Programming Language:", Value: codeBlock("Go"), Inline: true},
-			&discordgo.MessageEmbedField{Name: "Library:", Value: codeBlock("Discordgo"), Inline: true},
-			&discordgo.MessageEmbedField{Name: "Server Count:", Value: codeBlock(strconv.Itoa(len(s.State.Guilds))), Inline: true},
-			&discordgo.MessageEmbedField{Name: "Memory Usage:", Value: codeBlock(strconv.Itoa(int(mem.Alloc/1024/1024)) + "MB"), Inline: true},
-			&discordgo.MessageEmbedField{Name: "My Server:", Value: "https://discord.gg/9T34Y6u\nJoin here for support amongst other things!", Inline: false},
+			{Name: "Bot Name:", Value: codeBlock(s.State.User.Username), Inline: true},
+			{Name: "Creator:", Value: codeBlock("Strum355#1180"), Inline: true},
+			{Name: "Creation Date:", Value: codeBlock(creationTime), Inline: true},
+			{Name: "Global Prefix:", Value: codeBlock(c.Prefix), Inline: true},
+			{Name: "Programming Language:", Value: codeBlock("Go"), Inline: true},
+			{Name: "Library:", Value: codeBlock("Discordgo"), Inline: true},
+			{Name: "Server Count:", Value: codeBlock(strconv.Itoa(len(s.State.Guilds))), Inline: true},
+			{Name: "Memory Usage:", Value: codeBlock(strconv.Itoa(int(mem.Alloc/1024/1024)) + "MB"), Inline: true},
+			{Name: "My Server:", Value: "https://discord.gg/9T34Y6u\nJoin here for support amongst other things!", Inline: false},
 		},
 	})
 	return
@@ -230,7 +230,7 @@ func msgInvite(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
 			URL: happyEmoji,
 		},
 		Fields: []*discordgo.MessageEmbedField{
-			&discordgo.MessageEmbedField{Name: "Invite me with this link!", Value: "https://discordapp.com/oauth2/authorize?client_id=301819949683572738&scope=bot&permissions=3533824", Inline: true},
+			{Name: "Invite me with this link!", Value: "https://discordapp.com/oauth2/authorize?client_id=301819949683572738&scope=bot&permissions=3533824", Inline: true},
 		},
 	})
 }
