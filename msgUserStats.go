@@ -13,15 +13,15 @@ func msgUserStats(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 		return
 	}
 
-	guildDetails, err := s.State.Guild(channelInGuild.GuildID)
+	guild, err := s.State.Guild(channelInGuild.GuildID)
 	if err != nil {
-		log(true, "guildDetails err:", m.Content, err.Error())
+		log(true, "(msgUserStats) guildDetails err:", m.Content, err.Error())
 		return
 	}
 
 	var userID string
 	var nick string
-	roleStruct := guildDetails.Roles
+	roleStruct := guild.Roles
 
 	if len(msglist) > 1 {
 		submatch := userIDRegex.FindStringSubmatch(msglist[1])
@@ -65,7 +65,7 @@ func msgUserStats(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 
 	s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
 		Color:       s.State.UserColor(userID, m.ChannelID),
-		Description: fmt.Sprintf("%s is a loyal member of %s", user.Username, guildDetails.Name),
+		Description: fmt.Sprintf("%s is a loyal member of %s", user.Username, guild.Name),
 		Author: &discordgo.MessageEmbedAuthor{
 			Name:    user.Username,
 			IconURL: discordgo.EndpointUserAvatar(userID, user.Avatar),
@@ -78,7 +78,7 @@ func msgUserStats(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 			&discordgo.MessageEmbedField{Name: "Nickname:", Value: nick, Inline: true},
 			&discordgo.MessageEmbedField{Name: "Joined Server:", Value: memberStruct.JoinedAt[:10], Inline: false},
 			&discordgo.MessageEmbedField{Name: "Roles:", Value: strings.Join(roleNames, ", "), Inline: true},
-			//		&discordgo.MessageEmbedField{Name: "ID Number:", Value: user.ID, Inline: true},
+			&discordgo.MessageEmbedField{Name: "ID:", Value: user.ID, Inline: true},
 		},
 	})
 

@@ -10,7 +10,7 @@ import (
 )
 
 func msgRule34(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	guildDetails, err := guildDetails(m.ChannelID, s)
+	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
 		return
 	}
@@ -21,7 +21,7 @@ func msgRule34(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 		return
 	}
 
-	if !c.Servers[guildDetails.ID].Nsfw && !strings.HasPrefix(channel.Name, "nsfw") {
+	if !c.Servers[guild.ID].Nsfw && !strings.HasPrefix(channel.Name, "nsfw") {
 		s.ChannelMessageSend(m.ChannelID, "NSFW is disabled on this server~")
 		return
 	}

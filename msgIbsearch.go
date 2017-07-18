@@ -11,7 +11,7 @@ import (
 )
 
 func msgIbsearch(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	guildDetails, err := guildDetails(m.ChannelID, s)
+	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
 		return
 	}
@@ -22,7 +22,7 @@ func msgIbsearch(s *discordgo.Session, m *discordgo.MessageCreate, msglist []str
 		return
 	}
 
-	if !c.Servers[guildDetails.ID].Nsfw && !strings.HasPrefix(channel.Name, "nsfw") {
+	if !c.Servers[guild.ID].Nsfw && !strings.HasPrefix(channel.Name, "nsfw") {
 		s.ChannelMessageSend(m.ChannelID, "NSFW is disabled on this server~")
 		return
 	}
@@ -37,6 +37,10 @@ func msgIbsearch(s *discordgo.Session, m *discordgo.MessageCreate, msglist []str
 	filters := []string{"rating", "format"}
 	queries := []string{}
 	URL, err := url.Parse("https://ibsearch.xxx")
+	if err != nil {
+		log(true, "IBSearch query error", err.Error())
+		return
+	}
 
 	s.ChannelTyping(m.ChannelID)
 
@@ -52,11 +56,6 @@ func msgIbsearch(s *discordgo.Session, m *discordgo.MessageCreate, msglist []str
 				finalQuery += strings.Replace(queryList[i+1], " ", "", -1) + " "
 			}
 		}
-	}
-
-	if err != nil {
-		log(true, "IBSearch query error", err.Error())
-		return
 	}
 
 	//Assemble the URL

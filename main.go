@@ -51,7 +51,6 @@ func init() {
 func main() {
 	err := loadConfig()
 	if err != nil {
-		log(true, "Error loading config", err.Error())
 		fmt.Println("Error loading config")
 		return
 	}
@@ -137,7 +136,6 @@ func loadConfig() error {
 	c.Servers = make(map[string]*server)
 	file, err := ioutil.ReadFile("config.json")
 	if err != nil {
-		log(true, "Config open err", err.Error())
 		return err
 	}
 
@@ -289,19 +287,11 @@ func getCreationTime(ID string) (t time.Time, err error) {
 }
 
 func codeSeg(s ...string) string {
-	ret := "`"
-	for _, i := range s {
-		ret += i
-	}
-	return ret + "`"
+	return "`"+strings.Join(s, " ")+"`"
 }
 
 func codeBlock(s ...string) string {
-	ret := "```"
-	for _, i := range s {
-		ret += i
-	}
-	return ret + "```"
+	return "```"+strings.Join(s, " ")+"```"
 }
 
 func isIn(a string, list []string) bool {
@@ -329,6 +319,7 @@ func trimSlice(s []string) (ret []string) {
 	return
 }
 
+//Thanks to iopred
 func emojiFile(s string) string {
 	found := ""
 	filename := ""
@@ -348,15 +339,15 @@ func emojiFile(s string) string {
 	return found
 }
 
-func guildDetails(id string, s *discordgo.Session) (*discordgo.Guild, error) {
-	channelInGuild, err := s.State.Channel(id)
+func guildDetails(channelID string, s *discordgo.Session) (*discordgo.Guild, error) {
+	channelInGuild, err := s.State.Channel(channelID)
 	if err != nil {
 		log(true, "channelInGuild err:", err.Error())
 		return nil, err
 	}
 	guildDetails, err := s.State.Guild(channelInGuild.GuildID)
 	if err != nil {
-		log(true, "guildDetails err:", err.Error())
+		log(true, "(guildDetails) guildDetails err:", err.Error())
 		return nil, err
 	}
 	return guildDetails, nil
@@ -383,14 +374,16 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		//code seg checks if extra whitespace is between prefix and command. Not allowed, nope :}
 		//would break prefixes without trailing whitespace otherwise
 		var command string
-		if len([]rune(strings.TrimPrefix(m.Content, prefix))) < 1 {
-			log(true, "Uh oh why did the run cast break")
+ 		if len([]rune(strings.TrimPrefix(m.Content, prefix))) < 1 {
+			log(true, "Uh oh why did the rune cast break")
 			return
 		}
+
 		//casted to rune to index, cant index strings :(
 		if string([]rune(strings.TrimPrefix(m.Content, prefix))[0]) == " " {
 			command += " "
-		}
+		} 
+		
 		msgList := strings.Fields(strings.TrimPrefix(m.Content, prefix))
 
 		if len(msgList) > 0 {
@@ -401,6 +394,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	return
 }
 
+// Set all handlers for queued images, in case the bot crashes 
+// with images still in queue
 func setQueuedImageHandlers(s *discordgo.Session) {
 	for imgNum := range q.QueuedMsgs {
 		imgNumInt, err := strconv.Atoi(imgNum)
@@ -420,27 +415,36 @@ func joined(s *discordgo.Session, m *discordgo.GuildCreate) {
 	guildDetails, err := s.State.Guild(m.Guild.ID)
 	if err != nil {
 		log(true, "Join guild struct", err.Error())
-		return
 	}
 
 	user, err := s.User(guildDetails.OwnerID)
 	if err != nil {
 		log(true, "Joined user struct err", err.Error())
+		user = &discordgo.User {
+			Username: "error",
+			Discriminator: "error",
+		}
 	}
 
 	if _, ok := c.Servers[m.Guild.ID]; !ok {
+		//if newly joined
 		s.ChannelMessageSendEmbed(logChan, &discordgo.MessageEmbed{
 			Color: 65280,
+
+			Image: &discordgo.MessageEmbedImage {
+				URL: discordgo.EndpointGuildIcon(m.Guild.ID, m.Guild.Icon),
+			},
+
 			Footer: &discordgo.MessageEmbedFooter{
 				Text: "Brought to you by 2Bot :)\nLast Bot reboot: " + lastReboot + " GMT",
 			},
 
 			Fields: []*discordgo.MessageEmbedField{
-				&discordgo.MessageEmbedField{Name: "Name:", Value: guildDetails.Name, Inline: true},
-				&discordgo.MessageEmbedField{Name: "User Count:", Value: strconv.Itoa(guildDetails.MemberCount), Inline: true},
-				&discordgo.MessageEmbedField{Name: "Region:", Value: guildDetails.Region, Inline: true},
-				&discordgo.MessageEmbedField{Name: "Channel Count:", Value: strconv.Itoa(len(guildDetails.Channels)), Inline: true},
-				&discordgo.MessageEmbedField{Name: "ID:", Value: guildDetails.ID, Inline: true},
+				&discordgo.MessageEmbedField{Name: "Name:", Value: m.Guild.Name, Inline: true},
+				&discordgo.MessageEmbedField{Name: "User Count:", Value: strconv.Itoa(m.Guild.MemberCount), Inline: true},
+				&discordgo.MessageEmbedField{Name: "Region:", Value: m.Guild.Region, Inline: true},
+				&discordgo.MessageEmbedField{Name: "Channel Count:", Value: strconv.Itoa(len(m.Guild.Channels)), Inline: true},
+				&discordgo.MessageEmbedField{Name: "ID:", Value: m.Guild.ID, Inline: true},
 				&discordgo.MessageEmbedField{Name: "Owner:", Value: user.Username + "#" + user.Discriminator, Inline: true},
 			},
 		})
@@ -453,6 +457,30 @@ func joined(s *discordgo.Session, m *discordgo.GuildCreate) {
 		}
 
 		log(true, "Joined server", m.Guild.ID, m.Guild.Name)
+	}else if val := c.Servers[m.Guild.ID]; val.Kicked == true {
+		//If previously kicked and then readded
+		s.ChannelMessageSendEmbed(logChan, &discordgo.MessageEmbed{
+			Color: 16751104,
+
+			Image: &discordgo.MessageEmbedImage {
+				URL: discordgo.EndpointGuildIcon(m.Guild.ID, m.Guild.Icon),
+			},
+
+			Footer: &discordgo.MessageEmbedFooter{
+				Text: "Brought to you by 2Bot :)\nLast Bot reboot: " + lastReboot + " GMT",
+			},
+
+			Fields: []*discordgo.MessageEmbedField{
+				&discordgo.MessageEmbedField{Name: "Name:", Value: m.Guild.Name, Inline: true},
+				&discordgo.MessageEmbedField{Name: "User Count:", Value: strconv.Itoa(m.Guild.MemberCount), Inline: true},
+				&discordgo.MessageEmbedField{Name: "Region:", Value: m.Guild.Region, Inline: true},
+				&discordgo.MessageEmbedField{Name: "Channel Count:", Value: strconv.Itoa(len(m.Guild.Channels)), Inline: true},
+				&discordgo.MessageEmbedField{Name: "ID:", Value: m.Guild.ID, Inline: true},
+				&discordgo.MessageEmbedField{Name: "Owner:", Value: user.Username + "#" + user.Discriminator, Inline: true},
+			},
+		})
+
+		log(true, "Rejoined server", m.Guild.ID, m.Guild.Name)
 	}
 
 	c.Servers[m.Guild.ID].Kicked = false
@@ -469,7 +497,7 @@ func kicked(s *discordgo.Session, m *discordgo.GuildDelete) {
 				Text: "Brought to you by 2Bot :)\nLast Bot reboot: " + lastReboot + " GMT",
 			},
 			Fields: []*discordgo.MessageEmbedField{
-				&discordgo.MessageEmbedField{Name: "Name:", Value: m.Name, Inline: true},
+				&discordgo.MessageEmbedField{Name: "Name:", Value: m.Guild.Name, Inline: true},
 				&discordgo.MessageEmbedField{Name: "ID:", Value: m.Guild.ID, Inline: true},
 			},
 		})
@@ -486,7 +514,7 @@ func membPresChange(s *discordgo.Session, m *discordgo.PresenceUpdate) {
 		if guild.Log {
 			guildDetails, err := s.State.Guild(m.GuildID)
 			if err != nil {
-				log(true, "guildDetails err:", err.Error())
+				log(true, "(membPresChange) guildDetails err:", err.Error())
 				return
 			}
 
@@ -513,7 +541,7 @@ func membJoin(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 			if isBool && guild.JoinMessage[1] != "" {
 				guildDetails, err := s.State.Guild(m.GuildID)
 				if err != nil {
-					log(true, "guildDetails err:", err.Error())
+					log(true, "(membJoin) guildDetails err:", err.Error())
 					return
 				}
 

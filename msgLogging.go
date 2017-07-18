@@ -6,7 +6,7 @@ import (
 )
 
 func msgLogChannel(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	guildDetails, err := guildDetails(m.ChannelID, s)
+	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
 		return
 	}
@@ -15,12 +15,12 @@ func msgLogChannel(s *discordgo.Session, m *discordgo.MessageCreate, msglist []s
 		return
 	}
 
-	if m.Author.ID != guildDetails.OwnerID || m.Author.ID != noah {
+	if m.Author.ID != guild.OwnerID || m.Author.ID != noah {
 		s.ChannelMessageSend(m.ChannelID, "Sorry, only the owner can do this!")
 		return
 	}
 
-	if guild, ok := c.Servers[guildDetails.ID]; ok && !guild.Kicked {
+	if guild, ok := c.Servers[guild.ID]; ok && !guild.Kicked {
 		guild.LogChannel = msglist[1]
 		saveConfig()
 		channel, err := s.Channel(msglist[1])
@@ -33,12 +33,12 @@ func msgLogChannel(s *discordgo.Session, m *discordgo.MessageCreate, msglist []s
 }
 
 func msgLogging(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	guildDetails, err := guildDetails(m.ChannelID, s)
+	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
 		return
 	}
 
-	if m.Author.ID != guildDetails.OwnerID || m.Author.ID != noah {
+	if m.Author.ID != guild.OwnerID || m.Author.ID != noah {
 		s.ChannelMessageSend(m.ChannelID, "Sorry, only the owner can do this!")
 		return
 	}
@@ -47,7 +47,7 @@ func msgLogging(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 		return
 	}
 
-	if guild, ok := c.Servers[guildDetails.ID]; ok && !guild.Kicked {
+	if guild, ok := c.Servers[guild.ID]; ok && !guild.Kicked {
 		guild.Log = !guild.Log
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Logging? %t", guild.Log))
 		saveConfig()

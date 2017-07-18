@@ -2,13 +2,12 @@ package main
 
 import (
 	"github.com/bwmarrin/discordgo"
-	//"github.com/Necroforger/dgwidgets"
+	"github.com/Necroforger/dgwidgets"
 	"net/http"
 	"os"
 	"strings"
 
 	"fmt"
-	"github.com/Strum355/dgwidgets"
 	"io/ioutil"
 	"net/url"
 	"path"
@@ -132,6 +131,7 @@ func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 		s.ChannelMessageSend(m.ChannelID, "I can't use that as a file name <:2BThink:333694872802426880> Please no forward-slash in my christian file names!")
 		return
 	}
+
 	prefixedImgName := m.Author.ID + "_" + imgName
 	fileExtension := strings.ToLower(path.Ext(m.Attachments[0].URL))
 	imgFileName := prefixedImgName + fileExtension
@@ -179,7 +179,7 @@ func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	}
 	defer resp.Body.Close()
 
-	guildDetails, err := guildDetails(m.ChannelID, s)
+	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
 		log(true, "Guild details err", err.Error())
 	}
@@ -219,8 +219,8 @@ func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 			m.Author.Username,
 			m.Author.Discriminator,
 			m.Author.ID,
-			guildDetails.Name,
-			guildDetails.ID,
+			guild.Name,
+			guild.ID,
 			imgName),
 
 		Color: 0x000000,
@@ -276,6 +276,7 @@ func fimageReview(s *discordgo.Session, queue *imageQueue, currentImageNumber in
 		if confirm.UserID == s.State.User.ID || confirm.MessageID != imgInQueue.ReviewMsgID {
 			continue
 		}
+		
 		if confirm.MessageReaction.Emoji.Name == "✅" {
 			//IF CONFIRMED
 			s.ChannelMessageSend(reviewChan, fmt.Sprintf("Confirmed image `%s` from `%s#%s` ID: `%s`",

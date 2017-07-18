@@ -8,12 +8,12 @@ import (
 )
 
 func msgPurge(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	guildDetails, err := guildDetails(m.ChannelID, s)
+	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
 		return
 	}
 
-	if m.Author.ID != guildDetails.OwnerID || m.Author.ID != noah {
+	if m.Author.ID != guild.OwnerID || m.Author.ID != noah {
 		s.ChannelMessageSend(m.ChannelID, "Sorry, only the owner can do this")
 		return
 	}

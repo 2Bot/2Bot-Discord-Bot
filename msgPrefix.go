@@ -7,7 +7,7 @@ import (
 )
 
 func msgPrefix(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	guildDetails, err := guildDetails(m.ChannelID, s)
+	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
 		return
 	}
@@ -17,7 +17,7 @@ func msgPrefix(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 		return
 	}
 
-	if m.Author.ID != guildDetails.OwnerID || m.Author.ID != noah {
+	if m.Author.ID != guild.OwnerID || m.Author.ID != noah {
 		s.ChannelMessageSend(m.ChannelID, "Sorry, only the owner can do this")
 		return
 	}
@@ -26,7 +26,7 @@ func msgPrefix(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 	var space string
 	msg := "without"
 
-	if guild, ok := c.Servers[guildDetails.ID]; ok && !guild.Kicked {
+	if guild, ok := c.Servers[guild.ID]; ok && !guild.Kicked {
 		parts = trimSlice(strings.Split(strings.TrimPrefix(m.Content, c.Prefix+"setPrefix"), "|"))
 		if guild.Prefix != "" {
 			parts = trimSlice(strings.Split(strings.TrimPrefix(m.Content, guild.Prefix+"setPrefix"), "|"))

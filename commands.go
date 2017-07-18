@@ -105,7 +105,7 @@ func loadCommands() {
 }
 
 func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, command string, msgList []string) {
-	command = strings.ToLower(strings.TrimSpace(command))
+	command = strings.ToLower(strings.TrimSuffix(command, " "))
 
 	submatch := emojiRegex.FindStringSubmatch(msgList[0])
 	if len(submatch) > 0 {

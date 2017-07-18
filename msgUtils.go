@@ -74,16 +74,19 @@ func msgListUsers(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 
 	if guild, ok := c.Servers[msglist[1]]; ok && !guild.Kicked {
 		s.ChannelTyping(m.ChannelID)
+
 		var out []string
-		guildDetails, err := guildDetails(msglist[1], s)
+
+		guild, err := guildDetails(msglist[1], s)
 		if err != nil {
 			return
 		}
-		for _, user := range guildDetails.Members {
+
+		for _, user := range guild.Members {
 			out = append(out, user.User.Username)
 		}
 
-		s.ChannelMessageSend(m.ChannelID, "Users in: "+guildDetails.Name+"\n`"+strings.Join(out, "`, `")+"`")
+		s.ChannelMessageSend(m.ChannelID, "Users in: "+guild.Name+"\n`"+strings.Join(out, "`, `")+"`")
 		return
 	}
 
@@ -95,13 +98,12 @@ func msgAnnounce(s *discordgo.Session, m *discordgo.MessageCreate, msglist []str
 	if m.Author.ID != noah && len(msglist) < 2 {
 		return
 	}
-	//Discord Bots, cool kidz only, social experiment, discord go
-	blacklist := []string{"110373943822540800", "272873324705742848", "244133074328092673", "118456055842734083"}
+
 	for _, guild := range s.State.Guilds {
 		if !isIn(guild.ID, blacklist) {
-			if _, ok := c.Servers[guild.ID]; !ok {
-				log(true, "State and config mis-match")
-
+			if val, ok := c.Servers[guild.ID]; !ok || val.Kicked {
+				log(true, "State and config mis-match!")
+				s.ChannelMessageSend(logChan, "State and config mis-match!")
 			}
 			s.ChannelMessageSend(guild.ID, strings.Join(msglist[1:], " "))
 		}
@@ -109,23 +111,24 @@ func msgAnnounce(s *discordgo.Session, m *discordgo.MessageCreate, msglist []str
 }
 
 func msgGit(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
-	s.ChannelMessageSend(m.ChannelID, "Check me out here https://github.com/Strum355/2Bot-Discord-Bot\nGive it star to make my creators day!")
+	s.ChannelMessageSend(m.ChannelID, "Check me out here https://github.com/Strum355/2Bot-Discord-Bot\nGive it star to make my creators day! ⭐")
 }
 
 func msgNSFW(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
 	onOrOff := map[bool]string{true: "enabled", false: "disabled"}
 
-	guildDetails, err := guildDetails(m.ChannelID, s)
+	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, "There was an error with discord :( Try again please~")
 		return
 	}
 
-	if m.Author.ID != guildDetails.OwnerID || m.Author.ID != noah {
+	if m.Author.ID != guild.OwnerID || m.Author.ID != noah {
 		s.ChannelMessageSend(m.ChannelID, "Sorry, only the owner can do this")
 		return
 	}
 
-	if guild, ok := c.Servers[guildDetails.ID]; ok && !guild.Kicked {
+	if guild, ok := c.Servers[guild.ID]; ok && !guild.Kicked {
 		guild.Nsfw = !guild.Nsfw
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("NSFW %s", onOrOff[guild.Nsfw]))
 		saveConfig()
@@ -134,12 +137,13 @@ func msgNSFW(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
 }
 
 func msgJoinMessage(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	guildDetails, err := guildDetails(m.ChannelID, s)
+	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, "There was an error with discord :( Try again please~")
 		return
 	}
 
-	if m.Author.ID != guildDetails.OwnerID || m.Author.ID != noah {
+	if m.Author.ID != guild.OwnerID || m.Author.ID != noah {
 		s.ChannelMessageSend(m.ChannelID, "Sorry, only the owner can do this")
 		return
 	}
@@ -151,7 +155,7 @@ func msgJoinMessage(s *discordgo.Session, m *discordgo.MessageCreate, msglist []
 	}
 
 	if len(split) > 0 {
-		if guild, ok := c.Servers[guildDetails.ID]; ok && !guild.Kicked {
+		if guild, ok := c.Servers[guild.ID]; ok && !guild.Kicked {
 			if split[0] != "false" && split[0] != "true" {
 				s.ChannelMessageSend(m.ChannelID, "Please say either `true` or `false` for enabling or disabling join messages~")
 				return

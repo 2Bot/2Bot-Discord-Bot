@@ -16,10 +16,10 @@
     },
     "312292616089894924": {
       "log_channel": "312292616089894924",
-      "server_prefix": "",
+      "server_prefix": "!xd ",
       "log_active": false,
       "kicked": false,
-      "nsfw": true,
+      "nsfw": false,
       "join": [
         "false",
         "",
