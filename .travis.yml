@@ -6,5 +6,5 @@ go:
   - master
 
 install:
-	- go get github.com/bwmarrin/discordgo
-	- go get github.com/Necroforger/dgwidgets
+  - go get github.com/bwmarrin/discordgo
+  - go get github.com/Necroforger/dgwidgets
