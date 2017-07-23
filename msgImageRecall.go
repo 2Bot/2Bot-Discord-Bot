@@ -37,7 +37,11 @@ func msgImageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []
 	if len(msglist) < 2 {
 		prefix := c.Prefix
 		guild, err := guildDetails(m.ChannelID, s)
-		if err == nil && c.Servers[guild.ID].Prefix != "" {
+		if err != nil {
+			s.ChannelMessageSend(m.ChannelID, "There was an issue recalling your image :( Try again please~")
+			log(true, "image recall guild details error", err.Error())
+			return
+		} else if c.Servers[guild.ID].Prefix != "" {
 			prefix = c.Servers[guild.ID].Prefix
 		}
 		s.ChannelMessageSend(m.ChannelID, "Available sub-commands for `image`:\n`save`, `delete`, `recall`, `list`, `status`\n"+
@@ -181,7 +185,7 @@ func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
-		log(true, "Guild details err", err.Error())
+		log(true, "image save guild details error", err.Error())
 	}
 
 	tempFilepath := "../../public_html/2Bot/images/temp/" + imgFileName

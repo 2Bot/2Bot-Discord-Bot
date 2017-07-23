@@ -119,7 +119,8 @@ func msgNSFW(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
 
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
-		s.ChannelMessageSend(m.ChannelID, "There was an error with discord :( Try again please~")
+		s.ChannelMessageSend(m.ChannelID, "There was an error toggling NSFW :( Try again please~")
+		log(true, "nsfw guild details error", err.Error())
 		return
 	}
 
@@ -140,6 +141,7 @@ func msgJoinMessage(s *discordgo.Session, m *discordgo.MessageCreate, msglist []
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was an error with discord :( Try again please~")
+		log(true, "join message guild details error", err.Error())
 		return
 	}
 

@@ -13,6 +13,7 @@ import (
 func msgIbsearch(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
+		log(true, "ibsearch guild details err", err.Error())
 		return
 	}
 

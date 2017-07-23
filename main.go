@@ -360,12 +360,10 @@ func emojiFile(s string) string {
 func guildDetails(channelID string, s *discordgo.Session) (*discordgo.Guild, error) {
 	channelInGuild, err := s.State.Channel(channelID)
 	if err != nil {
-		log(true, "channelInGuild err:", err.Error())
 		return nil, err
 	}
 	guildDetails, err := s.State.Guild(channelInGuild.GuildID)
 	if err != nil {
-		log(true, "(guildDetails) guildDetails err:", err.Error())
 		return nil, err
 	}
 	return guildDetails, nil

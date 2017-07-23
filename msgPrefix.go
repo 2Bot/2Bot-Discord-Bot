@@ -9,6 +9,8 @@ import (
 func msgPrefix(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, "There was a problem changing the prefix :( Try again please~")
+		log(true, "prefix guild details error", err.Error())
 		return
 	}
 

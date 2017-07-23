@@ -8,15 +8,17 @@ import (
 func msgLogChannel(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
-		return
-	}
-
-	if len(msglist) < 2 {
+		s.ChannelMessageSend(m.ChannelID, "There was a problem setting the details :( Try again please~")
+		log(true, "log channel guild details error", err.Error())
 		return
 	}
 
 	if m.Author.ID != guild.OwnerID && m.Author.ID != noah {
 		s.ChannelMessageSend(m.ChannelID, "Sorry, only the owner can do this!")
+		return
+	}
+
+	if len(msglist) < 2 {
 		return
 	}
 
@@ -35,6 +37,8 @@ func msgLogChannel(s *discordgo.Session, m *discordgo.MessageCreate, msglist []s
 func msgLogging(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, "There was a problem toggling logging :( Try again please~")
+		log(true, "logging guild details error", err.Error())
 		return
 	}
 

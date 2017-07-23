@@ -12,6 +12,8 @@ import (
 func msgRule34(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, "There was a problem getting some details :( Please try again!")
+		log(true, "rule34 guild details error", err.Error())
 		return
 	}
 

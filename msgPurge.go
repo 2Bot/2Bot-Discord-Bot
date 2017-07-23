@@ -10,6 +10,8 @@ import (
 func msgPurge(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, "There was a problem purging :( Please try again~")
+		log(true, "purge guild details error", err.Error())
 		return
 	}
 
