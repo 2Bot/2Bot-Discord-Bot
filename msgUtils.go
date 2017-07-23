@@ -123,7 +123,7 @@ func msgNSFW(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
 		return
 	}
 
-	if m.Author.ID != guild.OwnerID || m.Author.ID != noah {
+	if m.Author.ID != guild.OwnerID && m.Author.ID != noah {
 		s.ChannelMessageSend(m.ChannelID, "Sorry, only the owner can do this")
 		return
 	}
@@ -143,7 +143,7 @@ func msgJoinMessage(s *discordgo.Session, m *discordgo.MessageCreate, msglist []
 		return
 	}
 
-	if m.Author.ID != guild.OwnerID || m.Author.ID != noah {
+	if m.Author.ID != guild.OwnerID && m.Author.ID != noah {
 		s.ChannelMessageSend(m.ChannelID, "Sorry, only the owner can do this")
 		return
 	}

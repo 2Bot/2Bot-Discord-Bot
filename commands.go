@@ -55,8 +55,8 @@ var (
 		"Args: none\n\nLinks 2Bots github page.\n\nExample:\n`!owo git`",
 		false, false, msgGit}
 	purgeComm = command{"purge",
-		"Args: [number] [@user]\n\nPurges 'number' amount of messages. Optionally, purge only the messages from a given user!\nAdmin only\n\nExample:\n`!owo purge 300`\n"+
-		"Example 2:\n`!owo purge 300 @Strum355#1180`",
+		"Args: [number] [@user]\n\nPurges 'number' amount of messages. Optionally, purge only the messages from a given user!\nAdmin only\n\nExample:\n`!owo purge 300`\n" +
+			"Example 2:\n`!owo purge 300 @Strum355#1180`",
 		false, true, msgPurge}
 	prefixComm = command{"setPrefix",
 		"Args: [prefix] | [whitespace?]\n\nSets the servers prefix to 'prefix'\nAdmin only.\n\nExample:\n`!owo setPrefix . | false`\nNew Example command:\n`.help`",
@@ -110,7 +110,8 @@ func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, command stri
 
 	submatch := emojiRegex.FindStringSubmatch(msgList[0])
 	if len(submatch) > 0 {
-		commMap[l(bigMoji.Name)].Exec(s, m, msgList)
+		bigMoji.Exec(s, m, msgList)
+		return
 	}
 
 	if command == "help" {
@@ -134,6 +135,8 @@ func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, command stri
 	if command == strings.ToLower(commMap[command].Name) {
 		commMap[command].Exec(s, m, msgList)
 	}
+
+	bigMoji.Exec(s, m, msgList)
 	return
 }
 

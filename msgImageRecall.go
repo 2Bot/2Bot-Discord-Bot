@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/bwmarrin/discordgo"
 	"github.com/Necroforger/dgwidgets"
+	"github.com/bwmarrin/discordgo"
 	"net/http"
 	"os"
 	"strings"
@@ -276,7 +276,7 @@ func fimageReview(s *discordgo.Session, queue *imageQueue, currentImageNumber in
 		if confirm.UserID == s.State.User.ID || confirm.MessageID != imgInQueue.ReviewMsgID {
 			continue
 		}
-		
+
 		if confirm.MessageReaction.Emoji.Name == "✅" {
 			//IF CONFIRMED
 			s.ChannelMessageSend(reviewChan, fmt.Sprintf("Confirmed image `%s` from `%s#%s` ID: `%s`",

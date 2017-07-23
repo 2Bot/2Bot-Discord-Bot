@@ -305,11 +305,11 @@ func getCreationTime(ID string) (t time.Time, err error) {
 }
 
 func codeSeg(s ...string) string {
-	return "`"+strings.Join(s, " ")+"`"
+	return "`" + strings.Join(s, " ") + "`"
 }
 
 func codeBlock(s ...string) string {
-	return "```"+strings.Join(s, " ")+"```"
+	return "```" + strings.Join(s, " ") + "```"
 }
 
 func isIn(a string, list []string) bool {
@@ -392,7 +392,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		//code seg checks if extra whitespace is between prefix and command. Not allowed, nope :}
 		//would break prefixes without trailing whitespace otherwise
 		var command string
- 		if len([]rune(strings.TrimPrefix(m.Content, prefix))) < 1 {
+		if len([]rune(strings.TrimPrefix(m.Content, prefix))) < 1 {
 			log(true, "Uh oh why did the rune cast break")
 			return
 		}
@@ -400,8 +400,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		//casted to rune to index, cant index strings :(
 		if string([]rune(strings.TrimPrefix(m.Content, prefix))[0]) == " " {
 			command += " "
-		} 
-		
+		}
+
 		msgList := strings.Fields(strings.TrimPrefix(m.Content, prefix))
 
 		if len(msgList) > 0 {
@@ -412,7 +412,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	return
 }
 
-// Set all handlers for queued images, in case the bot crashes 
+// Set all handlers for queued images, in case the bot crashes
 // with images still in queue
 func setQueuedImageHandlers(s *discordgo.Session) {
 	for imgNum := range q.QueuedMsgs {
@@ -438,8 +438,8 @@ func joined(s *discordgo.Session, m *discordgo.GuildCreate) {
 	user, err := s.User(guildDetails.OwnerID)
 	if err != nil {
 		log(true, "Joined user struct err", err.Error())
-		user = &discordgo.User {
-			Username: "error",
+		user = &discordgo.User{
+			Username:      "error",
 			Discriminator: "error",
 		}
 	}
@@ -449,7 +449,7 @@ func joined(s *discordgo.Session, m *discordgo.GuildCreate) {
 		s.ChannelMessageSendEmbed(logChan, &discordgo.MessageEmbed{
 			Color: 65280,
 
-			Image: &discordgo.MessageEmbedImage {
+			Image: &discordgo.MessageEmbedImage{
 				URL: discordgo.EndpointGuildIcon(m.Guild.ID, m.Guild.Icon),
 			},
 
@@ -475,12 +475,12 @@ func joined(s *discordgo.Session, m *discordgo.GuildCreate) {
 		}
 
 		log(true, "Joined server", m.Guild.ID, m.Guild.Name)
-	}else if val := c.Servers[m.Guild.ID]; val.Kicked == true {
+	} else if val := c.Servers[m.Guild.ID]; val.Kicked == true {
 		//If previously kicked and then readded
 		s.ChannelMessageSendEmbed(logChan, &discordgo.MessageEmbed{
 			Color: 16751104,
 
-			Image: &discordgo.MessageEmbedImage {
+			Image: &discordgo.MessageEmbedImage{
 				URL: discordgo.EndpointGuildIcon(m.Guild.ID, m.Guild.Icon),
 			},
 
@@ -489,12 +489,12 @@ func joined(s *discordgo.Session, m *discordgo.GuildCreate) {
 			},
 
 			Fields: []*discordgo.MessageEmbedField{
-				&discordgo.MessageEmbedField{Name: "Name:", Value: m.Guild.Name, Inline: true},
-				&discordgo.MessageEmbedField{Name: "User Count:", Value: strconv.Itoa(m.Guild.MemberCount), Inline: true},
-				&discordgo.MessageEmbedField{Name: "Region:", Value: m.Guild.Region, Inline: true},
-				&discordgo.MessageEmbedField{Name: "Channel Count:", Value: strconv.Itoa(len(m.Guild.Channels)), Inline: true},
-				&discordgo.MessageEmbedField{Name: "ID:", Value: m.Guild.ID, Inline: true},
-				&discordgo.MessageEmbedField{Name: "Owner:", Value: user.Username + "#" + user.Discriminator, Inline: true},
+				{Name: "Name:", Value: m.Guild.Name, Inline: true},
+				{Name: "User Count:", Value: strconv.Itoa(m.Guild.MemberCount), Inline: true},
+				{Name: "Region:", Value: m.Guild.Region, Inline: true},
+				{Name: "Channel Count:", Value: strconv.Itoa(len(m.Guild.Channels)), Inline: true},
+				{Name: "ID:", Value: m.Guild.ID, Inline: true},
+				{Name: "Owner:", Value: user.Username + "#" + user.Discriminator, Inline: true},
 			},
 		})
 

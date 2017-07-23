@@ -57,58 +57,53 @@ func msgPurge(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 }
 
 func standardPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCreate) {
-	loop := purgeAmount / 100
 	outOfDate := false
-	for i := 0; i <= loop; i++ {
-		if purgeAmount > 0 {
-			del := min(purgeAmount, 100)
-			list, err := s.ChannelMessages(m.ChannelID, del, "", "", "")
-			if err != nil {
-				log(true, "Purge populate message list err:", err.Error())
-				s.ChannelMessageSend(m.ChannelID, "There was a problem purging the chat :(")
-				return
-			}
-
-			if len(list) == 0 {
-				break
-			}
-
-			var purgeList []string
-			for _, msg := range list {
-				then, _ := msg.Timestamp.Parse()
-				timeSince := time.Since(then)
-
-				if timeSince.Hours()/24 >= 14 {
-					outOfDate = true
-					break
-				}
-
-				purgeList = append(purgeList, msg.ID)
-			}
-
-			err = s.ChannelMessagesBulkDelete(m.ChannelID, purgeList)
-			if err != nil {
-				s.ChannelMessageSend(m.ChannelID, "Dont have permissions to delete messages :(")
-				return
-			}
-
-			if outOfDate {
-				break
-			}
-
-			purgeAmount -= 100
+	for purgeAmount > 0 {
+		del := min(purgeAmount, 100)
+		list, err := s.ChannelMessages(m.ChannelID, del, "", "", "")
+		if err != nil {
+			log(true, "Purge populate message list err:", err.Error())
+			s.ChannelMessageSend(m.ChannelID, "There was a problem purging the chat :(")
+			return
 		}
+
+		if len(list) == 0 {
+			break
+		}
+
+		var purgeList []string
+		for _, msg := range list {
+			then, _ := msg.Timestamp.Parse()
+			timeSince := time.Since(then)
+
+			if timeSince.Hours()/24 >= 14 {
+				outOfDate = true
+				break
+			}
+
+			purgeList = append(purgeList, msg.ID)
+		}
+
+		err = s.ChannelMessagesBulkDelete(m.ChannelID, purgeList)
+		if err != nil {
+			s.ChannelMessageSend(m.ChannelID, "Dont have permissions to delete messages :(")
+			return
+		}
+
+		if outOfDate {
+			break
+		}
+
+		purgeAmount -= 100
 	}
 }
 
 func userPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCreate, userToPurge string) error {
-	var totalPurged int
-	outOfDate := false
-
-	for totalPurged < purgeAmount {
+	for purgeAmount > 0 {
 		del := min(purgeAmount, 100)
 		var purgeList []string
 
+	IfOutOfDate:
 		for len(purgeList) < del {
 			list, err := s.ChannelMessages(m.ChannelID, 100, "", "", "")
 			if err != nil {
@@ -131,16 +126,11 @@ func userPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCreate
 					timeSince := time.Since(then)
 
 					if timeSince.Hours()/24 >= 14 {
-						outOfDate = true
-						break
+						break IfOutOfDate
 					}
 
 					purgeList = append(purgeList, msg.ID)
 				}
-			}
-
-			if outOfDate || len(list) < 100 {
-				break
 			}
 		}
 
@@ -151,7 +141,6 @@ func userPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCreate
 		}
 
 		purgeAmount -= 100
-		totalPurged += del
 	}
 
 	return nil
