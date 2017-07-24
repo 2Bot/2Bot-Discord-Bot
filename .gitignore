@@ -1,0 +1,11 @@
+config.json
+log.log
+*.py
+temp.txt
+template.txt
+images/*
+images
+emoji
+python
+start.sh
+*.json
