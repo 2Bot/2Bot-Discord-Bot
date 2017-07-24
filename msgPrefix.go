@@ -10,7 +10,7 @@ func msgPrefix(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was a problem changing the prefix :( Try again please~")
-		log(true, "prefix guild details error", err.Error())
+		errorLog.Println("prefix guild details error", err.Error())
 		return
 	}
 
@@ -28,7 +28,7 @@ func msgPrefix(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 	var space string
 	msg := "without"
 
-	if guild, ok := c.Servers[guild.ID]; ok && !guild.Kicked {
+	if guild, ok := sMap.Server[guild.ID]; ok && !guild.Kicked {
 		parts = trimSlice(strings.Split(strings.TrimPrefix(m.Content, c.Prefix+"setPrefix"), "|"))
 		if guild.Prefix != "" {
 			parts = trimSlice(strings.Split(strings.TrimPrefix(m.Content, guild.Prefix+"setPrefix"), "|"))

@@ -11,7 +11,7 @@ func msgPurge(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was a problem purging :( Please try again~")
-		log(true, "purge guild details error", err.Error())
+		errorLog.Println("purge guild details error", err.Error())
 		return
 	}
 
@@ -64,7 +64,7 @@ func standardPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCr
 		del := min(purgeAmount, 100)
 		list, err := s.ChannelMessages(m.ChannelID, del, "", "", "")
 		if err != nil {
-			log(true, "Purge populate message list err:", err.Error())
+			errorLog.Println("Purge populate message list err:", err.Error())
 			s.ChannelMessageSend(m.ChannelID, "There was a problem purging the chat :(")
 			return
 		}
@@ -109,7 +109,7 @@ func userPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCreate
 		for len(purgeList) < del {
 			list, err := s.ChannelMessages(m.ChannelID, 100, "", "", "")
 			if err != nil {
-				log(true, "Purge populate message list err:", err.Error())
+				errorLog.Println("Purge populate message list err:", err.Error())
 				s.ChannelMessageSend(m.ChannelID, "There was a problem purging the chat :(")
 				return err
 			}

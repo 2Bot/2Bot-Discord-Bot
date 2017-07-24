@@ -39,11 +39,12 @@ func msgImageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []
 		guild, err := guildDetails(m.ChannelID, s)
 		if err != nil {
 			s.ChannelMessageSend(m.ChannelID, "There was an issue recalling your image :( Try again please~")
-			log(true, "image recall guild details error", err.Error())
+			errorLog.Println("image recall guild details error", err.Error())
 			return
-		} else if c.Servers[guild.ID].Prefix != "" {
-			prefix = c.Servers[guild.ID].Prefix
+		} else if sMap.Server[guild.ID].Prefix != "" {
+			prefix = sMap.Server[guild.ID].Prefix
 		}
+
 		s.ChannelMessageSend(m.ChannelID, "Available sub-commands for `image`:\n`save`, `delete`, `recall`, `list`, `status`\n"+
 			"Type `"+prefix+"help image` to see more info about this command")
 		return
@@ -64,7 +65,6 @@ func msgImageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []
 }
 
 func fimageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	s.ChannelTyping(m.ChannelID)
 	var filename string
 	if val, ok := u.User[m.Author.ID]; ok {
 		if isInMap(strings.Join(msglist, " "), val.Images) {
@@ -81,18 +81,18 @@ func fimageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 	escapedFile := url.PathEscape(filename)
 	imgURL, err := url.Parse("https://sushishader.eu/2Bot/images/" + escapedFile)
 	if err != nil {
-		log(true, "Error parsing img url", err.Error())
+		errorLog.Println("Error parsing img url", err.Error())
 		s.ChannelMessageSend(m.ChannelID, "Error getting the image :( Please pester Strum355#1180 about this")
 		return
 	}
 
 	resp, err := http.Head(imgURL.String())
 	if err != nil {
-		log(true, "Error recalling image", err.Error())
+		errorLog.Println("Error recalling image", err.Error())
 		s.ChannelMessageSend(m.ChannelID, "Error getting the image :( Please pester Strum355#1180 about this")
 		return
 	} else if resp.StatusCode != http.StatusOK {
-		log(true, "Non 200 status code")
+		errorLog.Println("Non 200 status code")
 		s.ChannelMessageSend(m.ChannelID, "Error getting the image :( Please pester Strum355#1180 about this")
 		return
 	}
@@ -178,14 +178,14 @@ func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	resp, err := http.Get(m.Attachments[0].URL)
 	if err != nil || resp.StatusCode != http.StatusOK {
 		s.ChannelMessageSend(m.ChannelID, "Error downloading the image :( Please pester Strum355#1180 about this")
-		log(true, "Error downloading image ", err.Error())
+		errorLog.Println("Error downloading image ", err.Error())
 		return
 	}
 	defer resp.Body.Close()
 
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
-		log(true, "image save guild details error", err.Error())
+		errorLog.Println("image save guild details error", err.Error())
 	}
 
 	tempFilepath := "../../public_html/2Bot/images/temp/" + imgFileName
@@ -193,7 +193,7 @@ func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	//create temp file in temp path
 	tempFile, err := os.Create(tempFilepath)
 	if err != nil {
-		log(true, "Error creating temp file", err.Error())
+		errorLog.Println("Error creating temp file", err.Error())
 		s.ChannelMessageSend(m.ChannelID, "There was an error saving the image :( Please pester Strum355#1180 about this")
 		return
 	}
@@ -201,13 +201,13 @@ func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 
 	bodyImg, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log(true, "Error parsing body", err.Error())
+		errorLog.Println("Error parsing body", err.Error())
 		return
 	}
 
 	_, err = tempFile.Write(bodyImg)
 	if err != nil {
-		log(true, "Error writing image to file", err.Error())
+		errorLog.Println("Error writing image to file", err.Error())
 		return
 	}
 
@@ -237,12 +237,12 @@ func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	err = s.MessageReactionAdd(reviewMsg.ChannelID, reviewMsg.ID, "✅")
 	if err != nil {
 		s.ChannelMessageSend(reviewChan, "Couldn't add ✅ to message")
-		log(true, "Error attaching reaction", err.Error())
+		errorLog.Println("Error attaching reaction", err.Error())
 	}
 	err = s.MessageReactionAdd(reviewMsg.ChannelID, reviewMsg.ID, "❌")
 	if err != nil {
 		s.ChannelMessageSend(reviewChan, "Couldn't add ❌ to message")
-		log(true, "Error attaching reaction", err.Error())
+		errorLog.Println("Error attaching reaction", err.Error())
 	}
 
 	currUser.TempImages = append(currUser.TempImages, imgName)
@@ -319,7 +319,7 @@ func fimageReview(s *discordgo.Session, queue *imageQueue, currentImageNumber in
 
 					err := os.Remove(tempFilepath)
 					if err != nil {
-						log(true, "Error deleting temp image", err.Error())
+						errorLog.Println("Error deleting temp image", err.Error())
 					}
 
 					//Make PM channel to inform user that image was rejected
@@ -361,7 +361,7 @@ func fimageReview(s *discordgo.Session, queue *imageQueue, currentImageNumber in
 	err = os.Chmod(filepath, 655)
 	if err != nil {
 		s.ChannelMessageSend(reviewChan, "Can't chmod "+err.Error())
-		log(true, "Cant chmod", err.Error())
+		errorLog.Println("Cant chmod", err.Error())
 	}
 
 	delete(q.QueuedMsgs, strconv.Itoa(currentImageNumber))
@@ -392,7 +392,7 @@ func fimageDelete(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 	err := os.Remove("../../public_html/2Bot/images/" + filename)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "Image couldnt be deleted :( Please pester Strum355#1180 for me")
-		log(true, "Error deleting image", err.Error())
+		errorLog.Println("Error deleting image", err.Error())
 		return
 	}
 
@@ -428,7 +428,7 @@ func fimageList(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 			escapedFile := url.PathEscape(img)
 			imgURL, err := url.Parse("https://sushishader.eu/2Bot/images/" + escapedFile)
 			if err != nil {
-				log(true, "Error parsing img url", err.Error())
+				errorLog.Println("Error parsing img url", err.Error())
 				success = false
 				continue
 			}
@@ -450,7 +450,7 @@ func fimageList(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 
 		err := p.Spawn()
 		if err != nil {
-			log(true, "Error creating image list", err.Error())
+			errorLog.Println("Error creating image list", err.Error())
 			s.ChannelMessageSend(m.ChannelID, "Couldn't make the list :( Go pester Strum355#1180 about this")
 			return
 		}

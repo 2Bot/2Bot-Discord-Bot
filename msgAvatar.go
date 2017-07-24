@@ -22,7 +22,7 @@ func msgAvatar(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 
 		resp, err := http.Get(discordgo.EndpointUserAvatar(user.ID, user.Avatar))
 		if err != nil {
-			log(true, "Error getting user avatar", err.Error())
+			errorLog.Println("Error getting user avatar", err.Error())
 			return
 		}
 		defer resp.Body.Close()
@@ -32,13 +32,13 @@ func msgAvatar(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 		userID = m.Author.ID
 		user, err := s.User(userID)
 		if err != nil {
-			log(true, "Avatar user struct", err.Error())
+			errorLog.Println("Avatar user struct", err.Error())
 			return
 		}
 
 		resp, err := http.Get(discordgo.EndpointUserAvatar(m.Author.ID, m.Author.Avatar))
 		if err != nil {
-			log(true, err.Error())
+			errorLog.Println(err.Error())
 			return
 		}
 		defer resp.Body.Close()

@@ -9,13 +9,15 @@ import (
 func msgUserStats(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	channelInGuild, err := s.State.Channel(m.ChannelID)
 	if err != nil {
-		log(true, "channelInGuild err:", m.Content, err.Error())
+		s.ChannelMessageSend(m.ChannelID, "There was an error getting the data :(")
+		errorLog.Println("channelInGuild err:", m.Content, err.Error())
 		return
 	}
 
 	guild, err := s.State.Guild(channelInGuild.GuildID)
 	if err != nil {
-		log(true, "(msgUserStats) guildDetails err:", m.Content, err.Error())
+		s.ChannelMessageSend(m.ChannelID, "There was an error getting the data :(")
+		errorLog.Println("(msgUserStats) guildDetails err:", m.Content, err.Error())
 		return
 	}
 
@@ -34,12 +36,13 @@ func msgUserStats(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 
 	user, err := s.User(userID)
 	if err != nil {
-		log(true, "user struct err:", m.Content, err.Error())
+		s.ChannelMessageSend(m.ChannelID, "There was an error getting the data :(")
+		errorLog.Println("user struct err:", m.Content, err.Error())
 		return
 	}
 	memberStruct, err := s.State.Member(channelInGuild.GuildID, user.ID)
 	if err != nil {
-		log(true, "memberStruct err:", m.Content, err.Error())
+		errorLog.Println("memberStruct err:", m.Content, err.Error())
 		return
 	}
 

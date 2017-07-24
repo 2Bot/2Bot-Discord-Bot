@@ -1,31 +1,6 @@
 {
   "game": "!xd help",
   "prefix": "!xd ",
-  "Servers": {
-    "193638572111298560": {
-      "log_channel": "193638572111298560",
-      "server_prefix": "",
-      "log_active": false,
-      "kicked": false,
-      "nsfw": false,
-      "join": [
-        "false",
-        "",
-        ""
-      ]
-    },
-    "312292616089894924": {
-      "log_channel": "312292616089894924",
-      "server_prefix": "!xd ",
-      "log_active": false,
-      "kicked": false,
-      "nsfw": false,
-      "join": [
-        "false",
-        "",
-        ""
-      ]
-    }
-  },
+  "discord.pw_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySUQiOiIxNDk2MTI3NzU1ODc0NDY3ODQiLCJyYW5kIjo2ODUsImlhdCI6MTUwMDg0MzAxMn0.a5qhXN0Eagz42k_lxDSi8Nv2ukRd0LOqsMzwcekbb2Q",
   "curr_img_id": 0
 }

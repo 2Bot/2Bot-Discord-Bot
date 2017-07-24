@@ -13,17 +13,17 @@ import (
 func msgIbsearch(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
-		log(true, "ibsearch guild details err", err.Error())
+		errorLog.Println("ibsearch guild details err", err.Error())
 		return
 	}
 
 	channel, err := s.State.Channel(m.ChannelID)
 	if err != nil {
-		log(true, "Channel error", err.Error())
+		errorLog.Println("Channel error", err.Error())
 		return
 	}
 
-	if !c.Servers[guild.ID].Nsfw && !strings.HasPrefix(channel.Name, "nsfw") {
+	if !sMap.Server[guild.ID].Nsfw && !strings.HasPrefix(channel.Name, "nsfw") {
 		s.ChannelMessageSend(m.ChannelID, "NSFW is disabled on this server~")
 		return
 	}
@@ -39,7 +39,7 @@ func msgIbsearch(s *discordgo.Session, m *discordgo.MessageCreate, msglist []str
 	queries := []string{}
 	URL, err := url.Parse("https://ibsearch.xxx")
 	if err != nil {
-		log(true, "IBSearch query error", err.Error())
+		errorLog.Println("IBSearch query error", err.Error())
 		return
 	}
 
@@ -71,9 +71,9 @@ func msgIbsearch(s *discordgo.Session, m *discordgo.MessageCreate, msglist []str
 
 	page, err := http.Get(URL.String())
 	if err != nil {
-		log(true, "Ibsearch http error", err.Error())
+		errorLog.Println("Ibsearch http error", err.Error())
 	}
-	if page.StatusCode != 200 {
+	if page.StatusCode != http.StatusOK {
 		s.ChannelMessageSend(m.ChannelID, "IBSearch didn't respond :(")
 		return
 	}
@@ -81,13 +81,13 @@ func msgIbsearch(s *discordgo.Session, m *discordgo.MessageCreate, msglist []str
 
 	body, err := ioutil.ReadAll(page.Body)
 	if err != nil {
-		log(true, "IBSearch response body err:", err.Error())
+		errorLog.Println("IBSearch response body err:", err.Error())
 		return
 	}
 
 	err = json.Unmarshal([]byte(strings.TrimPrefix(strings.TrimSuffix(string(body), "]"), "[")), &ibsearchStruct)
 	if err != nil {
-		log(true, "IBSearch json unmarshal err:", err.Error())
+		errorLog.Println("IBSearch json unmarshal err:", err.Error())
 		s.ChannelMessageSend(m.ChannelID, "No results ¯\\_(ツ)_/¯")
 		return
 	}

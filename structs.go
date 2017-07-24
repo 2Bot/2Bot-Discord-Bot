@@ -2,18 +2,6 @@ package main
 
 import "github.com/bwmarrin/discordgo"
 
-type server struct {
-	LogChannel string `json:"log_channel"`
-	Prefix     string `json:"server_prefix"`
-
-	Log    bool `json:"log_active"`
-	Kicked bool `json:"kicked"`
-	Nsfw   bool `json:"nsfw"`
-
-	//Enabled, Message, Channel
-	JoinMessage [3]string `json:"join"`
-}
-
 type ibStruct struct {
 	Path   string `json:"path"`
 	Server string `json:"server"`
@@ -31,9 +19,25 @@ type config struct {
 	Game   string `json:"game"`
 	Prefix string `json:"prefix"`
 
-	Servers map[string]*server
+	DiscordPWKey string `json:"discord.pw_key"`
 
 	CurrImg int `json:"curr_img_id"`
+}
+
+type servers struct {
+	Server map[string]*server
+}
+
+type server struct {
+	LogChannel string `json:"log_channel"`
+	Prefix     string `json:"server_prefix"`
+
+	Log    bool `json:"log_active"`
+	Kicked bool `json:"kicked"`
+	Nsfw   bool `json:"nsfw"`
+
+	//Enabled, Message, Channel
+	JoinMessage [3]string `json:"join"`
 }
 
 type imageQueue struct {

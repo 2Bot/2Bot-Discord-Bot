@@ -19,7 +19,7 @@ func msgEmoji(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 
 				resp, err := http.Get(fmt.Sprintf("https://cdn.discordapp.com/emojis/%s.png", emojiID))
 				if err != nil {
-					log(true, "BM custom emoji err:", err.Error())
+					errorLog.Println("BM custom emoji err:", err.Error())
 					return
 				}
 				defer resp.Body.Close()
@@ -31,7 +31,7 @@ func msgEmoji(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 				if emoji != "" {
 					file, err := os.Open(fmt.Sprintf("emoji/%s.png", emoji))
 					if err != nil {
-						log(true, "BM in-built emoji err:", err.Error())
+						errorLog.Println("BM in-built emoji err:", err.Error())
 						return
 					}
 					defer file.Close()
@@ -46,7 +46,7 @@ func msgEmoji(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 				emojiID := submatch[1]
 				resp, err := http.Get(fmt.Sprintf("https://cdn.discordapp.com/emojis/%s.png", emojiID))
 				if err != nil {
-					log(true, "!BM custom emoji err:", err.Error())
+					errorLog.Println("!BM custom emoji err:", err.Error())
 					return
 				}
 				defer resp.Body.Close()
@@ -58,7 +58,7 @@ func msgEmoji(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 				if emoji != "" {
 					file, err := os.Open(fmt.Sprintf("emoji/%s.png", emoji))
 					if err != nil {
-						log(true, "!BM in-built emoji err:", err.Error())
+						errorLog.Println("!BM in-built emoji err:", err.Error())
 						return
 					}
 					defer file.Close()

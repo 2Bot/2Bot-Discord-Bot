@@ -13,17 +13,17 @@ func msgRule34(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was a problem getting some details :( Please try again!")
-		log(true, "rule34 guild details error", err.Error())
+		errorLog.Println("rule34 guild details error", err.Error())
 		return
 	}
 
 	channel, err := s.State.Channel(m.ChannelID)
 	if err != nil {
-		log(true, "Channel error", err.Error())
+		errorLog.Println("Channel error", err.Error())
 		return
 	}
 
-	if !c.Servers[guild.ID].Nsfw && !strings.HasPrefix(channel.Name, "nsfw") {
+	if !sMap.Server[guild.ID].Nsfw && !strings.HasPrefix(channel.Name, "nsfw") {
 		s.ChannelMessageSend(m.ChannelID, "NSFW is disabled on this server~")
 		return
 	}
@@ -42,10 +42,9 @@ func msgRule34(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 	}
 	page, err := http.Get(fmt.Sprintf("https://rule34.xxx/index.php?page=dapi&s=post&q=index&tags=%s", query))
 	if err != nil {
-		log(true, "R34 response err:", err.Error())
+		errorLog.Println("R34 response err:", err.Error())
 		return
 	}
-
 	if page.StatusCode != 200 {
 		s.ChannelMessageSend(m.ChannelID, "Rule34 didn't respond :(")
 		return
@@ -54,13 +53,13 @@ func msgRule34(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 
 	body, err := ioutil.ReadAll(page.Body)
 	if err != nil {
-		log(true, "R34 response body err:", err.Error())
+		errorLog.Println("R34 response body err:", err.Error())
 		return
 	}
 
 	err = xml.Unmarshal(body, &r34)
 	if err != nil {
-		log(true, "R34 xml unmarshal err:", err.Error())
+		errorLog.Println("R34 xml unmarshal err:", err.Error())
 		return
 	}
 
@@ -71,7 +70,7 @@ func msgRule34(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 		url = "https:" + r34.Posts[randRange(0, len(r34.Posts)-1)].URL
 		resp, err := http.Get(url)
 		if err != nil {
-			log(true, "R34 image response err:", err.Error())
+			errorLog.Println("R34 image response err:", err.Error())
 			return
 		}
 		defer resp.Body.Close()

@@ -27,7 +27,7 @@ func msgSetGame(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 
 	err := s.UpdateStatus(0, game)
 	if err != nil {
-		log(true, "Game change error", err.Error())
+		errorLog.Println("Game change error", err.Error())
 		return
 	}
 
@@ -72,7 +72,7 @@ func msgListUsers(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 		return
 	}
 
-	if guild, ok := c.Servers[msglist[1]]; ok && !guild.Kicked {
+	if guild, ok := sMap.Server[msglist[1]]; ok && !guild.Kicked {
 		s.ChannelTyping(m.ChannelID)
 
 		var out []string
@@ -101,8 +101,8 @@ func msgAnnounce(s *discordgo.Session, m *discordgo.MessageCreate, msglist []str
 
 	for _, guild := range s.State.Guilds {
 		if !isIn(guild.ID, blacklist) {
-			if val, ok := c.Servers[guild.ID]; !ok || val.Kicked {
-				log(true, "State and config mis-match!")
+			if val, ok := sMap.Server[guild.ID]; !ok || val.Kicked {
+				errorLog.Println("State and config mis-match!")
 				s.ChannelMessageSend(logChan, "State and config mis-match!")
 			}
 			s.ChannelMessageSend(guild.ID, strings.Join(msglist[1:], " "))
@@ -120,7 +120,7 @@ func msgNSFW(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was an error toggling NSFW :( Try again please~")
-		log(true, "nsfw guild details error", err.Error())
+		errorLog.Println("nsfw guild details error", err.Error())
 		return
 	}
 
@@ -129,7 +129,7 @@ func msgNSFW(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
 		return
 	}
 
-	if guild, ok := c.Servers[guild.ID]; ok && !guild.Kicked {
+	if guild, ok := sMap.Server[guild.ID]; ok && !guild.Kicked {
 		guild.Nsfw = !guild.Nsfw
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("NSFW %s", onOrOff[guild.Nsfw]))
 		saveConfig()
@@ -141,7 +141,7 @@ func msgJoinMessage(s *discordgo.Session, m *discordgo.MessageCreate, msglist []
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was an error with discord :( Try again please~")
-		log(true, "join message guild details error", err.Error())
+		errorLog.Println("join message guild details error", err.Error())
 		return
 	}
 
@@ -157,7 +157,7 @@ func msgJoinMessage(s *discordgo.Session, m *discordgo.MessageCreate, msglist []
 	}
 
 	if len(split) > 0 {
-		if guild, ok := c.Servers[guild.ID]; ok && !guild.Kicked {
+		if guild, ok := sMap.Server[guild.ID]; ok && !guild.Kicked {
 			if split[0] != "false" && split[0] != "true" {
 				s.ChannelMessageSend(m.ChannelID, "Please say either `true` or `false` for enabling or disabling join messages~")
 				return
@@ -176,7 +176,7 @@ func msgJoinMessage(s *discordgo.Session, m *discordgo.MessageCreate, msglist []
 			}
 			channelStruct, err := s.State.Channel(split[2])
 			if err != nil {
-				log(true, "Join message channel struct or bad channel ID?", split[2], err.Error())
+				errorLog.Println("Join message channel struct or bad channel ID?", split[2], err.Error())
 				s.ChannelMessageSend(m.ChannelID, "Please give me a proper channel ID :(")
 				return
 			}
@@ -207,7 +207,7 @@ func msgReloadConfig(s *discordgo.Session, m *discordgo.MessageCreate, msglist [
 	case "c":
 		c = &config{}
 		if err := loadConfig(); err != nil {
-			log(true, "Error reloading config", err.Error())
+			errorLog.Println("Error reloading config", err.Error())
 			s.ChannelMessageSend(m.ChannelID, "Error reloading config")
 			return
 		}
@@ -215,7 +215,7 @@ func msgReloadConfig(s *discordgo.Session, m *discordgo.MessageCreate, msglist [
 	case "u":
 		u = &users{}
 		if err := loadConfig(); err != nil {
-			log(true, "Error reloading config", err.Error())
+			errorLog.Println("Error reloading config", err.Error())
 			s.ChannelMessageSend(m.ChannelID, "Error reloading config")
 			return
 		}
