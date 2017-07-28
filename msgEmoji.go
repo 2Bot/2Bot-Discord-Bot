@@ -7,9 +7,34 @@ import (
 	"os"
 )
 
+//Thanks to iopred
+func emojiFile(s string) string {
+	found := ""
+	filename := ""
+	for _, r := range s {
+		if filename != "" {
+			filename = fmt.Sprintf("%s-%x", filename, r)
+		} else {
+			filename = fmt.Sprintf("%x", r)
+		}
+
+		if _, err := os.Stat(fmt.Sprintf("emoji/%s.png", filename)); err == nil {
+			found = filename
+		} else if found != "" {
+			return found
+		}
+	}
+	return found
+}
+
 func msgEmoji(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	s.ChannelTyping(m.ChannelID)
 	submatch := emojiRegex.FindStringSubmatch(msglist[0])
+
+	/* if len(submatch) != 0 {
+		emojiID := submatch[1]
+	} */
+
+
 	if msglist[0] == "bigMoji" || len(submatch) != 0 || emojiFile(msglist[0]) != "" {
 		//bigMoji
 		if msglist[0] == "bigMoji" && len(msglist) > 1 {
@@ -25,7 +50,9 @@ func msgEmoji(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 				defer resp.Body.Close()
 
 				s.ChannelFileSend(m.ChannelID, "emoji.png", resp.Body)
-				s.ChannelMessageDelete(m.ChannelID, m.ID)
+				if m != nil {
+					s.ChannelMessageDelete(m.ChannelID, m.ID)
+				}
 			} else {
 				emoji := emojiFile(msglist[1])
 				if emoji != "" {
@@ -37,7 +64,9 @@ func msgEmoji(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 					defer file.Close()
 
 					s.ChannelFileSend(m.ChannelID, "emoji.png", file)
-					s.ChannelMessageDelete(m.ChannelID, m.ID)
+					if m != nil {
+						s.ChannelMessageDelete(m.ChannelID, m.ID)
+					}				
 				}
 			}
 			//not bigMoji
@@ -52,7 +81,9 @@ func msgEmoji(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 				defer resp.Body.Close()
 
 				s.ChannelFileSend(m.ChannelID, "emoji.png", resp.Body)
-				s.ChannelMessageDelete(m.ChannelID, m.ID)
+				if m != nil {
+					s.ChannelMessageDelete(m.ChannelID, m.ID)
+				}			
 			} else {
 				emoji := emojiFile(msglist[0])
 				if emoji != "" {
@@ -64,7 +95,9 @@ func msgEmoji(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 					defer file.Close()
 
 					s.ChannelFileSend(m.ChannelID, "emoji.png", file)
-					s.ChannelMessageDelete(m.ChannelID, m.ID)
+					if m != nil {
+						s.ChannelMessageDelete(m.ChannelID, m.ID)
+					}
 				}
 			}
 		}

@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"net/http"
 	"os"
 	"os/signal"
@@ -57,8 +56,8 @@ var (
 	lastReboot    string
 	token         string
 	emojiRegex    = regexp.MustCompile("<:.*?:(.*?)>")
-	userIDRegex   = regexp.MustCompile("<@!?([0-9]*)>")
-	fileNameRegex = regexp.MustCompile(`/`)
+	userIDRegex   = regexp.MustCompile("<@!?([0-9]{18})>")
+	channelRegex  = regexp.MustCompile("<#([0-9]{18})>")
 	status        = map[discordgo.Status]string{"dnd": "busy", "online": "online", "idle": "idle", "offline": "offline"}
 	//Discord Bots, cool kidz only, social experiment, discord go
 	blacklist    = []string{"110373943822540800", "272873324705742848", "244133074328092673", "118456055842734083"}
@@ -335,110 +334,6 @@ func saveQueue() {
 	return
 }
 
-func randRange(min, max int) int {
-	rand.Seed(time.Now().Unix())
-	if max == 0 {
-		return 0
-	}
-	return rand.Intn(max-min) + min
-}
-
-func findIndex(s []string, f string) int {
-	for i, j := range s {
-		if j == f {
-			return i
-		}
-	}
-	return -1
-}
-
-func remove(s []string, i int) []string {
-	s[i] = s[len(s)-1]
-	return s[:len(s)-1]
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func getCreationTime(ID string) (t time.Time, err error) {
-	i, err := strconv.ParseInt(ID, 10, 64)
-	if err != nil {
-		return
-	}
-	timestamp := (i >> 22) + 1420070400000
-	t = time.Unix(timestamp/1000, 0)
-	return
-}
-
-func codeSeg(s ...string) string {
-	return "`" + strings.Join(s, " ") + "`"
-}
-
-func codeBlock(s ...string) string {
-	return "```" + strings.Join(s, " ") + "```"
-}
-
-func isIn(a string, list []string) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
-	return false
-}
-
-func isInMap(a string, aMap map[string]string) bool {
-	for key := range aMap {
-		if a == key {
-			return true
-		}
-	}
-	return false
-}
-
-func trimSlice(s []string) (ret []string) {
-	for _, i := range s {
-		ret = append(ret, strings.TrimSpace(i))
-	}
-	return
-}
-
-//Thanks to iopred
-func emojiFile(s string) string {
-	found := ""
-	filename := ""
-	for _, r := range s {
-		if filename != "" {
-			filename = fmt.Sprintf("%s-%x", filename, r)
-		} else {
-			filename = fmt.Sprintf("%x", r)
-		}
-
-		if _, err := os.Stat(fmt.Sprintf("emoji/%s.png", filename)); err == nil {
-			found = filename
-		} else if found != "" {
-			return found
-		}
-	}
-	return found
-}
-
-func guildDetails(channelID string, s *discordgo.Session) (*discordgo.Guild, error) {
-	channelInGuild, err := s.State.Channel(channelID)
-	if err != nil {
-		return nil, err
-	}
-	guildDetails, err := s.State.Guild(channelInGuild.GuildID)
-	if err != nil {
-		return nil, err
-	}
-	return guildDetails, nil
-}
-
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == s.State.User.ID || m.Author.Bot {
 		return
@@ -458,17 +353,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	if strings.HasPrefix(m.Content, prefix) {
-		//code seg checks if extra whitespace is between prefix and command. Not allowed, nope :}
+		//code to check if extra whitespace is between prefix and command. Not allowed, nope :}
 		//would break prefixes without trailing whitespace otherwise
 		var command string
-		if len([]rune(strings.TrimPrefix(m.Content, prefix))) < 1 {
-			errorLog.Println("Uh oh why did the rune cast break")
-			return
-		}
-
-		//casted to rune to index, cant index strings :(
-		if string([]rune(strings.TrimPrefix(m.Content, prefix))[0]) == " " {
-			command += " "
+		if string(strings.TrimPrefix(m.Content, prefix)[0]) == " " {
+			command = " "
 		}
 
 		msgList := strings.Fields(strings.TrimPrefix(m.Content, prefix))
@@ -593,51 +482,6 @@ func kicked(s *discordgo.Session, m *discordgo.GuildDelete) {
 
 		sMap.Server[m.Guild.ID].Kicked = true
 		saveConfig()
-	}
-	return
-}
-
-func membPresChange(s *discordgo.Session, m *discordgo.PresenceUpdate) {
-	if guild, ok := sMap.Server[m.GuildID]; ok && !guild.Kicked {
-		if guild.Log {
-			memberStruct, err := s.State.Member(m.GuildID, m.User.ID)
-			if err != nil {
-				errorLog.Println("Member struct error", err)
-				return
-			}
-
-			s.ChannelMessageSend(guild.LogChannel, fmt.Sprintf("`%s is now %s`", memberStruct.User, status[m.Status]))
-		}
-	}
-	return
-}
-
-func membJoin(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
-	if guild, ok := sMap.Server[m.GuildID]; ok && !guild.Kicked {
-		if len(guild.JoinMessage) == 3 {
-			isBool, err := strconv.ParseBool(guild.JoinMessage[0])
-			if err != nil {
-				errorLog.Println("Config join msg bool err", err)
-				return
-			}
-
-			if isBool && guild.JoinMessage[1] != "" {
-				guildDetails, err := s.State.Guild(m.GuildID)
-				if err != nil {
-					errorLog.Println("(membJoin) guildDetails err:", err)
-					return
-				}
-
-				membStruct, err := s.User(m.User.ID)
-				if err != nil {
-					errorLog.Println(guildDetails.Name, m.GuildID, err)
-					return
-				}
-
-				message := strings.Replace(guild.JoinMessage[1], "%s", membStruct.Mention(), -1)
-				s.ChannelMessageSend(guild.JoinMessage[2], message)
-			}
-		}
 	}
 	return
 }

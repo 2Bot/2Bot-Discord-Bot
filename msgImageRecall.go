@@ -15,23 +15,6 @@ import (
 	"time"
 )
 
-//From Necroforger's dgwidgets
-func nextMessageReactionAddC(s *discordgo.Session) chan *discordgo.MessageReactionAdd {
-	out := make(chan *discordgo.MessageReactionAdd)
-	s.AddHandlerOnce(func(_ *discordgo.Session, e *discordgo.MessageReactionAdd) {
-		out <- e
-	})
-	return out
-}
-
-func nextMessageCreateC(s *discordgo.Session) chan *discordgo.MessageCreate {
-	out := make(chan *discordgo.MessageCreate)
-	s.AddHandlerOnce(func(_ *discordgo.Session, e *discordgo.MessageCreate) {
-		out <- e
-	})
-	return out
-}
-
 func msgImageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 
 	if len(msglist) < 2 {
@@ -129,10 +112,10 @@ func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	}
 
 	imgName := strings.Join(msglist, " ")
-	isLegalFileName := fileNameRegex.MatchString(imgName)
+	isLegalFileName := strings.Contains(imgName, "/")
 
 	if isLegalFileName {
-		s.ChannelMessageSend(m.ChannelID, "I can't use that as a file name <:2BThink:333694872802426880> Please no forward-slash in my christian file names!")
+		s.ChannelMessageSend(m.ChannelID, "I can't use that as a file name <:2BThink:333694872802426880> Please dont include a forward-slash in the file names!")
 		return
 	}
 
@@ -214,7 +197,9 @@ func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	_, err = s.ChannelMessageEdit(m.ChannelID, dlMsg.ID, fmt.Sprintf("%s Thanks for the submission! Your image is being reviewed by our ~~lazy~~ hard-working review team! You'll get a PM from either my master himself or from me once its been confirmed or rejected :) Sit tight!", m.Author.Mention()))
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s Thanks for the submission! Your image is being reviewed by our ~~lazy~~ hard-working review team! You'll get a PM from either my master himself or from me once its been confirmed or rejected :) Sit tight!", m.Author.Mention()))
-		s.ChannelMessageDelete(m.ChannelID, dlMsg.ID)
+		if dlMsg != nil {
+			s.ChannelMessageDelete(m.ChannelID, dlMsg.ID)
+		}
 	}
 
 	reviewMsg, _ := s.ChannelMessageSendEmbed(reviewChan, &discordgo.MessageEmbed{
@@ -276,7 +261,7 @@ func fimageReview(s *discordgo.Session, queue *imageQueue, currentImageNumber in
 
 	//Wait here for a relevant reaction to the confirmation message
 	for {
-		confirm := <-nextMessageReactionAddC(s)
+		confirm := <-nextReactionAdd(s)
 		if confirm.UserID == s.State.User.ID || confirm.MessageID != imgInQueue.ReviewMsgID {
 			continue
 		}
@@ -300,7 +285,7 @@ func fimageReview(s *discordgo.Session, queue *imageQueue, currentImageNumber in
 
 			var reason string
 			for {
-				rejectMsg := <-nextMessageCreateC(s)
+				rejectMsg := <-nextMessageCreate(s)
 				if rejectMsg.Author.ID == confirm.UserID {
 					rejectMsgList := strings.Fields(rejectMsg.Content)
 					if len(rejectMsgList) < 1 || rejectMsgList[0] != strconv.Itoa(currentImageNumber) {

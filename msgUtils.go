@@ -42,6 +42,13 @@ func msgInfo(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
 	ct1, _ := getCreationTime(s.State.User.ID)
 	creationTime := ct1.Format(time.UnixDate)[:10]
 	runtime.ReadMemStats(&mem)
+	var prefix string
+	guild, err := guildDetails(m.ChannelID, s)
+	if err == nil {
+		if val, ok := sMap.Server[guild.ID]; ok {
+			prefix = val.Prefix
+		}
+	}
 
 	s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
 		Color: 0,
@@ -57,6 +64,7 @@ func msgInfo(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
 			{Name: "Creator:", Value: codeBlock("Strum355#1180"), Inline: true},
 			{Name: "Creation Date:", Value: codeBlock(creationTime), Inline: true},
 			{Name: "Global Prefix:", Value: codeBlock(c.Prefix), Inline: true},
+			{Name: "Local Prefix", Value: codeBlock(prefix), Inline: true},
 			{Name: "Programming Language:", Value: codeBlock("Go"), Inline: true},
 			{Name: "Library:", Value: codeBlock("Discordgo"), Inline: true},
 			{Name: "Server Count:", Value: codeBlock(strconv.Itoa(len(s.State.Guilds))), Inline: true},

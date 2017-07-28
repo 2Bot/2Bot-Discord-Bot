@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -22,17 +23,26 @@ func msgLogChannel(s *discordgo.Session, m *discordgo.MessageCreate, msglist []s
 		return
 	}
 
+	channelID := channelRegex.FindStringSubmatch(msglist[1])
+	if len(channelID) != 2 {
+		s.ChannelMessageSend(m.ChannelID, "Not a valid channel!")
+		return
+	}
+
+	var chanList []string
+	for _, channel := range guild.Channels {
+		chanList = append(chanList, channel.ID)
+	}
+
+	if !isIn(channelID[1], chanList) {
+		s.ChannelMessageSend(m.ChannelID, "That channel isn't in this server <:2BThink:333694872802426880>")
+		return
+	}
+
 	if guild, ok := sMap.Server[guild.ID]; ok && !guild.Kicked {
-		guild.LogChannel = msglist[1]
-		saveConfig()
-		channel, err := s.Channel(msglist[1])
-		if err != nil {
-			errorLog.Println("Channel error", err.Error())
-			channel = &discordgo.Channel{
-				Name: msglist[1],
-			}
-		}
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Log channel changed to %s", channel.Name))
+		guild.LogChannel = channelID[1]
+		saveServers()
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Log channel changed to %s", channelID[0]))
 	}
 	return
 }
@@ -50,14 +60,9 @@ func msgLogging(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 		return
 	}
 
-	fmt.Println(msglist)
-	if len(msglist) < 2 {
-		return
-	}
-
 	if guild, ok := sMap.Server[guild.ID]; ok && !guild.Kicked {
 		guild.Log = !guild.Log
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Logging? %t", guild.Log))
-		saveConfig()
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Logging %t", guild.Log))
+		saveServers()
 	}
 }

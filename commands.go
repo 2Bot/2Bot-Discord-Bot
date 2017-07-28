@@ -121,26 +121,36 @@ func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, command stri
 				return
 			}
 		}
+
 		var commands []string
 		for _, val := range commMap {
 			if !val.NoahOnly {
 				commands = append(commands, "`"+val.Name+"`")
 			}
 		}
+
+		prefix := c.Prefix
+		if guild, err := guildDetails(m.ChannelID, s); err != nil {
+			prefix = sMap.Server[guild.ID].Prefix
+		}
+
 		s.ChannelMessageSend(m.ChannelID, strings.Join(commands, ", ")+
-			"\n\nUse `[prefix] help [command]` for detailed info about a command.")
+			"\n\nUse `"+prefix+" help [command]` for detailed info about a command.")
 		return
 	}
 
 	if command == strings.ToLower(commMap[command].Name) {
 		commMap[command].Exec(s, m, msgList)
+		return
 	}
 
+	//if data passed as command isnt a valid command,
+	//check if its an emoji
 	bigMoji.Exec(s, m, msgList)
 	return
 }
 
-func (c command) helpCommand(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
+func (c *command) helpCommand(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	s.ChannelMessageSend(m.ChannelID, c.Help)
 	return
 }

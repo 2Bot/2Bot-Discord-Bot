@@ -41,19 +41,22 @@ func msgPurge(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 		return
 	}
 
-	s.ChannelMessageDelete(m.ChannelID, m.Message.ID)
+	if m != nil {
+		s.ChannelMessageDelete(m.ChannelID, m.ID)
+	}
 
 	if userToPurge == "" {
 		standardPurge(purgeAmount, s, m)
 	} else {
-
 		err = userPurge(purgeAmount, s, m, userToPurge)
 	}
 
 	if err == nil {
 		msg, _ := s.ChannelMessageSend(m.ChannelID, "Successfully deleted :ok_hand:")
 		time.Sleep(time.Second * 5)
-		s.ChannelMessageDelete(m.ChannelID, msg.ID)
+		if msg != nil {
+			s.ChannelMessageDelete(m.ChannelID, msg.ID)
+		}
 	}
 	return
 }
