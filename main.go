@@ -127,6 +127,8 @@ func main() {
 	<-sc
 }
 
+
+
 func loadLog() *os.File {
 	var err error
 	logF, err = os.OpenFile("log.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
@@ -238,7 +240,7 @@ func loadServers() error {
 	for gID, guild := range sMap.Server {
 		if guild.LogChannel == "" {
 			guild.LogChannel = gID
-			saveConfig()
+			saveServers()
 		}
 	}
 
@@ -460,7 +462,7 @@ func joined(s *discordgo.Session, m *discordgo.GuildCreate) {
 	}
 
 	sMap.Server[m.Guild.ID].Kicked = false
-	saveConfig()
+	saveServers()
 
 	return
 }
@@ -481,7 +483,7 @@ func kicked(s *discordgo.Session, m *discordgo.GuildDelete) {
 		infoLog.Println("Kicked from", m.Guild.ID, m.Name)
 
 		sMap.Server[m.Guild.ID].Kicked = true
-		saveConfig()
+		saveServers()
 	}
 	return
 }

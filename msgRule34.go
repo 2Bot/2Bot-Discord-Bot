@@ -67,7 +67,7 @@ func msgRule34(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 	if r34.PostCount == 0 {
 		s.ChannelMessageSend(m.ChannelID, "No results ¯\\_(ツ)_/¯")
 	} else {
-		url = "https:" + r34.Posts[randRange(0, len(r34.Posts)-1)].URL
+		url = r34.Posts[randRange(0, len(r34.Posts)-1)].URL
 		resp, err := http.Get(url)
 		if err != nil {
 			errorLog.Println("R34 image response err:", err.Error())

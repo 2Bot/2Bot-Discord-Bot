@@ -49,6 +49,9 @@ func msgInfo(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
 			prefix = val.Prefix
 		}
 	}
+	if prefix == "" {
+		prefix = "None"
+	}
 
 	s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
 		Color: 0,
@@ -140,7 +143,7 @@ func msgNSFW(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
 	if guild, ok := sMap.Server[guild.ID]; ok && !guild.Kicked {
 		guild.Nsfw = !guild.Nsfw
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("NSFW %s", onOrOff[guild.Nsfw]))
-		saveConfig()
+		saveServers()
 	}
 	return
 }
@@ -173,7 +176,7 @@ func msgJoinMessage(s *discordgo.Session, m *discordgo.MessageCreate, msglist []
 
 			if split[0] == "false" {
 				guild.JoinMessage = [3]string{split[0]}
-				saveConfig()
+				saveServers()
 				s.ChannelMessageSend(m.ChannelID, "Join messages disabled! ")
 				return
 			}
@@ -195,7 +198,7 @@ func msgJoinMessage(s *discordgo.Session, m *discordgo.MessageCreate, msglist []
 			}
 
 			guild.JoinMessage = [3]string{split[0], split[1], split[2]}
-			saveConfig()
+			saveServers()
 
 			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Join message set to:\n%s\nin %s", split[1], channelStruct.Name))
 		}
@@ -261,4 +264,14 @@ func msgPrintJSON(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 			s.ChannelMessageSend(m.ChannelID, string(out.Bytes()))
 		}
 	}
+}
+
+func msgCheckMismatch(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string){
+	var total int
+	for _, guild := range sMap.Server {
+		if !guild.Kicked {
+			total++
+		}
+	}
+	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("State: %d\nConfig: %d", len(s.State.Guilds), total))
 }

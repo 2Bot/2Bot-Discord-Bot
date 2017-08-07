@@ -14,6 +14,7 @@ var (
 	globalPrefix  = command{"setGlobalPrefix", "", true, false, msgGlobalPrefix}
 	//reloadConf    = command{"reload", "", true, false, msgReloadConfig}
 	//printJSON     = command{"printJSON", "", true, false, msgPrintJSON}
+	checkMismatch = command{"mismatch", "", true, false, msgCheckMismatch}
 
 	avatar = command{"avatar",
 		"Args: [@user]\n\nReturns the given users avatar.\nIf no user ID is given, your own avatar is sent.\n\nExample:\n`!owo avatar @Strum355#2298`",
@@ -103,6 +104,7 @@ func loadCommands() {
 	//	commMap[l(reloadConf.Name)] = reloadConf
 	commMap[l(inviteLink.Name)] = inviteLink
 	//commMap[l(printJSON.Name)] = printJSON
+	commMap[l(checkMismatch.Name)] = checkMismatch
 }
 
 func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, command string, msgList []string) {

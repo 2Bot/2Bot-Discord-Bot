@@ -62,7 +62,7 @@ func fimageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 	}
 
 	escapedFile := url.PathEscape(filename)
-	imgURL, err := url.Parse("https://sushishader.eu/2Bot/images/" + escapedFile)
+	imgURL, err := url.Parse("http://noahsc.xyz/2Bot/images/" + escapedFile)
 	if err != nil {
 		errorLog.Println("Error parsing img url", err.Error())
 		s.ChannelMessageSend(m.ChannelID, "Error getting the image :( Please pester Strum355#1180 about this")
@@ -411,7 +411,7 @@ func fimageList(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 		success := true
 		for i, img := range files {
 			escapedFile := url.PathEscape(img)
-			imgURL, err := url.Parse("https://sushishader.eu/2Bot/images/" + escapedFile)
+			imgURL, err := url.Parse("http://noahsc.xyz/2Bot/images/" + escapedFile)
 			if err != nil {
 				errorLog.Println("Error parsing img url", err.Error())
 				success = false

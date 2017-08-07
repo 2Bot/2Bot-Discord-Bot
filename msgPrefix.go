@@ -40,7 +40,7 @@ func msgPrefix(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 			}
 			guild.Prefix = parts[0] + space
 			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Prefix changed to %s %s a trailing space", codeSeg(guild.Prefix), msg))
-			saveConfig()
+			saveServers()
 		}
 	}
 	return
