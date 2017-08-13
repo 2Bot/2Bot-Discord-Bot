@@ -9,6 +9,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"crypto/sha256"
+	"encoding/hex"
+	"os"
+	"path"
 )
 
 var mem runtime.MemStats
@@ -274,4 +278,23 @@ func msgCheckMismatch(s *discordgo.Session, m *discordgo.MessageCreate, msglist 
 		}
 	}
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("State: %d\nConfig: %d", len(s.State.Guilds), total))
+}
+
+func hashImages(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
+	fpath := "/home/users/strum355/public_html/2Bot/images/"
+	for _, user := range u.User {
+		for imgName, image := range user.Images {
+			hash := sha256.Sum256([]byte(image))
+			ext := strings.ToLower(path.Ext(image))
+
+			fmt.Println("Moving "+image+" to "+hex.EncodeToString(hash[:])+ext)
+
+			user.Images[imgName] = hex.EncodeToString(hash[:])+ext
+			err := os.Rename(fpath+image, fpath+hex.EncodeToString(hash[:])+ext)
+			if err != nil {
+				fmt.Println(err)
+			}
+		}
+	}
+	saveUsers()
 }

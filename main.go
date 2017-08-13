@@ -361,12 +361,19 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if string(strings.TrimPrefix(m.Content, prefix)[0]) == " " {
 			command = " "
 		}
+		
 
 		msgList := strings.Fields(strings.TrimPrefix(m.Content, prefix))
 
 		if len(msgList) > 0 {
 			command += msgList[0]
 			parseCommand(s, m, command, msgList)
+		}
+	}else if prefix != c.Prefix && strings.HasPrefix(m.Content, c.Prefix) {
+		msgList := strings.Fields(strings.TrimPrefix(m.Content, c.Prefix))
+
+		if len(msgList) > 0 {
+			parseCommand(s, m, msgList[0], msgList)
 		}
 	}
 	return

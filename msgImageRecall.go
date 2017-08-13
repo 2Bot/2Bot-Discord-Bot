@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/Necroforger/dgwidgets"
+	"github.com/Strum355/dgwidgets"
 	"github.com/bwmarrin/discordgo"
 	"net/http"
 	"os"
@@ -13,6 +13,8 @@ import (
 	"path"
 	"strconv"
 	"time"
+	"crypto/sha256"
+	"encoding/hex"
 )
 
 func msgImageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
@@ -61,21 +63,15 @@ func fimageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 		return
 	}
 
-	escapedFile := url.PathEscape(filename)
-	imgURL, err := url.Parse("http://noahsc.xyz/2Bot/images/" + escapedFile)
-	if err != nil {
-		errorLog.Println("Error parsing img url", err.Error())
-		s.ChannelMessageSend(m.ChannelID, "Error getting the image :( Please pester Strum355#1180 about this")
-		return
-	}
+	imgURL := "http://noahsc.xyz/2Bot/images/" + url.PathEscape(filename)
 
-	resp, err := http.Head(imgURL.String())
+	resp, err := http.Head(imgURL)
 	if err != nil {
 		errorLog.Println("Error recalling image", err.Error())
 		s.ChannelMessageSend(m.ChannelID, "Error getting the image :( Please pester Strum355#1180 about this")
 		return
 	} else if resp.StatusCode != http.StatusOK {
-		errorLog.Println("Non 200 status code")
+		errorLog.Println("Non 200 status code " + imgURL)
 		s.ChannelMessageSend(m.ChannelID, "Error getting the image :( Please pester Strum355#1180 about this")
 		return
 	}
@@ -86,7 +82,7 @@ func fimageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 		Color: 0x000000,
 
 		Image: &discordgo.MessageEmbedImage{
-			URL: imgURL.String(),
+			URL: imgURL,
 		},
 	})
 }
@@ -94,6 +90,7 @@ func fimageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	c.CurrImg++
 	saveConfig()
+
 	currentImageNumber := c.CurrImg
 
 	if len(m.Attachments) == 0 {
@@ -112,16 +109,17 @@ func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	}
 
 	imgName := strings.Join(msglist, " ")
-	isLegalFileName := strings.Contains(imgName, "/")
+/* 	isIllegalFileName := strings.ContainsAny(imgName, `#/"<>#%{}|\^~[];?:@=&`)
 
-	if isLegalFileName {
-		s.ChannelMessageSend(m.ChannelID, "I can't use that as a file name <:2BThink:333694872802426880> Please dont include a forward-slash in the file names!")
+	if isIllegalFileName {
+		s.ChannelMessageSend(m.ChannelID, `I can't use that as a file name <:2BThink:333694872802426880> Please dont include any of the following in the file name: #/"<>#%{}|\^~[];?:@=&`)
 		return
-	}
+	} */
 
 	prefixedImgName := m.Author.ID + "_" + imgName
-	fileExtension := strings.ToLower(path.Ext(m.Attachments[0].URL))
-	imgFileName := prefixedImgName + fileExtension
+	fileExtension 	:= strings.ToLower(path.Ext(m.Attachments[0].URL))
+	hash 			:= sha256.Sum256([]byte(prefixedImgName))
+	imgFileName 	:= hex.EncodeToString(hash[:]) + fileExtension
 
 	if _, ok := u.User[m.Author.ID]; !ok {
 		u.User[m.Author.ID] = &user{
@@ -255,7 +253,8 @@ func fimageReview(s *discordgo.Session, queue *imageQueue, currentImageNumber in
 	fileSize := imgInQueue.FileSize
 	prefixedImgName := imgInQueue.AuthorID + "_" + imgInQueue.ImageName
 	fileExtension := strings.ToLower(path.Ext(imgInQueue.ImageURL))
-	imgFileName := prefixedImgName + fileExtension
+	hash := sha256.Sum256([]byte(prefixedImgName))
+	imgFileName := hex.EncodeToString(hash[:]) + fileExtension
 	tempFilepath := "../../public_html/2Bot/images/temp/" + imgFileName
 	currUser := u.User[imgInQueue.AuthorID]
 
@@ -343,8 +342,7 @@ func fimageReview(s *discordgo.Session, queue *imageQueue, currentImageNumber in
 	filepath := "../../public_html/2Bot/images/" + imgFileName
 
 	os.Rename(tempFilepath, filepath)
-	err = os.Chmod(filepath, 655)
-	if err != nil {
+	if err = os.Chmod(filepath, 0755); err != nil {
 		s.ChannelMessageSend(reviewChan, "Can't chmod "+err.Error())
 		errorLog.Println("Cant chmod", err.Error())
 	}
