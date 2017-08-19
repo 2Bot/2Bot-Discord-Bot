@@ -127,8 +127,6 @@ func main() {
 	<-sc
 }
 
-
-
 func loadLog() *os.File {
 	var err error
 	logF, err = os.OpenFile("log.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
@@ -161,6 +159,7 @@ func postServerCount() {
 	_, err = client.Do(req)
 	if err != nil {
 		errorLog.Println("bots.discord.pw error", err)
+		return
 	}
 
 	infoLog.Println("POSTed " + strconv.Itoa(sCount) + " to bots.discord.pw")
@@ -179,7 +178,9 @@ func setInitialGame(s *discordgo.Session) {
 	err := s.UpdateStatus(0, c.Game)
 	if err != nil {
 		errorLog.Println("Update status err:", err)
+		return
 	}
+	infoLog.Println("set initial game to ", c.Game)
 	return
 }
 

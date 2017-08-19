@@ -9,10 +9,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"crypto/sha256"
-	"encoding/hex"
-	"os"
-	"path"
 )
 
 var mem runtime.MemStats
@@ -268,33 +264,4 @@ func msgPrintJSON(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 			s.ChannelMessageSend(m.ChannelID, string(out.Bytes()))
 		}
 	}
-}
-
-func msgCheckMismatch(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string){
-	var total int
-	for _, guild := range sMap.Server {
-		if !guild.Kicked {
-			total++
-		}
-	}
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("State: %d\nConfig: %d", len(s.State.Guilds), total))
-}
-
-func hashImages(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	fpath := "/home/users/strum355/public_html/2Bot/images/"
-	for _, user := range u.User {
-		for imgName, image := range user.Images {
-			hash := sha256.Sum256([]byte(image))
-			ext := strings.ToLower(path.Ext(image))
-
-			fmt.Println("Moving "+image+" to "+hex.EncodeToString(hash[:])+ext)
-
-			user.Images[imgName] = hex.EncodeToString(hash[:])+ext
-			err := os.Rename(fpath+image, fpath+hex.EncodeToString(hash[:])+ext)
-			if err != nil {
-				fmt.Println(err)
-			}
-		}
-	}
-	saveUsers()
 }
