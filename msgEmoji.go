@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"net/http"
+	"os"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -41,7 +41,7 @@ func msgEmoji(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 			submatch := emojiRegex.FindStringSubmatch(msglist[1])
 			if len(submatch) != 0 {
 				emojiID := submatch[1]
-				
+
 				resp, err := http.Get(fmt.Sprintf("https://cdn.discordapp.com/emojis/%s.png", emojiID))
 				if err != nil {
 					errorLog.Println("BM custom emoji err:", err.Error())
@@ -63,7 +63,7 @@ func msgEmoji(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 						return
 					}
 					defer file.Close()
-					
+
 					s.ChannelFileSend(m.ChannelID, "emoji.png", file)
 
 					if m != nil {
@@ -97,7 +97,7 @@ func msgEmoji(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 						return
 					}
 					defer file.Close()
-					
+
 					s.ChannelFileSend(m.ChannelID, "emoji.png", file)
 
 					if m != nil {

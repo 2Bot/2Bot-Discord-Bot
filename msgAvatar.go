@@ -1,12 +1,14 @@
 package main
 
 import (
-	"net/http"
 	"fmt"
+	"net/http"
+
 	"github.com/bwmarrin/discordgo"
 )
 
 func msgAvatar(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
+	s.ChannelTyping(m.ChannelID)
 	if len(msglist) > 1 {
 		submatch := userIDRegex.FindStringSubmatch(msglist[1])
 		if len(submatch) != 0 {
@@ -21,6 +23,7 @@ func msgAvatar(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 func getAvatar(userID string, m *discordgo.MessageCreate, s *discordgo.Session) {
 	user, err := s.User(userID)
 	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, "There was an error getting the image :( Please try again")
 		errorLog.Println("Avatar user struct", err.Error())
 		return
 	}
@@ -32,14 +35,14 @@ func getAvatar(userID string, m *discordgo.MessageCreate, s *discordgo.Session) 
 	}
 	defer resp.Body.Close()
 
-	imgURL := discordgo.EndpointUserAvatar(user.ID, user.Avatar)
-	if resp.StatusCode == http.StatusOK {
-		imgURL = fmt.Sprintf("%s/%s.gif", discordgo.EndpointCDNAvatars+userID, user.Avatar)
+	imgURL := fmt.Sprintf("%s/%s.gif", discordgo.EndpointCDNAvatars+userID, user.Avatar)
+	if resp.StatusCode != http.StatusOK {
+		imgURL = discordgo.EndpointUserAvatar(user.ID, user.Avatar)
 	}
-			
+
 	s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
-		Description: user.Username+"'s Avatar",
-		
+		Description: user.Username + "'s Avatar",
+
 		Color: 0x000000,
 
 		Image: &discordgo.MessageEmbedImage{
