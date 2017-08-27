@@ -19,6 +19,8 @@ type config struct {
 	Game   string `json:"game"`
 	Prefix string `json:"prefix"`
 
+	InDev bool `json:"indev"`
+
 	DiscordPWKey string `json:"discord.pw_key"`
 
 	CurrImg int `json:"curr_img_id"`

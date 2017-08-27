@@ -61,7 +61,6 @@ var (
 	status        = map[discordgo.Status]string{"dnd": "busy", "online": "online", "idle": "idle", "offline": "offline"}
 	//Discord Bots, cool kidz only, social experiment, discord go
 	blacklist    = []string{"110373943822540800", "272873324705742848", "244133074328092673", "118456055842734083"}
-	inDev        = false
 	errEmptyFile = errors.New("file is empty")
 )
 
@@ -104,7 +103,6 @@ func main() {
 
 	//Register handlers
 	dg.AddHandler(messageCreate)
-	dg.AddHandler(joined)
 	dg.AddHandler(membPresChange)
 	dg.AddHandler(kicked)
 	dg.AddHandler(membJoin)
@@ -113,7 +111,8 @@ func main() {
 	setInitialGame(dg)
 
 	go setQueuedImageHandlers(dg)
-	if !inDev {
+	if !c.InDev {
+		dg.AddHandler(joined)		
 		go dailyJobs(dg)
 	}
 
