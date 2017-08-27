@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/bwmarrin/discordgo"
 	"net/http"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 func msgAvatar(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {

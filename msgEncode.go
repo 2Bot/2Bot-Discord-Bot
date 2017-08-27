@@ -5,9 +5,10 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"strings"
+
 	"github.com/bwmarrin/discordgo"
 	"golang.org/x/crypto/bcrypt"
-	"strings"
 )
 
 func msgEncode(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {

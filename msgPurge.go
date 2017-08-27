@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/bwmarrin/discordgo"
 	"strconv"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 func msgPurge(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {

@@ -1,10 +1,11 @@
-package main 
+package main
 
 import (
-	"github.com/bwmarrin/discordgo"
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 func membPresChange(s *discordgo.Session, m *discordgo.PresenceUpdate) {

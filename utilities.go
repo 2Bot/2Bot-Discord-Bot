@@ -1,11 +1,12 @@
-package main 
+package main
 
 import (
-	"github.com/bwmarrin/discordgo"
 	"math/rand"
+	"strconv"
 	"strings"
 	"time"
-	"strconv"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 //From Necroforger's dgwidgets

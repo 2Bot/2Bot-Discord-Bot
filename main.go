@@ -46,19 +46,19 @@ const (
 )
 
 var (
-	c             = &config{}
-	u             = &users{}
-	q             = &imageQueue{}
-	sMap          = &servers{}
-	errorLog      *log.Logger
-	infoLog       *log.Logger
-	logF          *os.File
-	lastReboot    string
-	token         string
-	emojiRegex    = regexp.MustCompile("<:.*?:(.*?)>")
-	userIDRegex   = regexp.MustCompile("<@!?([0-9]{18})>")
-	channelRegex  = regexp.MustCompile("<#([0-9]{18})>")
-	status        = map[discordgo.Status]string{"dnd": "busy", "online": "online", "idle": "idle", "offline": "offline"}
+	c            = &config{}
+	u            = &users{}
+	q            = &imageQueue{}
+	sMap         = &servers{}
+	errorLog     *log.Logger
+	infoLog      *log.Logger
+	logF         *os.File
+	lastReboot   string
+	token        string
+	emojiRegex   = regexp.MustCompile("<:.*?:(.*?)>")
+	userIDRegex  = regexp.MustCompile("<@!?([0-9]{18})>")
+	channelRegex = regexp.MustCompile("<#([0-9]{18})>")
+	status       = map[discordgo.Status]string{"dnd": "busy", "online": "online", "idle": "idle", "offline": "offline"}
 	//Discord Bots, cool kidz only, social experiment, discord go
 	blacklist    = []string{"110373943822540800", "272873324705742848", "244133074328092673", "118456055842734083"}
 	errEmptyFile = errors.New("file is empty")
@@ -112,7 +112,7 @@ func main() {
 
 	go setQueuedImageHandlers(dg)
 	if !c.InDev {
-		dg.AddHandler(joined)		
+		dg.AddHandler(joined)
 		go dailyJobs(dg)
 	}
 
@@ -361,7 +361,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if string(strings.TrimPrefix(m.Content, prefix)[0]) == " " {
 			command = " "
 		}
-		
 
 		msgList := strings.Fields(strings.TrimPrefix(m.Content, prefix))
 
@@ -369,7 +368,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			command += msgList[0]
 			parseCommand(s, m, command, msgList)
 		}
-	}else if prefix != c.Prefix && strings.HasPrefix(m.Content, c.Prefix) {
+	} else if prefix != c.Prefix && strings.HasPrefix(m.Content, c.Prefix) {
 		msgList := strings.Fields(strings.TrimPrefix(m.Content, c.Prefix))
 
 		if len(msgList) > 0 {

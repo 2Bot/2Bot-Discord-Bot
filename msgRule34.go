@@ -3,10 +3,11 @@ package main
 import (
 	"encoding/xml"
 	"fmt"
-	"github.com/bwmarrin/discordgo"
 	"io/ioutil"
 	"net/http"
 	"strings"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 func msgRule34(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {

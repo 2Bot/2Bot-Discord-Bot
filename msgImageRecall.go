@@ -1,20 +1,21 @@
 package main
 
 import (
-	"github.com/Strum355/dgwidgets"
-	"github.com/bwmarrin/discordgo"
 	"net/http"
 	"os"
 	"strings"
 
+	"github.com/Strum355/dgwidgets"
+	"github.com/bwmarrin/discordgo"
+
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"net/url"
 	"path"
 	"strconv"
 	"time"
-	"crypto/sha256"
-	"encoding/hex"
 )
 
 func msgImageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
@@ -109,17 +110,17 @@ func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	}
 
 	imgName := strings.Join(msglist, " ")
-/* 	isIllegalFileName := strings.ContainsAny(imgName, `#/"<>#%{}|\^~[];?:@=&`)
+	/* 	isIllegalFileName := strings.ContainsAny(imgName, `#/"<>#%{}|\^~[];?:@=&`)
 
-	if isIllegalFileName {
-		s.ChannelMessageSend(m.ChannelID, `I can't use that as a file name <:2BThink:333694872802426880> Please dont include any of the following in the file name: #/"<>#%{}|\^~[];?:@=&`)
-		return
-	} */
+	   	if isIllegalFileName {
+	   		s.ChannelMessageSend(m.ChannelID, `I can't use that as a file name <:2BThink:333694872802426880> Please dont include any of the following in the file name: #/"<>#%{}|\^~[];?:@=&`)
+	   		return
+	   	} */
 
 	prefixedImgName := m.Author.ID + "_" + imgName
-	fileExtension 	:= strings.ToLower(path.Ext(m.Attachments[0].URL))
-	hash 			:= sha256.Sum256([]byte(prefixedImgName))
-	imgFileName 	:= hex.EncodeToString(hash[:]) + fileExtension
+	fileExtension := strings.ToLower(path.Ext(m.Attachments[0].URL))
+	hash := sha256.Sum256([]byte(prefixedImgName))
+	imgFileName := hex.EncodeToString(hash[:]) + fileExtension
 
 	if _, ok := u.User[m.Author.ID]; !ok {
 		u.User[m.Author.ID] = &user{

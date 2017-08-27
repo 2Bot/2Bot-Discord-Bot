@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/bwmarrin/discordgo"
 	"strings"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 func msgPrefix(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {

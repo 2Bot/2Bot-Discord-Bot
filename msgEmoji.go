@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/bwmarrin/discordgo"
 	"net/http"
 	"os"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 //Thanks to iopred
@@ -33,7 +34,6 @@ func msgEmoji(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 	/* if len(submatch) != 0 {
 		emojiID := submatch[1]
 	} */
-
 
 	if msglist[0] == "bigMoji" || len(submatch) != 0 || emojiFile(msglist[0]) != "" {
 		//bigMoji
@@ -66,7 +66,7 @@ func msgEmoji(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 					s.ChannelFileSend(m.ChannelID, "emoji.png", file)
 					if m != nil {
 						s.ChannelMessageDelete(m.ChannelID, m.ID)
-					}				
+					}
 				}
 			}
 			//not bigMoji
@@ -83,7 +83,7 @@ func msgEmoji(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 				s.ChannelFileSend(m.ChannelID, "emoji.png", resp.Body)
 				if m != nil {
 					s.ChannelMessageDelete(m.ChannelID, m.ID)
-				}			
+				}
 			} else {
 				emoji := emojiFile(msglist[0])
 				if emoji != "" {

@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/bwmarrin/discordgo"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 var mem runtime.MemStats

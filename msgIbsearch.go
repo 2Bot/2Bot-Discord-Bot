@@ -3,11 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/bwmarrin/discordgo"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 func msgIbsearch(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
