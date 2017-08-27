@@ -266,9 +266,17 @@ func fimageReview(s *discordgo.Session, queue *imageQueue, currentImageNumber in
 			continue
 		}
 
+		user, _ := s.User(confirm.UserID)
+
 		if confirm.MessageReaction.Emoji.Name == "✅" {
 			//IF CONFIRMED
-			s.ChannelMessageSend(reviewChan, fmt.Sprintf("Confirmed image `%s` from `%s#%s` ID: `%s`",
+			s.ChannelMessageSend(reviewChan, fmt.Sprintf("%s confirmed image `%s` from `%s#%s` ID: `%s`",
+				func() string {
+					if user != nil {
+						return user.Username
+					}
+					return confirm.UserID
+				}(),
 				imgInQueue.ImageName,
 				imgInQueue.AuthorName,
 				imgInQueue.AuthorDiscrim,
@@ -277,7 +285,13 @@ func fimageReview(s *discordgo.Session, queue *imageQueue, currentImageNumber in
 			break
 		} else if confirm.MessageReaction.Emoji.Name == "❌" {
 			//IF REJECTED
-			s.ChannelMessageSend(reviewChan, fmt.Sprintf("Rejected image `%s` from `%s#%s` ID: `%s`\nGive a reason next! Enter `None` to give no reason",
+			s.ChannelMessageSend(reviewChan, fmt.Sprintf("%s rejected image `%s` from `%s#%s` ID: `%s`\nGive a reason next! Enter `None` to give no reason",
+				func() string {
+					if user != nil {
+						return user.Username
+					}
+					return confirm.UserID
+				}(),
 				imgInQueue.ImageName,
 				imgInQueue.AuthorName,
 				imgInQueue.AuthorDiscrim,
