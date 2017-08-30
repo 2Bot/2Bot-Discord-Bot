@@ -107,7 +107,6 @@ func main() {
 	dg.AddHandler(kicked)
 	dg.AddHandler(membJoin)
 
-	loadCommands()
 	setInitialGame(dg)
 
 	go setQueuedImageHandlers(dg)
@@ -155,13 +154,19 @@ func postServerCount() {
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
-	_, err = client.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		errorLog.Println("bots.discord.pw error", err)
 		return
 	}
 
-	infoLog.Println("POSTed " + strconv.Itoa(sCount) + " to bots.discord.pw")
+	infoLog.Println("POSTed " + strconv.Itoa(sCount) + " to bots.discord.pw. Resp: "+strconv.Itoa(resp.StatusCode)+" "+func() string {
+		bytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return ""
+		}
+		return string(bytes)
+	}())
 }
 
 func activeServerCount() (sCount int) {
