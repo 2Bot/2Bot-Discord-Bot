@@ -110,9 +110,10 @@ func main() {
 	setInitialGame(dg)
 
 	go setQueuedImageHandlers(dg)
+	
 	if !c.InDev {
-		dg.AddHandler(joined)
 		go dailyJobs(dg)
+		dg.AddHandler(joined)
 	}
 
 	fmt.Fprintln(logF, "")
@@ -147,26 +148,22 @@ func postServerCount() {
 	url := "https://bots.discord.pw/api/bots/301819949683572738/stats"
 
 	sCount := activeServerCount()
-	jsonStr := []byte(`{"server_count"` + strconv.Itoa(sCount) + `:}`)
+	jsonStr := []byte(`{"server_count":`+ strconv.Itoa(activeServerCount()) +`}`)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
+	if err != nil {
+		errorLog.Println("error making bots.discord.pw request", err)
+	}
 
 	req.Header.Set("Authorization", c.DiscordPWKey)
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
+	if _, err := client.Do(req); err != nil {
 		errorLog.Println("bots.discord.pw error", err)
 		return
 	}
 
-	infoLog.Println("POSTed " + strconv.Itoa(sCount) + " to bots.discord.pw. Resp: "+strconv.Itoa(resp.StatusCode)+" "+func() string {
-		bytes, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return ""
-		}
-		return string(bytes)
-	}())
+	infoLog.Println("POSTed " + strconv.Itoa(sCount) + " to bots.discord.pw")
 }
 
 func activeServerCount() (sCount int) {
