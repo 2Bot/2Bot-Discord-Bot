@@ -226,7 +226,7 @@ func msgReloadConfig(s *discordgo.Session, m *discordgo.MessageCreate, msglist [
 		reloaded = "config"
 	case "u":
 		u = &users{}
-		if err := loadConfig(); err != nil {
+		if err := loadUsers(); err != nil {
 			errorLog.Println("Error reloading config", err.Error())
 			s.ChannelMessageSend(m.ChannelID, "Error reloading config")
 			return

@@ -74,6 +74,8 @@ var (
 	inviteLink = command{"invite",
 		"Args: none\n\nSends an invite link for 2Bot!\n\nExample:\n`!owo invite`",
 		false, false, msgInvite}.add()
+	musicComm = command{"yt", "", 
+		false, false, msgYoutube}.add()
 )
 
 //Small wrapper function to reduce clutter
