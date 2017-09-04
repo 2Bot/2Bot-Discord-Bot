@@ -2,6 +2,7 @@ package main
 
 import (
 	"io"
+	"errors"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/jonas747/dca"
@@ -9,18 +10,30 @@ import (
 )
 
 func msgYoutube(s* discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	fmt.Println("Got song "+msglist[1])
+	switch msglist[1] {
+		case "play":
+			play(s, m, msglist)
+		case "stop":
+			stop(s, m, msglist)
+	}
+}
+
+func play(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	vid, err := ytdl.GetVideoInfo(msglist[1])
+	voiceInst := &(sMap.Server[guild.ID].VoiceInst)
+	voiceInst.Done = make(chan error)
+
+	vid, err := ytdl.GetVideoInfo(msglist[2])
 	if err != nil {
 	  fmt.Println(err)
 	  return
 	}
+
 	format := vid.Formats.Extremes(ytdl.FormatAudioBitrateKey, true)[0]
 	videoURL, err := vid.GetDownloadURL(format)
 	if err != nil {
@@ -40,6 +53,7 @@ func msgYoutube(s* discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 				fmt.Println(err)
 				return
 			}
+			defer vc.Disconnect()
 
 			encSesh, err := dca.EncodeFile(videoURL.String(), options)
 			if err != nil {
@@ -47,12 +61,11 @@ func msgYoutube(s* discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 				return
 			}
 		
-			done := make(chan error)
-			dca.NewStream(encSesh, vc, done)
+			dca.NewStream(encSesh, vc, voiceInst.Done)
 			for {
 				select {
-					case err := <- done:
-						if err != nil && err != io.EOF {
+					case err := <- voiceInst.Done:
+						if err != nil && err != io.EOF && err.Error() != "stop" {
 							fmt.Println(err)
 						}
 						encSesh.Cleanup()
@@ -62,4 +75,15 @@ func msgYoutube(s* discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 			}
 		}
 	}
+}
+
+func stop(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
+	guild, err := guildDetails(m.ChannelID, s)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	voiceInst := &(sMap.Server[guild.ID].VoiceInst)
+	voiceInst.Done <- errors.New("stop")
 }

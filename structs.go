@@ -40,6 +40,19 @@ type server struct {
 
 	//Enabled, Message, Channel
 	JoinMessage [3]string `json:"join"`
+
+	VoiceInst struct {
+		ChannelID string
+		Queue []song
+		Done chan error
+	}
+
+	Playlist map[string][]song
+}
+
+type song struct {
+	DownloadURL string `json:"url"`
+	Name        string `json:"name"`
 }
 
 type imageQueue struct {

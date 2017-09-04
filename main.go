@@ -86,6 +86,8 @@ func main() {
 	loadQueue()
 	loadServers()
 
+	defer cleanup()
+
 	// Create a new Discord session using the provided bot token.
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
@@ -124,6 +126,13 @@ func main() {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
+}
+
+func cleanup() {
+	saveConfig()
+	saveQueue()
+	saveServers()
+	saveUsers()
 }
 
 func loadLog() *os.File {
