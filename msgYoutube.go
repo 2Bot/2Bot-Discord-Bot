@@ -12,9 +12,12 @@ import (
 func msgYoutube(s* discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	switch msglist[1] {
 		case "play":
-			play(s, m, msglist)
+			play(s, m, msglist[2:])
 		case "stop":
-			stop(s, m, msglist)
+			stop(s, m, msglist[2:])
+		case "playlist":
+			playlist(s, m, msglist[2:])
+
 	}
 }
 
@@ -28,7 +31,7 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	voiceInst := &(sMap.Server[guild.ID].VoiceInst)
 	voiceInst.Done = make(chan error)
 
-	vid, err := ytdl.GetVideoInfo(msglist[2])
+	vid, err := ytdl.GetVideoInfo(msglist[0])
 	if err != nil {
 	  fmt.Println(err)
 	  return
@@ -60,7 +63,8 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 				fmt.Println(err)
 				return
 			}
-		
+			defer encSesh.Cleanup()
+			
 			dca.NewStream(encSesh, vc, voiceInst.Done)
 			for {
 				select {
@@ -86,4 +90,20 @@ func stop(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 
 	voiceInst := &(sMap.Server[guild.ID].VoiceInst)
 	voiceInst.Done <- errors.New("stop")
+}
+
+func playlist(s  *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
+	guild, err := guildDetails(m.ChannelID, s)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	switch msglist[0]{
+		case "create":
+			sMap.Server[guild.ID].Playlists[msglist[1]] = []song{}
+			s.ChannelMessageSend(m.ChannelID, "Created playlist "+msglist[1])
+			return
+			
+	}
 }

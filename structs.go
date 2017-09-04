@@ -47,7 +47,7 @@ type server struct {
 		Done chan error
 	}
 
-	Playlist map[string][]song
+	Playlists map[string][]song `json:"playlists"`
 }
 
 type song struct {

@@ -7,3 +7,5 @@ go:
 install:
   - go get github.com/bwmarrin/discordgo
   - go get github.com/Strum355/dgwidgets
+  - go get github.com/jonas747/dca
+  - go get github.com/rylio/ytdl
