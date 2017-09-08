@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -54,7 +53,6 @@ var (
 	infoLog      *log.Logger
 	logF         *os.File
 	lastReboot   string
-	token        string
 	emojiRegex   = regexp.MustCompile("<:.*?:(.*?)>")
 	userIDRegex  = regexp.MustCompile("<@!?([0-9]{18})>")
 	channelRegex = regexp.MustCompile("<#([0-9]{18})>")
@@ -64,22 +62,19 @@ var (
 	errEmptyFile = errors.New("file is empty")
 )
 
-func init() {
-	flag.StringVar(&token, "t", "", "Bot Token")
-	flag.Parse()
-
-	timeNow := time.Now()
-	lastReboot = timeNow.Format(time.RFC1123)[:22]
-}
-
 func main() {
+	lastReboot = time.Now().Format(time.RFC1123)[:22]
+
 	loadLog()
 	defer logF.Close()
 
 	log.SetOutput(logF)
 
 	infoLog = log.New(logF, "INFO:  ", log.Ldate|log.Ltime)
-	errorLog = log.New(logF, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
+	errorLog = log.New(os.Stdout, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
+	if c.InDev {
+		errorLog = log.New(os.Stdout, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
+	}
 
 	loadConfig()
 	loadUsers()
@@ -89,7 +84,7 @@ func main() {
 	defer cleanup()
 
 	// Create a new Discord session using the provided bot token.
-	dg, err := discordgo.New("Bot " + token)
+	dg, err := discordgo.New("Bot " + c.Token)
 	if err != nil {
 		fmt.Println("Error creating Discord session,", err)
 		return
@@ -112,7 +107,7 @@ func main() {
 	setInitialGame(dg)
 
 	go setQueuedImageHandlers(dg)
-	
+
 	if !c.InDev {
 		go dailyJobs(dg)
 		dg.AddHandler(joined)
@@ -157,7 +152,7 @@ func postServerCount() {
 	url := "https://bots.discord.pw/api/bots/301819949683572738/stats"
 
 	sCount := activeServerCount()
-	jsonStr := []byte(`{"server_count":`+ strconv.Itoa(activeServerCount()) +`}`)
+	jsonStr := []byte(`{"server_count":` + strconv.Itoa(activeServerCount()) + `}`)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
 	if err != nil {
 		errorLog.Println("error making bots.discord.pw request", err)
@@ -222,7 +217,7 @@ func saveConfig() {
 		return
 	}
 
-	err = ioutil.WriteFile("config.json", out, 0755)
+	err = ioutil.WriteFile("config.json", out, 0600)
 	if err != nil {
 		errorLog.Println("Save config err:", err)
 	}
@@ -265,7 +260,7 @@ func saveServers() {
 		return
 	}
 
-	err = ioutil.WriteFile("servers.json", out, 0755)
+	err = ioutil.WriteFile("servers.json", out, 0600)
 	if err != nil {
 		errorLog.Println("Save servers err:", err)
 	}
@@ -277,7 +272,7 @@ func loadUsers() error {
 	u.User = make(map[string]*user)
 	file, err := ioutil.ReadFile("users.json")
 	if err != nil {
-		fmt.Println(true, "Users open err", err)
+		fmt.Println("Users open err", err)
 		return err
 	}
 
@@ -302,7 +297,7 @@ func saveUsers() {
 		return
 	}
 
-	err = ioutil.WriteFile("users.json", out, 0755)
+	err = ioutil.WriteFile("users.json", out, 0600)
 	if err != nil {
 		errorLog.Println("Save user err:", err)
 	}
@@ -340,7 +335,7 @@ func saveQueue() {
 		return
 	}
 
-	err = ioutil.WriteFile("queue.json", out, 0755)
+	err = ioutil.WriteFile("queue.json", out, 0600)
 	if err != nil {
 		errorLog.Println("Save queue err:", err)
 	}
@@ -348,7 +343,7 @@ func saveQueue() {
 }
 
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if m.Author.ID == s.State.User.ID || m.Author.Bot {
+	if m.Author.Bot {
 		return
 	}
 

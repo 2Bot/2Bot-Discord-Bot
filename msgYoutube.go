@@ -1,46 +1,89 @@
 package main
 
 import (
-	"io"
 	"errors"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/jonas747/dca"
 	"github.com/rylio/ytdl"
+	"io"
 )
 
-func msgYoutube(s* discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
+func msgYoutube(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	switch msglist[1] {
-		case "play":
-			play(s, m, msglist[2:])
-		case "stop":
-			stop(s, m, msglist[2:])
-		case "playlist":
-			playlist(s, m, msglist[2:])
-
+	case "play":
+		addToQueue(s, m, msglist[2:])
+	case "stop":
+		stop(s, m, msglist[2:])
 	}
 }
 
-func play(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
+func addToQueue(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
-		fmt.Println(err)
+		errorLog.Println(err)
 		return
 	}
 
-	voiceInst := &(sMap.Server[guild.ID].VoiceInst)
-	voiceInst.Done = make(chan error)
+	srvr := sMap.Server[guild.ID]
+	srvr.VoiceInst.Done = make(chan error)
 
-	vid, err := ytdl.GetVideoInfo(msglist[0])
+	// TODO error messages boolean logic end of func
+	for _, vs := range guild.VoiceStates {
+		if vs.UserID == m.Author.ID {
+			if (vs.ChannelID == srvr.VoiceInst.ChannelID) || !srvr.VoiceInst.Playing {
+				vc, err := s.ChannelVoiceJoin(guild.ID, vs.ChannelID, false, true)
+				if err != nil {
+					errorLog.Println(err)
+					return
+				}
+
+				srvr.VoiceInst.Queue = append(srvr.VoiceInst.Queue, song{
+					URL: msglist[0],
+				})
+
+				vid, err := ytdl.GetVideoInfo(srvr.VoiceInst.Queue[0].URL)
+				if err != nil {
+					errorLog.Println("1", err)
+					return
+				}
+				
+				s.ChannelMessageSend(m.ChannelID, "Added "+vid.Title+" to the queue!")
+
+				if !srvr.VoiceInst.Playing {
+					go play(s, m, sMap.Server[guild.ID], vc)
+				}
+				return				
+			}
+
+			if vs.ChannelID != srvr.VoiceInst.ChannelID {
+				s.ChannelMessageSend(m.ChannelID, "Already playing in a different voice channel :(")				
+			}
+		}
+	}
+
+	s.ChannelMessageSend(m.ChannelID, "Need to be in a voice channel!")
+}
+
+func play(s *discordgo.Session, m *discordgo.MessageCreate, srvr *server, vc *discordgo.VoiceConnection) {
+	if len(srvr.VoiceInst.Queue) == 0 {
+		vc.Disconnect()
+		srvr.VoiceInst.ChannelID = ""
+		srvr.VoiceInst.Playing = false
+		s.ChannelMessageSend(m.ChannelID, "🔇 Done queue!")
+		return
+	}
+
+	vid, err := ytdl.GetVideoInfo(srvr.VoiceInst.Queue[0].URL)
 	if err != nil {
-	  fmt.Println(err)
-	  return
+		errorLog.Println("1", err)
+		return
 	}
 
 	format := vid.Formats.Extremes(ytdl.FormatAudioBitrateKey, true)[0]
 	videoURL, err := vid.GetDownloadURL(format)
 	if err != nil {
-		fmt.Println(err)
+		errorLog.Println("2", err)
 		return
 	}
 
@@ -48,62 +91,42 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	options.RawOutput = true
 	options.Bitrate = 96
 	options.Application = "lowdelay"
+	options.Volume = 200
 
-	for _, vs := range guild.VoiceStates {
-		if vs.UserID == m.Author.ID {
-			vc, err := s.ChannelVoiceJoin(guild.ID, vs.ChannelID, false, true)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			defer vc.Disconnect()
-
-			encSesh, err := dca.EncodeFile(videoURL.String(), options)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			defer encSesh.Cleanup()
-			
-			dca.NewStream(encSesh, vc, voiceInst.Done)
-			for {
-				select {
-					case err := <- voiceInst.Done:
-						if err != nil && err != io.EOF && err.Error() != "stop" {
-							fmt.Println(err)
-						}
-						encSesh.Cleanup()
-						vc.Disconnect()
-						return
-				}
-			}
-		}
+	encSesh, err := dca.EncodeFile(videoURL.String(), options)
+	if err != nil {
+		errorLog.Println("3", err)
+		return
 	}
+	defer encSesh.Cleanup()
+
+	dca.NewStream(encSesh, vc, srvr.VoiceInst.Done)
+	s.ChannelMessageSend(m.ChannelID, "🔊 Playing: "+vid.Title)
+
+	srvr.VoiceInst.Playing = true
+	srvr.VoiceInst.ChannelID = vc.ChannelID
+
+	for {
+		err = <-srvr.VoiceInst.Done
+		if err != nil && err != io.EOF && err.Error() != "stop" {
+			errorLog.Println("Music stream error", err)
+		}
+		break
+	}
+
+	srvr.VoiceInst.Queue = srvr.VoiceInst.Queue[1:]
+	go play(s, m, srvr, vc)
+
+	return
 }
 
 func stop(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
-		fmt.Println(err)
+		errorLog.Println("Guild details error", err)
 		return
 	}
 
 	voiceInst := &(sMap.Server[guild.ID].VoiceInst)
 	voiceInst.Done <- errors.New("stop")
-}
-
-func playlist(s  *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	guild, err := guildDetails(m.ChannelID, s)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	switch msglist[0]{
-		case "create":
-			sMap.Server[guild.ID].Playlists[msglist[1]] = []song{}
-			s.ChannelMessageSend(m.ChannelID, "Created playlist "+msglist[1])
-			return
-			
-	}
 }

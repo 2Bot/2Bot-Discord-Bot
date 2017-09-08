@@ -1,6 +1,9 @@
 package main
 
-import "github.com/bwmarrin/discordgo"
+import (
+	"github.com/bwmarrin/discordgo"
+	"time"
+)
 
 type ibStruct struct {
 	Path   string `json:"path"`
@@ -18,6 +21,7 @@ type rule34 struct {
 type config struct {
 	Game   string `json:"game"`
 	Prefix string `json:"prefix"`
+	Token  string `json:"token"`
 
 	InDev bool `json:"indev"`
 
@@ -43,16 +47,22 @@ type server struct {
 
 	VoiceInst struct {
 		ChannelID string
+
 		Queue []song
+
+		Playing bool
+
 		Done chan error
-	}
+	} `json:"-"`
 
 	Playlists map[string][]song `json:"playlists"`
 }
 
 type song struct {
-	DownloadURL string `json:"url"`
-	Name        string `json:"name"`
+	URL  string `json:"url"`
+	Name string `json:"name"`
+
+	Duration time.Duration `json:"duration"`
 }
 
 type imageQueue struct {
