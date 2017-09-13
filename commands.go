@@ -74,10 +74,12 @@ var (
 	inviteLink = command{"invite",
 		"Args: none\n\nSends an invite link for 2Bot!\n\nExample:\n`!owo invite`",
 		false, false, msgInvite}.add()
+	helpComm = command{"help",
+		"", false, false, msgHelp}.add()
 	musicComm = command{"yt", "",
-		false, false, msgYoutube}.add()
+		false, false, msgYoutube}
 	playlistComm = command{"playlist", "",
-		false, false, msgPlaylist}.add()
+		false, false, msgPlaylist}
 )
 
 //Small wrapper function to reduce clutter
@@ -85,53 +87,37 @@ func l(s string) (r string) {
 	return strings.ToLower(s)
 }
 
-func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, command string, msgList []string) {
+func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, command string, msglist []string) {
 	command = strings.ToLower(strings.TrimSuffix(command, " "))
 
-	submatch := emojiRegex.FindStringSubmatch(msgList[0])
+	submatch := emojiRegex.FindStringSubmatch(msglist[0])
 	if len(submatch) > 0 {
-		bigMoji.Exec(s, m, msgList)
-		return
-	}
-
-	if command == "help" {
-		if len(msgList) == 2 {
-			if val, ok := commMap[l(msgList[1])]; ok {
-				val.helpCommand(s, m)
-				return
-			}
-		}
-
-		var commands []string
-		for _, val := range commMap {
-			if !val.NoahOnly {
-				commands = append(commands, "`"+val.Name+"`")
-			}
-		}
-
-		prefix := c.Prefix
-		if guild, err := guildDetails(m.ChannelID, s); err != nil {
-			prefix = sMap.Server[guild.ID].Prefix
-		}
-
-		s.ChannelMessageSend(m.ChannelID, strings.Join(commands, ", ")+
-			"\n\nUse `"+prefix+"help [command]` for detailed info about a command.")
+		bigMoji.Exec(s, m, msglist)
 		return
 	}
 
 	if command == strings.ToLower(commMap[command].Name) {
-		commMap[command].Exec(s, m, msgList)
+		commMap[command].Exec(s, m, msglist)
 		return
 	}
 
 	//if data passed as command isnt a valid command,
 	//check if its an emoji
-	bigMoji.Exec(s, m, msgList)
+	bigMoji.Exec(s, m, msglist)
 	return
 }
 
 func (c command) helpCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
-	s.ChannelMessageSend(m.ChannelID, c.Help)
+	s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
+		Color: 0,
+
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Name:  c.Name,
+				Value: c.Help,
+			},
+		},
+	})
 	return
 }
 

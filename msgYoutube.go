@@ -40,23 +40,22 @@ func addToQueue(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 				srvr.VoiceInst.Queue = append(srvr.VoiceInst.Queue, song{
 					URL: msglist[0],
 				})
-
 				vid, err := ytdl.GetVideoInfo(srvr.VoiceInst.Queue[0].URL)
 				if err != nil {
 					errorLog.Println("1", err)
 					return
 				}
-				
+
 				s.ChannelMessageSend(m.ChannelID, "Added "+vid.Title+" to the queue!")
 
 				if !srvr.VoiceInst.Playing {
 					go play(s, m, sMap.Server[guild.ID], vc)
 				}
-				return				
+				return
 			}
 
 			if vs.ChannelID != srvr.VoiceInst.ChannelID {
-				s.ChannelMessageSend(m.ChannelID, "Already playing in a different voice channel :(")				
+				s.ChannelMessageSend(m.ChannelID, "Already playing in a different voice channel :(")
 			}
 		}
 	}

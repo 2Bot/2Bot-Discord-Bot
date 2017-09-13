@@ -39,6 +39,35 @@ func msgSetGame(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	return
 }
 
+func msgHelp(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
+	if len(msglist) == 2 {
+		if val, ok := commMap[l(msglist[1])]; ok {
+			val.helpCommand(s, m)
+			return
+		}
+	}
+
+	var commands []string
+	for _, val := range commMap {
+		if !val.NoahOnly {
+			commands = append(commands, "`"+val.Name+"`")
+		}
+	}
+
+	prefix := c.Prefix
+	if guild, err := guildDetails(m.ChannelID, s); err != nil {
+		prefix = sMap.Server[guild.ID].Prefix
+	}
+
+	s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
+		Color: 0,
+
+		Fields: []*discordgo.MessageEmbedField{
+			{Name: "2Bot help", Value: strings.Join(commands, ", ")+"\n\nUse `"+prefix+"help [command]` for detailed info about a command."},
+		},
+	})
+}
+
 func msgInfo(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
 	ct1, _ := getCreationTime(s.State.User.ID)
 	creationTime := ct1.Format(time.UnixDate)[:10]
