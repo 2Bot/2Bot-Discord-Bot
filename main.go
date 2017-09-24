@@ -26,14 +26,13 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/signal"
 	"regexp"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/gorilla/mux"
 )
 
 const (
@@ -42,6 +41,7 @@ const (
 	reviewChan string = "334092230845267988"
 	noah       string = "149612775587446784"
 	logChan    string = "312352242504040448"
+	serverID   string = "312292616089894924"
 )
 
 var (
@@ -49,6 +49,7 @@ var (
 	u            = &users{}
 	q            = &imageQueue{}
 	sMap         = &servers{}
+	dg			 *discordgo.Session
 	errorLog     *log.Logger
 	infoLog      *log.Logger
 	logF         *os.File
@@ -84,7 +85,8 @@ func main() {
 	defer cleanup()
 
 	// Create a new Discord session using the provided bot token.
-	dg, err := discordgo.New("Bot " + c.Token)
+	var err error
+	dg, err = discordgo.New("Bot " + c.Token)
 	if err != nil {
 		fmt.Println("Error creating Discord session,", err)
 		return
@@ -116,11 +118,14 @@ func main() {
 	fmt.Fprintln(logF, "")
 	infoLog.Println(`/*********BOT RESTARTED*********\`)
 
+	router := mux.NewRouter().StrictSlash(true)
+
+	router.HandleFunc("/image/{id}", httpImage)
+	router.HandleFunc("/inServer", isInServer).Methods("GET")
+
 	// Wait here until CTRL-C or other term signal is received.
 	fmt.Println("Bot is now running. Press CTRL-C to exit.")
-	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
-	<-sc
+	errorLog.Println(http.ListenAndServe("strum355.netsoc.co:8042", router))
 }
 
 func cleanup() {

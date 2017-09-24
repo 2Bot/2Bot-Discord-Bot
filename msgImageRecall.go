@@ -50,18 +50,38 @@ func msgImageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []
 	}
 }
 
-func fimageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
+func httpImage(w http.ResponseWriter, r *http.Request) {
+	fmt.Println(strings.Split(r.URL.Path, "/")[2])
+	id := r.Header.Get("id")
+
+/* 	name := r.Header.Get("name")
+	var filename string
+
+	if val, ok := u.User[id]; ok {
+		if isInMap(name, val.Images) {
+			filename = val.Images[name]
+		} else {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+	} else {
+
+		return
+	} */
+}
+
+func fimageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) string {
 	var filename string
 	if val, ok := u.User[m.Author.ID]; ok {
 		if isInMap(strings.Join(msglist, " "), val.Images) {
 			filename = val.Images[strings.Join(msglist, " ")]
 		} else {
 			s.ChannelMessageSend(m.ChannelID, "You dont have an image under that name saved with me <:2BThink:333694872802426880>")
-			return
+			return ""
 		}
 	} else {
 		s.ChannelMessageSend(m.ChannelID, "You've no saved images! Get storin'!")
-		return
+		return ""
 	}
 
 	imgURL := "http://noahsc.xyz/2Bot/images/" + url.PathEscape(filename)
@@ -70,11 +90,11 @@ func fimageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 	if err != nil {
 		errorLog.Println("Error recalling image", err.Error())
 		s.ChannelMessageSend(m.ChannelID, "Error getting the image :( Please pester Strum355#1180 about this")
-		return
+		return ""
 	} else if resp.StatusCode != http.StatusOK {
 		errorLog.Println("Non 200 status code " + imgURL)
 		s.ChannelMessageSend(m.ChannelID, "Error getting the image :( Please pester Strum355#1180 about this")
-		return
+		return ""
 	}
 
 	s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
@@ -86,6 +106,8 @@ func fimageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 			URL: imgURL,
 		},
 	})
+
+	return imgURL
 }
 
 func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
@@ -480,23 +502,25 @@ func fimageInfo(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 			float32(val.DiskQuota)/1000,
 			float32(val.DiskQuota-(val.QueueSize+val.CurrDiskUsed))/1000/1000,
 			float32(val.DiskQuota-(val.QueueSize+val.CurrDiskUsed))/1000))
-	} else {
-		//If function has been called recursively but
-		//u.User[m.Author.ID] doesnt exist yet,
-		//something went wrong, so abort
-		if called {
+
 			return
-		}
-
-		u.User[m.Author.ID] = &user{
-			Images:     map[string]string{},
-			TempImages: []string{},
-			DiskQuota:  8000000,
-			QueueSize:  0,
-		}
-
-		saveUsers()
-
-		fimageInfo(s, m, msglist, true)
 	}
+
+	//If function has been called recursively but
+	//u.User[m.Author.ID] doesnt exist yet,
+	//something went wrong, so abort
+	if called {
+		return
+	}
+
+	u.User[m.Author.ID] = &user{
+		Images:     map[string]string{},
+		TempImages: []string{},
+		DiskQuota:  8000000,
+		QueueSize:  0,
+	}
+
+	saveUsers()
+
+	fimageInfo(s, m, msglist, true)
 }

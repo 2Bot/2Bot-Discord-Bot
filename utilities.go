@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"net/http"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -108,4 +109,22 @@ func guildDetails(channelID string, s *discordgo.Session) (*discordgo.Guild, err
 		return nil, err
 	}
 	return guildDetails, nil
+}
+
+func isInServer(w http.ResponseWriter, r *http.Request) {
+	authorID := r.FormValue("id")
+	guild, err := guildDetails(serverID, dg)
+	if err != nil {
+
+		return
+	}
+
+	for _, member := range guild.Members {
+		if member.User.ID == authorID {
+			w.Header().Add("exists", "true")
+			return
+		}
+	}
+
+	w.Header().Add("exists", "false")
 }
