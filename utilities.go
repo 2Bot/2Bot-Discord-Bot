@@ -83,15 +83,6 @@ func isIn(a string, list []string) bool {
 	return false
 }
 
-func isInMap(a string, aMap map[string]string) bool {
-	for key := range aMap {
-		if a == key {
-			return true
-		}
-	}
-	return false
-}
-
 func trimSlice(s []string) (ret []string) {
 	for _, i := range s {
 		ret = append(ret, strings.TrimSpace(i))

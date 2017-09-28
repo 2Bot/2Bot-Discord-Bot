@@ -72,7 +72,7 @@ func main() {
 	log.SetOutput(logF)
 
 	infoLog = log.New(logF, "INFO:  ", log.Ldate|log.Ltime)
-	errorLog = log.New(os.Stdout, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
+	errorLog = log.New(logF, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
 	if c.InDev {
 		errorLog = log.New(os.Stdout, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
 	}
@@ -115,17 +115,17 @@ func main() {
 		dg.AddHandler(joined)
 	}
 
-	fmt.Fprintln(logF, "")
-	infoLog.Println(`/*********BOT RESTARTED*********\`)
+	infoLog.Println("\n/*********BOT RESTARTED*********\\")
 
 	router := mux.NewRouter().StrictSlash(true)
-
-	router.HandleFunc("/image/{id}", httpImage)
-	router.HandleFunc("/inServer", isInServer).Methods("GET")
+	subrouter := router.Host("strum355.netsoc.co").Subrouter()
+	
+	subrouter.HandleFunc("/image/{id:[0-9]{18}}/recall/{img:[0-9a-z]{64}}", httpImageRecall)
+	subrouter.HandleFunc("/inServer", isInServer).Methods("GET")
 
 	// Wait here until CTRL-C or other term signal is received.
 	fmt.Println("Bot is now running. Press CTRL-C to exit.")
-	errorLog.Println(http.ListenAndServe("strum355.netsoc.co:8042", router))
+	errorLog.Println(http.ListenAndServe(":8042", router))
 }
 
 func cleanup() {

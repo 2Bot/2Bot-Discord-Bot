@@ -69,14 +69,8 @@ func msgRule34(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 		s.ChannelMessageSend(m.ChannelID, "No results ¯\\_(ツ)_/¯")
 	} else {
 		url = r34.Posts[randRange(0, len(r34.Posts)-1)].URL
-		resp, err := http.Get(url)
-		if err != nil {
-			errorLog.Println("R34 image response err:", err.Error())
-			return
-		}
-		defer resp.Body.Close()
 
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s searched for `%s` \n%s", m.Author.Username, strings.Replace(query, "+", " ", -1), url))
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s searched for `%s` \n%s", m.Author.Username, strings.Replace(query, "+", " ", -1), "https:"+url))
 	}
 
 	return

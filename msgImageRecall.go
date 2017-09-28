@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/gorilla/mux"
 	"net/http"
 	"os"
 	"strings"
@@ -8,7 +9,7 @@ import (
 	"github.com/Strum355/dgwidgets"
 	"github.com/bwmarrin/discordgo"
 
-	"crypto/sha256"
+	"golang.org/x/crypto/blake2b"
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
@@ -50,31 +51,32 @@ func msgImageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []
 	}
 }
 
-func httpImage(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(strings.Split(r.URL.Path, "/")[2])
-	id := r.Header.Get("id")
+func httpImageRecall(w http.ResponseWriter, r *http.Request) {
+	// 404 for user not found, 410 for image not found
+	defer r.Body.Close()
 
-/* 	name := r.Header.Get("name")
-	var filename string
-
-	if val, ok := u.User[id]; ok {
-		if isInMap(name, val.Images) {
-			filename = val.Images[name]
-		} else {
-			w.WriteHeader(http.StatusNotFound)
-			return
+	vars := mux.Vars(r)
+	fmt.Println(vars)
+	if val, ok := u.User[vars["id"]]; ok {
+		for _, val := range val.Images {
+			if strings.HasPrefix(val, vars["img"]) {
+				w.WriteHeader(http.StatusOK)
+				fmt.Fprint(w, val)
+				return		
+			}
 		}
-	} else {
-
+		w.WriteHeader(http.StatusGone)
 		return
-	} */
+	}
+	
+	w.WriteHeader(http.StatusNotFound)
 }
 
 func fimageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) string {
 	var filename string
 	if val, ok := u.User[m.Author.ID]; ok {
-		if isInMap(strings.Join(msglist, " "), val.Images) {
-			filename = val.Images[strings.Join(msglist, " ")]
+		if val, ok := val.Images[strings.Join(msglist, " ")]; ok {
+			filename = val
 		} else {
 			s.ChannelMessageSend(m.ChannelID, "You dont have an image under that name saved with me <:2BThink:333694872802426880>")
 			return ""
@@ -132,18 +134,13 @@ func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	}
 
 	imgName := strings.Join(msglist, " ")
-	/* 	isIllegalFileName := strings.ContainsAny(imgName, `#/"<>#%{}|\^~[];?:@=&`)
-
-	   	if isIllegalFileName {
-	   		s.ChannelMessageSend(m.ChannelID, `I can't use that as a file name <:2BThink:333694872802426880> Please dont include any of the following in the file name: #/"<>#%{}|\^~[];?:@=&`)
-	   		return
-	   	} */
 
 	prefixedImgName := m.Author.ID + "_" + imgName
+	hash := blake2b.Sum256([]byte(prefixedImgName))
+	
 	fileExtension := strings.ToLower(path.Ext(m.Attachments[0].URL))
-	hash := sha256.Sum256([]byte(prefixedImgName))
 	imgFileName := hex.EncodeToString(hash[:]) + fileExtension
-
+	fmt.Println(imgFileName )
 	if _, ok := u.User[m.Author.ID]; !ok {
 		u.User[m.Author.ID] = &user{
 			Images:     map[string]string{},
@@ -155,8 +152,9 @@ func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 
 	currUser := u.User[m.Author.ID]
 
+	_, ok := currUser.Images[imgName];
 	//if named image is in queue or already saved, abort
-	if isIn(imgName, currUser.TempImages) || isInMap(imgName, currUser.Images) {
+	if isIn(imgName, currUser.TempImages) || ok {
 		s.ChannelMessageSend(m.ChannelID, "You've already saved an image under that name! Delete it first~")
 		return
 	}
@@ -276,7 +274,7 @@ func fimageReview(s *discordgo.Session, queue *imageQueue, currentImageNumber in
 	fileSize := imgInQueue.FileSize
 	prefixedImgName := imgInQueue.AuthorID + "_" + imgInQueue.ImageName
 	fileExtension := strings.ToLower(path.Ext(imgInQueue.ImageURL))
-	hash := sha256.Sum256([]byte(prefixedImgName))
+	hash := blake2b.Sum256([]byte(prefixedImgName))
 	imgFileName := hex.EncodeToString(hash[:]) + fileExtension
 	tempFilepath := "../../public_html/2Bot/images/temp/" + imgFileName
 	currUser := u.User[imgInQueue.AuthorID]
@@ -399,8 +397,8 @@ func fimageReview(s *discordgo.Session, queue *imageQueue, currentImageNumber in
 func fimageDelete(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	var filename string
 	if val, ok := u.User[m.Author.ID]; ok {
-		if isInMap(strings.Join(msglist, " "), val.Images) {
-			filename = val.Images[strings.Join(msglist, " ")]
+		if val, ok := val.Images[strings.Join(msglist, " ")]; ok {
+			filename = val
 		} else {
 			s.ChannelMessageSend(m.ChannelID, "You dont have an image under that name saved with me <:2BThink:333694872802426880>")
 			return
