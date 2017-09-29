@@ -22,6 +22,7 @@ type config struct {
 	Game   string `json:"game"`
 	Prefix string `json:"prefix"`
 	Token  string `json:"token"`
+	Port   string `json:"port"`
 
 	InDev bool `json:"indev"`
 

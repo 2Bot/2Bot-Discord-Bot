@@ -6,12 +6,12 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Strum355/dgwidgets"
+	"github.com/Necroforger/dgwidgets"
 	"github.com/bwmarrin/discordgo"
 
-	"golang.org/x/crypto/blake2b"
 	"encoding/hex"
 	"fmt"
+	"golang.org/x/crypto/blake2b"
 	"io/ioutil"
 	"net/url"
 	"path"
@@ -61,14 +61,14 @@ func httpImageRecall(w http.ResponseWriter, r *http.Request) {
 		for _, val := range val.Images {
 			if strings.HasPrefix(val, vars["img"]) {
 				w.WriteHeader(http.StatusOK)
-				fmt.Fprint(w, val)
-				return		
+				fmt.Fprint(w, "http://noahsc.xyz/2Bot/images/"+val)
+				return
 			}
 		}
 		w.WriteHeader(http.StatusGone)
 		return
 	}
-	
+
 	w.WriteHeader(http.StatusNotFound)
 }
 
@@ -134,13 +134,12 @@ func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	}
 
 	imgName := strings.Join(msglist, " ")
-
 	prefixedImgName := m.Author.ID + "_" + imgName
 	hash := blake2b.Sum256([]byte(prefixedImgName))
-	
+
 	fileExtension := strings.ToLower(path.Ext(m.Attachments[0].URL))
 	imgFileName := hex.EncodeToString(hash[:]) + fileExtension
-	fmt.Println(imgFileName )
+
 	if _, ok := u.User[m.Author.ID]; !ok {
 		u.User[m.Author.ID] = &user{
 			Images:     map[string]string{},
@@ -152,7 +151,7 @@ func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 
 	currUser := u.User[m.Author.ID]
 
-	_, ok := currUser.Images[imgName];
+	_, ok := currUser.Images[imgName]
 	//if named image is in queue or already saved, abort
 	if isIn(imgName, currUser.TempImages) || ok {
 		s.ChannelMessageSend(m.ChannelID, "You've already saved an image under that name! Delete it first~")
@@ -273,8 +272,9 @@ func fimageReview(s *discordgo.Session, queue *imageQueue, currentImageNumber in
 
 	fileSize := imgInQueue.FileSize
 	prefixedImgName := imgInQueue.AuthorID + "_" + imgInQueue.ImageName
-	fileExtension := strings.ToLower(path.Ext(imgInQueue.ImageURL))
 	hash := blake2b.Sum256([]byte(prefixedImgName))
+
+	fileExtension := strings.ToLower(path.Ext(imgInQueue.ImageURL))
 	imgFileName := hex.EncodeToString(hash[:]) + fileExtension
 	tempFilepath := "../../public_html/2Bot/images/temp/" + imgFileName
 	currUser := u.User[imgInQueue.AuthorID]
@@ -459,12 +459,10 @@ func fimageList(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 		}
 
 		p.SetPageFooters()
-
-		p.ColourWhenDone = 0xff0000
 		p.Loop = true
-		p.DeleteReactionsWhenDone = true
-
+		p.ColourWhenDone = 0xff0000
 		p.Widget.Timeout = time.Minute * 5
+		p.DeleteReactionsWhenDone = true
 
 		err := p.Spawn()
 		if err != nil {
@@ -501,7 +499,7 @@ func fimageInfo(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 			float32(val.DiskQuota-(val.QueueSize+val.CurrDiskUsed))/1000/1000,
 			float32(val.DiskQuota-(val.QueueSize+val.CurrDiskUsed))/1000))
 
-			return
+		return
 	}
 
 	//If function has been called recursively but

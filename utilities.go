@@ -2,10 +2,10 @@ package main
 
 import (
 	"math/rand"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
-	"net/http"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -106,16 +106,16 @@ func isInServer(w http.ResponseWriter, r *http.Request) {
 	authorID := r.FormValue("id")
 	guild, err := guildDetails(serverID, dg)
 	if err != nil {
-
+		errorLog.Println(err)
 		return
 	}
 
 	for _, member := range guild.Members {
 		if member.User.ID == authorID {
-			w.Header().Add("exists", "true")
+			w.WriteHeader(http.StatusOK)
 			return
 		}
 	}
 
-	w.Header().Add("exists", "false")
+	w.WriteHeader(http.StatusNotFound)
 }

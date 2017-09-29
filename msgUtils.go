@@ -63,7 +63,7 @@ func msgHelp(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string)
 		Color: 0,
 
 		Fields: []*discordgo.MessageEmbedField{
-			{Name: "2Bot help", Value: strings.Join(commands, ", ")+"\n\nUse `"+prefix+"help [command]` for detailed info about a command."},
+			{Name: "2Bot help", Value: strings.Join(commands, ", ") + "\n\nUse `" + prefix + "help [command]` for detailed info about a command."},
 		},
 	})
 }

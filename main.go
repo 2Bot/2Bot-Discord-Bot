@@ -49,7 +49,7 @@ var (
 	u            = &users{}
 	q            = &imageQueue{}
 	sMap         = &servers{}
-	dg			 *discordgo.Session
+	dg           *discordgo.Session
 	errorLog     *log.Logger
 	infoLog      *log.Logger
 	logF         *os.File
@@ -118,14 +118,13 @@ func main() {
 	infoLog.Println("\n/*********BOT RESTARTED*********\\")
 
 	router := mux.NewRouter().StrictSlash(true)
-	subrouter := router.Host("strum355.netsoc.co").Subrouter()
-	
-	subrouter.HandleFunc("/image/{id:[0-9]{18}}/recall/{img:[0-9a-z]{64}}", httpImageRecall)
-	subrouter.HandleFunc("/inServer", isInServer).Methods("GET")
+
+	router.HandleFunc("/image/{id:[0-9]{18}}/recall/{img:[0-9a-z]{64}}", httpImageRecall)
+	router.HandleFunc("/inServer", isInServer).Methods("GET")
 
 	// Wait here until CTRL-C or other term signal is received.
 	fmt.Println("Bot is now running. Press CTRL-C to exit.")
-	errorLog.Println(http.ListenAndServe(":8042", router))
+	errorLog.Println(http.ListenAndServe("0.0.0.0"+c.Port, router))
 }
 
 func cleanup() {
