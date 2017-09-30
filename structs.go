@@ -1,8 +1,10 @@
 package main
 
 import (
-	"github.com/bwmarrin/discordgo"
+	"sync"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 type ibStruct struct {
@@ -55,14 +57,17 @@ type server struct {
 		Playing bool
 
 		Done chan error
+
+		Mutex *sync.Mutex
 	} `json:"-"`
 
 	Playlists map[string][]song `json:"playlists"`
 }
 
 type song struct {
-	URL  string `json:"url"`
-	Name string `json:"name"`
+	URL   string `json:"url"`
+	Name  string `json:"name"`
+	Image string `json:"image"`
 
 	Duration time.Duration `json:"duration"`
 }

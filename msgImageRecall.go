@@ -1,22 +1,24 @@
 package main
 
 import (
-	"github.com/gorilla/mux"
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/gorilla/mux"
 
 	"github.com/Necroforger/dgwidgets"
 	"github.com/bwmarrin/discordgo"
 
 	"encoding/hex"
 	"fmt"
-	"golang.org/x/crypto/blake2b"
 	"io/ioutil"
 	"net/url"
 	"path"
 	"strconv"
 	"time"
+
+	"golang.org/x/crypto/blake2b"
 )
 
 func msgImageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {

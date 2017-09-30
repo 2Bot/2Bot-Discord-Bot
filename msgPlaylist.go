@@ -1,9 +1,10 @@
 package main
 
 import (
+	"strconv"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/rylio/ytdl"
-	"strconv"
 )
 
 func msgPlaylist(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
