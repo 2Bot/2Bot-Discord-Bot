@@ -29,6 +29,7 @@ type config struct {
 	DiscordPWKey string `json:"discord.pw_key"`
 
 	CurrImg int `json:"curr_img_id"`
+	MaxProc int `json:"maxproc"`
 }
 
 type servers struct {

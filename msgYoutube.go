@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"errors"
 	"github.com/bwmarrin/discordgo"
 	"github.com/jonas747/dca"
@@ -25,7 +26,9 @@ func addToQueue(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	}
 
 	srvr := sMap.Server[guild.ID]
-	srvr.VoiceInst.Done = make(chan error)
+	if srvr.VoiceInst.Done == nil {
+		srvr.VoiceInst.Done = make(chan error)
+	}
 
 	// TODO error messages boolean logic end of func
 	for _, vs := range guild.VoiceStates {
@@ -36,7 +39,9 @@ func addToQueue(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 					errorLog.Println(err)
 					return
 				}
-
+				if !strings.HasPrefix(msglist[0], "https://www.youtube.com/watch?v") {
+					s.ChannelMessageSend(m.ChannelID, "Please make sure the URL starts with `https://www.youtube.com/watch?v`")
+				}
 				srvr.VoiceInst.Queue = append(srvr.VoiceInst.Queue, song{
 					URL: msglist[0],
 				})
@@ -87,9 +92,10 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate, srvr *server, vc *di
 
 	options := dca.StdEncodeOptions
 	options.RawOutput = true
-	options.Bitrate = 96
+	options.Bitrate = 64
 	options.Application = "lowdelay"
 	options.Volume = 200
+	options.Threads = 4
 
 	encSesh, err := dca.EncodeFile(videoURL.String(), options)
 	if err != nil {

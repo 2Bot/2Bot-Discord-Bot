@@ -76,8 +76,11 @@ var (
 		false, false, msgInvite}.add()
 	helpComm = command{"help",
 		"", false, false, msgHelp}.add()
-	musicComm = command{"yt", "",
-		false, false, msgYoutube}
+	musicComm = command{"yt", 
+		"Args: [play,stop] [url]\n\nWork In Progress!!! Play music from Youtube straight to your Discord Server!\n\n"+
+		"Example 1: `!owo yt play https://www.youtube.com/watch?v=MvLdxtICOIY`\n"+
+		"Example 2: `!owo yt stop`",
+		false, false, msgYoutube}.add()
 	playlistComm = command{"playlist", "",
 		false, false, msgPlaylist}
 )

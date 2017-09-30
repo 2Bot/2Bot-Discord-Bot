@@ -56,7 +56,6 @@ func httpImageRecall(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	vars := mux.Vars(r)
-	fmt.Println(vars)
 	if val, ok := u.User[vars["id"]]; ok {
 		for _, val := range val.Images {
 			if strings.HasPrefix(val, vars["img"]) {

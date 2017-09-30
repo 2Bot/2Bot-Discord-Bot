@@ -26,9 +26,12 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -65,6 +68,7 @@ var (
 
 func main() {
 	lastReboot = time.Now().Format(time.RFC1123)[:22]
+	runtime.GOMAXPROCS(c.MaxProc)
 
 	loadLog()
 	defer logF.Close()
@@ -115,8 +119,10 @@ func main() {
 		dg.AddHandler(joined)
 	}
 
-	infoLog.Println("\n/*********BOT RESTARTED*********\\")
+	fmt.Fprintln(logF, "/*********BOT RESTARTED*********\\")
+	errorLog.Println("error test")
 
+	// Setup http server for selfbots
 	router := mux.NewRouter().StrictSlash(true)
 
 	router.HandleFunc("/image/{id:[0-9]{18}}/recall/{img:[0-9a-z]{64}}", httpImageRecall)
@@ -124,7 +130,10 @@ func main() {
 
 	// Wait here until CTRL-C or other term signal is received.
 	fmt.Println("Bot is now running. Press CTRL-C to exit.")
-	errorLog.Println(http.ListenAndServe("0.0.0.0"+c.Port, router))
+	go errorLog.Println(http.ListenAndServe("0.0.0.0"+c.Port, router))
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
+	<-sc
 }
 
 func cleanup() {
