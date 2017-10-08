@@ -10,3 +10,4 @@ install:
   - go get github.com/Necroforger/dgwidgets
   - go get github.com/jonas747/dca
   - go get github.com/rylio/ytdl
+  - go get github.com/gorilla/mux

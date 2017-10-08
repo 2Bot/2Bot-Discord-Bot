@@ -7,10 +7,10 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/Necroforger/dgwidgets"
 	"github.com/bwmarrin/discordgo"
 	"github.com/jonas747/dca"
 	"github.com/rylio/ytdl"
-	"github.com/Necroforger/dgwidgets"
 )
 
 func msgYoutube(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
@@ -47,12 +47,11 @@ func queue(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}(),
 	})
 
-	
 	for _, song := range val.VoiceInst.Queue {
 		p.Add(&discordgo.MessageEmbed{
 			Title: fmt.Sprintf("Title: %s\nDuration: %s", song.Name, song.Duration),
 
-			Image: &discordgo.MessageEmbedImage {
+			Image: &discordgo.MessageEmbedImage{
 				URL: song.Image,
 			},
 		})
@@ -109,14 +108,14 @@ func addToQueue(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 					srvr.VoiceInst.Mutex.Unlock()
 					return
 				}
-				
+
 				srvr.VoiceInst.Queue = append(srvr.VoiceInst.Queue, song{
 					URL:      msglist[0],
 					Name:     vid.Title,
 					Duration: vid.Duration,
-					Image: vid.GetThumbnailURL(ytdl.ThumbnailQualityMedium).String(),
+					Image:    vid.GetThumbnailURL(ytdl.ThumbnailQualityMedium).String(),
 				})
-				
+
 				s.ChannelMessageSend(m.ChannelID, "Added "+vid.Title+" to the queue!")
 
 				if !srvr.VoiceInst.Playing {
@@ -194,8 +193,8 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate, srvr *server, vc *di
 			srvr.VoiceInst.Mutex.Lock()
 			srvr.VoiceInst.Playing = false
 			srvr.VoiceInst.Queue = []song{}
-			srvr.VoiceInst.ChannelID = ""	
-			srvr.VoiceInst.Mutex.Unlock()			
+			srvr.VoiceInst.ChannelID = ""
+			srvr.VoiceInst.Mutex.Unlock()
 			s.ChannelMessageSend(m.ChannelID, "🔇 Stopped")
 			return
 		}
