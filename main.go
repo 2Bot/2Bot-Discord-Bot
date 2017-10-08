@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -199,21 +198,30 @@ func setInitialGame(s *discordgo.Session) {
 	return
 }
 
-func loadConfig() error {
-	file, err := ioutil.ReadFile("config.json")
+func saveJSON(path string, data interface{}) error {
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
-		errorLog.Println("Config open err", err)
 		return err
 	}
 
-	if len(file) < 1 {
-		infoLog.Println("config.json is empty")
-		return errEmptyFile
+	enc := json.NewEncoder(f)
+	enc.SetIndent("", "  ")
+	return enc.Encode(data)
+}
+
+func loadJSON(path string, v interface{}) error {
+	f, err := os.OpenFile(path, os.O_RDONLY, 0600)
+	if err != nil {
+		return err
 	}
 
-	err = json.Unmarshal(file, c)
+	return json.NewDecoder(f).Decode(v)
+}
+
+func loadConfig() error {
+	err := loadJSON("config.json", c)
 	if err != nil {
-		errorLog.Println("Config unmarshal err", err)
+		errorLog.Println("Error loading config: ", err)
 		return err
 	}
 
@@ -221,35 +229,18 @@ func loadConfig() error {
 }
 
 func saveConfig() {
-	out, err := json.MarshalIndent(c, "", "  ")
+	err := saveJSON("config.json", c)
 	if err != nil {
-		errorLog.Println("Config marshall err:", err)
+		errorLog.Println("Config save error:", err)
 		return
 	}
-
-	err = ioutil.WriteFile("config.json", out, 0600)
-	if err != nil {
-		errorLog.Println("Save config err:", err)
-	}
-	return
 }
 
 func loadServers() error {
 	sMap.Server = make(map[string]*server)
-	file, err := ioutil.ReadFile("servers.json")
+	err := loadJSON("servers.json", sMap)
 	if err != nil {
-		fmt.Println(true, "Servers open err", err)
-		return err
-	}
-
-	if len(file) < 1 {
-		infoLog.Println("servers.json is empty")
-		return errEmptyFile
-	}
-
-	err = json.Unmarshal(file, sMap)
-	if err != nil {
-		errorLog.Println("Servers unmarshal err", err)
+		errorLog.Println("Error loading servers: ", err)
 		return err
 	}
 
@@ -264,92 +255,42 @@ func loadServers() error {
 }
 
 func saveServers() {
-	out, err := json.MarshalIndent(sMap, "", "  ")
+	err := saveJSON("servers.json", sMap)
 	if err != nil {
-		errorLog.Println("Servers marshall err:", err)
-		return
+		errorLog.Println("Save servers err: ", err)
 	}
-
-	err = ioutil.WriteFile("servers.json", out, 0600)
-	if err != nil {
-		errorLog.Println("Save servers err:", err)
-	}
-
-	return
 }
 
 func loadUsers() error {
 	u.User = make(map[string]*user)
-	file, err := ioutil.ReadFile("users.json")
+	err := loadJSON("users.json", u)
 	if err != nil {
-		fmt.Println("Users open err", err)
-		return err
+		errorLog.Println("Error loading users: ", err)
 	}
-
-	if len(file) < 1 {
-		infoLog.Println("users.json is empty")
-		return errEmptyFile
-	}
-
-	err = json.Unmarshal(file, u)
-	if err != nil {
-		errorLog.Println("Users unmarshal err", err)
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func saveUsers() {
-	out, err := json.MarshalIndent(u, "", "  ")
+	err := saveJSON("users.json", u)
 	if err != nil {
-		errorLog.Println("Users marshall err:", err)
-		return
+		errorLog.Println("Save user err: ", err)
 	}
-
-	err = ioutil.WriteFile("users.json", out, 0600)
-	if err != nil {
-		errorLog.Println("Save user err:", err)
-	}
-
-	return
 }
 
 func loadQueue() error {
 	q.QueuedMsgs = make(map[string]*queuedImage)
-
-	file, err := ioutil.ReadFile("queue.json")
+	err := loadJSON("queue.json", q)
 	if err != nil {
-		errorLog.Println("Queue open err", err)
-		return err
+		errorLog.Println("Load queue error: ", err)
 	}
-
-	if len(file) < 1 {
-		infoLog.Println("queue.json is empty")
-		return nil
-	}
-
-	err = json.Unmarshal(file, q)
-	if err != nil {
-		errorLog.Println("Queue unmarshal err", err)
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func saveQueue() {
-	out, err := json.MarshalIndent(q, "", "  ")
+	err := saveJSON("queue.json", q)
 	if err != nil {
-		errorLog.Println("Queue marshall err:", err)
-		return
+		errorLog.Println("Save Queue error: ", err)
 	}
-
-	err = ioutil.WriteFile("queue.json", out, 0600)
-	if err != nil {
-		errorLog.Println("Save queue err:", err)
-	}
-	return
 }
 
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
