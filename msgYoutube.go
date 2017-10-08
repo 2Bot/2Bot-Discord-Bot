@@ -27,7 +27,7 @@ func msgYoutube(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 func queue(s *discordgo.Session, m *discordgo.MessageCreate) {
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
-		fmt.Println(err)
+		errorLog.Println(err)
 		return
 	}
 
@@ -49,16 +49,13 @@ func queue(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	
 	for _, song := range val.VoiceInst.Queue {
-		p.Add(func() (out *discordgo.MessageEmbed) {
-		out = &discordgo.MessageEmbed{
+		p.Add(&discordgo.MessageEmbed{
 			Title: fmt.Sprintf("Title: %s\nDuration: %s", song.Name, song.Duration),
 
 			Image: &discordgo.MessageEmbedImage {
 				URL: song.Image,
 			},
-		}
-		return
-		}())
+		})
 	}
 
 	p.SetPageFooters()
@@ -96,7 +93,6 @@ func addToQueue(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 		return
 	}
 
-	// TODO error messages boolean logic end of func
 	for _, vs := range guild.VoiceStates {
 		if vs.UserID == m.Author.ID {
 			if (vs.ChannelID == srvr.VoiceInst.ChannelID) || !srvr.VoiceInst.Playing {
@@ -113,7 +109,7 @@ func addToQueue(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 					srvr.VoiceInst.Mutex.Unlock()
 					return
 				}
-
+				
 				srvr.VoiceInst.Queue = append(srvr.VoiceInst.Queue, song{
 					URL:      msglist[0],
 					Name:     vid.Title,
@@ -190,8 +186,6 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate, srvr *server, vc *di
 
 	for {
 		err = <-srvr.VoiceInst.Done
-		fmt.Println(err)
-		fmt.Println(encSesh.FFMPEGMessages())
 		if err != nil && err != io.EOF && err.Error() != "stop" {
 			errorLog.Println("Music stream error", err)
 
