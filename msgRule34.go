@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/xml"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -52,13 +51,7 @@ func msgRule34(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 	}
 	defer page.Body.Close()
 
-	body, err := ioutil.ReadAll(page.Body)
-	if err != nil {
-		errorLog.Println("R34 response body err:", err.Error())
-		return
-	}
-
-	err = xml.Unmarshal(body, &r34)
+	err = xml.NewDecoder(page.Body).Decode(&r34)
 	if err != nil {
 		errorLog.Println("R34 xml unmarshal err:", err.Error())
 		return
@@ -72,6 +65,4 @@ func msgRule34(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s searched for `%s` \n%s", m.Author.Username, strings.Replace(query, "+", " ", -1), "https:"+url))
 	}
-
-	return
 }
