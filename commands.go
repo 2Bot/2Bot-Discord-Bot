@@ -90,9 +90,15 @@ func l(s string) (r string) {
 	return strings.ToLower(s)
 }
 
-func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, command string, msglist []string) {
-	command = strings.ToLower(strings.TrimSuffix(command, " "))
-
+func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, message string) {
+	msglist := strings.Fields(message)
+	command := func() string {
+		if strings.HasPrefix(message, " "){
+			return " "+msglist[0]
+		}
+		return msglist[0]
+	}()
+	
 	submatch := emojiRegex.FindStringSubmatch(msglist[0])
 	if len(submatch) > 0 {
 		bigMoji.Exec(s, m, msglist)
