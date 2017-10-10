@@ -18,7 +18,7 @@ func msgAvatar(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 }
 
 func getAvatar(userID string, m *discordgo.MessageCreate, s *discordgo.Session) {
-	
+
 	user, err := s.User(userID)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was an error finding the user :( Please try again")

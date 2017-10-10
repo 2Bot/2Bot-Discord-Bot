@@ -14,28 +14,27 @@ func msgPrefix(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 		errorLog.Println("prefix guild details error", err.Error())
 		return
 	}
-	
+
 	if len(msglist) < 2 {
 		s.ChannelMessageSend(m.ChannelID, "No prefix given :/")
 		return
 	}
-	
+
 	if m.Author.ID != guild.OwnerID && m.Author.ID != noah {
 		s.ChannelMessageSend(m.ChannelID, "Sorry, only the owner can do this")
 		return
 	}
-	
+
 	var parts []string
 	var space string
 	msg := "without"
 
 	if guild, ok := sMap.Server[guild.ID]; ok && !guild.Kicked {
-		
 		parts = trimSlice(strings.Split(strings.TrimPrefix(m.Content, c.Prefix+msglist[0]), "|"))
 		if guild.Prefix != "" {
 			parts = trimSlice(strings.Split(strings.TrimPrefix(m.Content, guild.Prefix+msglist[0]), "|"))
 		}
-		if len(parts) == 2 {			
+		if len(parts) == 2 {
 			if strings.ToLower(parts[1]) == "true" {
 				space = " "
 				msg = "with"
