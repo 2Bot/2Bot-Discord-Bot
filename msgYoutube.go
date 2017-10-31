@@ -6,6 +6,7 @@ import (
 	"io"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/Necroforger/dgwidgets"
 	"github.com/bwmarrin/discordgo"
@@ -20,11 +21,15 @@ func msgYoutube(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	case "stop":
 		stop(s, m, msglist[2:])
 	case "list":
-		queue(s, m)
+		listQueue(s, m)
+	case "pause":
+		pauseQueue(s, m)
+	case "unpause":
+		unpauseQueue(s, m)
 	}
 }
 
-func queue(s *discordgo.Session, m *discordgo.MessageCreate) {
+func listQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
 		errorLog.Println(err)
@@ -32,6 +37,12 @@ func queue(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	val := sMap.Server[guild.ID]
+
+	if len(val.VoiceInst.Queue) == 0 {
+		s.ChannelMessageSend(m.ChannelID, "No songs in queue!")
+		return
+	}
+
 	p := dgwidgets.NewPaginator(s, m.ChannelID)
 	p.Add(&discordgo.MessageEmbed{
 		Title: guild.Name + "'s queue",
@@ -58,8 +69,12 @@ func queue(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	p.SetPageFooters()
-	p.Loop = true
-	p.DeleteReactionsWhenDone = true
+	p = &dgwidgets.Paginator{
+		Loop:                    true,
+		ColourWhenDone:          0xff0000,
+		DeleteReactionsWhenDone: true,
+	}
+	p.Widget.Timeout = time.Minute * 2
 	p.Spawn()
 }
 
@@ -76,15 +91,10 @@ func addToQueue(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 
 	srvr := sMap.Server[guild.ID]
 
-	if srvr.VoiceInst.Mutex == nil {
-		srvr.VoiceInst.Mutex = &sync.Mutex{}
-	}
-
+	srvr.VoiceInst.Mutex = &sync.Mutex{}
 	srvr.VoiceInst.Mutex.Lock()
 
-	if srvr.VoiceInst.Done == nil {
-		srvr.VoiceInst.Done = make(chan error)
-	}
+	srvr.VoiceInst.Done = make(chan error)
 
 	if !strings.HasPrefix(msglist[0], "https://www.youtube.com/watch?v") {
 		s.ChannelMessageSend(m.ChannelID, "Please make sure the URL starts with `https://www.youtube.com/watch?v`")
@@ -141,8 +151,10 @@ func addToQueue(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 func play(s *discordgo.Session, m *discordgo.MessageCreate, srvr *server, vc *discordgo.VoiceConnection) {
 	if len(srvr.VoiceInst.Queue) == 0 {
 		vc.Disconnect()
-		srvr.VoiceInst.ChannelID = ""
-		srvr.VoiceInst.Playing = false
+		srvr.VoiceInst = voiceInst{
+			ChannelID: "",
+			Playing:   false,
+		}
 		s.ChannelMessageSend(m.ChannelID, "🔇 Done queue!")
 		srvr.VoiceInst.Mutex.Unlock()
 		return
@@ -150,34 +162,49 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate, srvr *server, vc *di
 
 	vid, err := ytdl.GetVideoInfo(srvr.VoiceInst.Queue[0].URL)
 	if err != nil {
-		errorLog.Println("1", err)
+		srvr.VoiceInst.Mutex.Unlock()
+		errorLog.Println(err)
 		return
 	}
 
 	srvr.VoiceInst.Mutex.Unlock()
 
-	format := vid.Formats.Extremes(ytdl.FormatAudioBitrateKey, true)[0]
-	videoURL, err := vid.GetDownloadURL(format)
-	if err != nil {
-		errorLog.Println("2", err)
-		return
+	reader, writer := io.Pipe()
+	defer reader.Close()
+
+	formats := vid.Formats.Extremes(ytdl.FormatAudioBitrateKey, true)
+	if len(formats) > 0 {
+		go func() {
+			defer writer.Close()
+			if err := vid.Download(formats[0], writer); err != nil {
+				fmt.Println(err)
+				return
+			}
+		}()
 	}
 
-	options := dca.StdEncodeOptions
-	options.RawOutput = true
-	options.Bitrate = 64
-	options.Application = "lowdelay"
-	options.Volume = 200
-	options.Threads = 4
-
-	encSesh, err := dca.EncodeFile(videoURL.String(), options)
+	encSesh, err := dca.EncodeMem(reader, &dca.EncodeOptions{
+		RawOutput:        true,
+		Bitrate:          96,
+		Application:      "lowdelay",
+		Volume:           200,
+		Threads:          4,
+		FrameDuration:    20,
+		FrameRate:        48000,
+		Channels:         2,
+		VBR:              true,
+		BufferedFrames:   100,
+		PacketLoss:       1,
+		CompressionLevel: 10,
+	})
 	if err != nil {
-		errorLog.Println("3", err)
+		fmt.Println(err)
 		return
 	}
 	defer encSesh.Cleanup()
 
-	dca.NewStream(encSesh, vc, srvr.VoiceInst.Done)
+	srvr.VoiceInst.StreamingSession = dca.NewStream(encSesh, vc, srvr.VoiceInst.Done)
+	
 	s.ChannelMessageSend(m.ChannelID, "🔊 Playing: "+vid.Title)
 
 	srvr.VoiceInst.Playing = true
@@ -187,13 +214,14 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate, srvr *server, vc *di
 		err = <-srvr.VoiceInst.Done
 		if err != nil && err != io.EOF && err.Error() != "stop" {
 			errorLog.Println("Music stream error", err)
-
 		} else if err.Error() == "stop" {
 			vc.Disconnect()
 			srvr.VoiceInst.Mutex.Lock()
-			srvr.VoiceInst.Playing = false
-			srvr.VoiceInst.Queue = []song{}
-			srvr.VoiceInst.ChannelID = ""
+			srvr.VoiceInst = voiceInst{
+				Playing:   false,
+				Queue:     []song{},
+				ChannelID: "",
+			}
 			srvr.VoiceInst.Mutex.Unlock()
 			s.ChannelMessageSend(m.ChannelID, "🔇 Stopped")
 			return
@@ -204,8 +232,6 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate, srvr *server, vc *di
 	srvr.VoiceInst.Mutex.Lock()
 	srvr.VoiceInst.Queue = srvr.VoiceInst.Queue[1:]
 	go play(s, m, srvr, vc)
-
-	return
 }
 
 func stop(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
@@ -217,4 +243,26 @@ func stop(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 
 	srvr := sMap.Server[guild.ID]
 	srvr.VoiceInst.Done <- errors.New("stop")
+}
+
+func pauseQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
+	guild, err := guildDetails(m.ChannelID, s)
+	if err != nil {
+		errorLog.Println("Guild details error", err)
+		return
+	}
+
+	srvr := sMap.Server[guild.ID]
+	srvr.VoiceInst.StreamingSession.SetPaused(true)
+}
+
+func unpauseQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
+	guild, err := guildDetails(m.ChannelID, s)
+	if err != nil {
+		errorLog.Println("Guild details error", err)
+		return
+	}
+
+	srvr := sMap.Server[guild.ID]
+	srvr.VoiceInst.StreamingSession.SetPaused(false)
 }

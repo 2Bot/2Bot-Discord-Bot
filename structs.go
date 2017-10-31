@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/jonas747/dca"
 	"sync"
 	"time"
 
@@ -49,19 +50,23 @@ type server struct {
 	//Enabled, Message, Channel
 	JoinMessage [3]string `json:"join"`
 
-	VoiceInst struct {
-		ChannelID string
-
-		Queue []song
-
-		Playing bool
-
-		Done chan error
-
-		Mutex *sync.Mutex
-	} `json:"-"`
+	VoiceInst voiceInst `json:"-"`
 
 	Playlists map[string][]song `json:"playlists"`
+}
+
+type voiceInst struct {
+	ChannelID string
+
+	Queue []song
+
+	Playing bool
+
+	Done chan error
+
+	Mutex *sync.Mutex
+
+	StreamingSession *dca.StreamingSession
 }
 
 type song struct {

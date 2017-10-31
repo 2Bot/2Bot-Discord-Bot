@@ -460,10 +460,12 @@ func fimageList(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 		}
 
 		p.SetPageFooters()
-		p.Loop = true
-		p.ColourWhenDone = 0xff0000
-		p.Widget.Timeout = time.Minute * 5
-		p.DeleteReactionsWhenDone = true
+		p = &dgwidgets.Paginator{
+			Loop:                    true,
+			ColourWhenDone:          0xff0000,
+			DeleteReactionsWhenDone: true,
+		}
+		p.Widget.Timeout = time.Minute * 2
 
 		err := p.Spawn()
 		if err != nil {
