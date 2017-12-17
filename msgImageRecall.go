@@ -436,7 +436,6 @@ func fimageList(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 			out = append(out, key)
 			files = append(files, value)
 		}
-
 		s.ChannelMessageSend(m.ChannelID, "Your saved images are: `"+strings.Join(out, ", ")+
 			"`\nAssemblin' a preview your images! **Don't click the reactions until all 5 are there!** Blame Discords rate-limit...")
 
@@ -460,13 +459,10 @@ func fimageList(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 		}
 
 		p.SetPageFooters()
-		p = &dgwidgets.Paginator{
-			Loop:                    true,
-			ColourWhenDone:          0xff0000,
-			DeleteReactionsWhenDone: true,
-		}
+		p.Loop = true
+		p.ColourWhenDone = 0xff0000
+		p.DeleteReactionsWhenDone = true
 		p.Widget.Timeout = time.Minute * 2
-
 		err := p.Spawn()
 		if err != nil {
 			errorLog.Println("Error creating image list", err.Error())

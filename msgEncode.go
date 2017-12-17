@@ -28,7 +28,7 @@ func msgEncode(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 		s.ChannelTyping(m.ChannelID)
 		output, err := bcrypt.GenerateFromPassword([]byte(text), 14)
 		if err != nil {
-			errorLog.Println("Bcrypt err:", err.Error())
+			errorLog.Println("Bcrypt err:", err)
 			return
 		}
 		s.ChannelMessageSend(m.ChannelID, string(output))

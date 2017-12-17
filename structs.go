@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/jonas747/dca"
 	"sync"
 	"time"
+
+	"github.com/jonas747/dca"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -33,26 +34,8 @@ type config struct {
 
 	CurrImg int `json:"curr_img_id"`
 	MaxProc int `json:"maxproc"`
-}
 
-type servers struct {
-	Server map[string]*server
-}
-
-type server struct {
-	LogChannel string `json:"log_channel"`
-	Prefix     string `json:"server_prefix"`
-
-	Log    bool `json:"log_active"`
-	Kicked bool `json:"kicked"`
-	Nsfw   bool `json:"nsfw"`
-
-	//Enabled, Message, Channel
-	JoinMessage [3]string `json:"join"`
-
-	VoiceInst voiceInst `json:"-"`
-
-	Playlists map[string][]song `json:"playlists"`
+	Blacklist []string `json:"blacklist"`
 }
 
 type voiceInst struct {

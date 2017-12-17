@@ -25,15 +25,14 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/signal"
 	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/christophberger/grada"
 	"github.com/gorilla/mux"
 )
 
@@ -47,10 +46,10 @@ const (
 )
 
 var (
-	c            = &config{}
-	u            = &users{}
-	q            = &imageQueue{}
-	sMap         = &servers{}
+	c            = new(config)
+	u            = new(users)
+	q            = new(imageQueue)
+	sMap         = new(servers)
 	dg           *discordgo.Session
 	errorLog     *log.Logger
 	infoLog      *log.Logger
@@ -60,8 +59,6 @@ var (
 	userIDRegex  = regexp.MustCompile("<@!?([0-9]{18})>")
 	channelRegex = regexp.MustCompile("<#([0-9]{18})>")
 	status       = map[discordgo.Status]string{"dnd": "busy", "online": "online", "idle": "idle", "offline": "offline"}
-	//Discord Bots, cool kidz only, social experiment, discord go
-	blacklist    = []string{"110373943822540800", "272873324705742848", "244133074328092673", "118456055842734083"}
 	errEmptyFile = errors.New("file is empty")
 )
 
@@ -75,7 +72,7 @@ func main() {
 	log.SetOutput(logF)
 
 	infoLog = log.New(logF, "INFO:  ", log.Ldate|log.Ltime)
-	errorLog = log.New(os.Stdout, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
+	errorLog = log.New(logF, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
 
 	loadConfig()
 	loadUsers()
@@ -84,19 +81,15 @@ func main() {
 
 	defer cleanup()
 
-	// Create a new Discord session using the provided bot token.
 	var err error
 	dg, err = discordgo.New("Bot " + c.Token)
 	if err != nil {
-		fmt.Println("Error creating Discord session,", err)
-		return
+		log.Fatalln("Error creating Discord session,", err)
 	}
 
-	// Open a websocket connection to Discord and begin listening.
 	err = dg.Open()
 	if err != nil {
-		fmt.Println("Error opening connection,", err)
-		return
+		log.Fatalln("Error opening connection,", err)
 	}
 	defer dg.Close()
 
@@ -118,18 +111,15 @@ func main() {
 	fmt.Fprintln(logF, "/*********BOT RESTARTED*********\\")
 	errorLog.Println("error test")
 
+	grafana()
+
 	// Setup http server for selfbots
 	router := mux.NewRouter().StrictSlash(true)
-
 	router.HandleFunc("/image/{id:[0-9]{18}}/recall/{img:[0-9a-z]{64}}", httpImageRecall)
 	router.HandleFunc("/inServer", isInServer).Methods("GET")
 
-	// Wait here until CTRL-C or other term signal is received.
 	fmt.Println("Bot is now running. Press CTRL-C to exit.")
-	go errorLog.Println(http.ListenAndServe("0.0.0.0"+c.Port, router))
-	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
-	<-sc
+	errorLog.Println(http.ListenAndServe("0.0.0.0"+c.Port, router))
 }
 
 func cleanup() {
@@ -139,12 +129,28 @@ func cleanup() {
 	saveUsers()
 }
 
+func grafana() {
+	dash := grada.GetDashboard()
+	ActiveServers, err := dash.CreateMetric("Active Servers", 5*time.Minute, time.Second)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	go func() {
+		for {
+			ActiveServers.Add(func() float64 {
+				time.Sleep(time.Duration(1000) * time.Millisecond)
+				return float64(sMap.getCount())
+			}())
+		}
+	}()
+}
+
 func loadLog() *os.File {
 	var err error
 	logF, err = os.OpenFile("log.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(2)
+		log.Fatalln(err)
 	}
 	return logF
 }
@@ -160,8 +166,9 @@ func dailyJobs(s *discordgo.Session) {
 func postServerCount() {
 	url := "https://bots.discord.pw/api/bots/301819949683572738/stats"
 
-	sCount := activeServerCount()
-	jsonStr := []byte(`{"server_count":` + strconv.Itoa(activeServerCount()) + `}`)
+	count := sMap.getCount()
+
+	jsonStr := []byte(`{"server_count":` + strconv.Itoa(count) + `}`)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
 	if err != nil {
 		errorLog.Println("error making bots.discord.pw request", err)
@@ -176,16 +183,7 @@ func postServerCount() {
 		return
 	}
 
-	infoLog.Println("POSTed " + strconv.Itoa(sCount) + " to bots.discord.pw")
-}
-
-func activeServerCount() (sCount int) {
-	for _, g := range sMap.Server {
-		if !g.Kicked {
-			sCount++
-		}
-	}
-	return
+	infoLog.Println("POSTed " + strconv.Itoa(count) + " to bots.discord.pw")
 }
 
 func setInitialGame(s *discordgo.Session) {
@@ -300,13 +298,13 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	guildDetails, err := guildDetails(m.ChannelID, s)
 	if err != nil {
-		errorLog.Println("Message create guild details err:")
+		errorLog.Println("Message create guild details err: ", err)
 		return
 	}
 
 	var prefix string
-	if _, ok := sMap.Server[guildDetails.ID]; ok {
-		if prefix = sMap.Server[guildDetails.ID].Prefix; prefix == "" {
+	if val, ok := sMap.Server[guildDetails.ID]; ok {
+		if prefix = val.Prefix; prefix == "" {
 			prefix = c.Prefix
 		}
 	}
@@ -325,7 +323,7 @@ func setQueuedImageHandlers(s *discordgo.Session) {
 	for imgNum := range q.QueuedMsgs {
 		imgNumInt, err := strconv.Atoi(imgNum)
 		if err != nil {
-			errorLog.Println("Error converting string to num for queue:", err)
+			errorLog.Println("Error converting string to num for queue: ", err)
 			continue
 		}
 		go fimageReview(s, q, imgNumInt)
@@ -351,28 +349,30 @@ func joined(s *discordgo.Session, m *discordgo.GuildCreate) {
 		}
 	}
 
+	embed := &discordgo.MessageEmbed{
+		Image: &discordgo.MessageEmbedImage{
+			URL: discordgo.EndpointGuildIcon(m.Guild.ID, m.Guild.Icon),
+		},
+
+		Footer: &discordgo.MessageEmbedFooter{
+			Text: "Brought to you by 2Bot :)\nLast Bot reboot: " + lastReboot + " GMT",
+		},
+
+		Fields: []*discordgo.MessageEmbedField{
+			{Name: "Name:", Value: m.Guild.Name, Inline: true},
+			{Name: "User Count:", Value: strconv.Itoa(m.Guild.MemberCount), Inline: true},
+			{Name: "Region:", Value: m.Guild.Region, Inline: true},
+			{Name: "Channel Count:", Value: strconv.Itoa(len(m.Guild.Channels)), Inline: true},
+			{Name: "ID:", Value: m.Guild.ID, Inline: true},
+			{Name: "Owner:", Value: user.Username + "#" + user.Discriminator, Inline: true},
+		},
+	}
+
 	if _, ok := sMap.Server[m.Guild.ID]; !ok {
 		//if newly joined
-		s.ChannelMessageSendEmbed(logChan, &discordgo.MessageEmbed{
-			Color: 65280,
-
-			Image: &discordgo.MessageEmbedImage{
-				URL: discordgo.EndpointGuildIcon(m.Guild.ID, m.Guild.Icon),
-			},
-
-			Footer: &discordgo.MessageEmbedFooter{
-				Text: "Brought to you by 2Bot :)\nLast Bot reboot: " + lastReboot + " GMT",
-			},
-
-			Fields: []*discordgo.MessageEmbedField{
-				{Name: "Name:", Value: m.Guild.Name, Inline: true},
-				{Name: "User Count:", Value: strconv.Itoa(m.Guild.MemberCount), Inline: true},
-				{Name: "Region:", Value: m.Guild.Region, Inline: true},
-				{Name: "Channel Count:", Value: strconv.Itoa(len(m.Guild.Channels)), Inline: true},
-				{Name: "ID:", Value: m.Guild.ID, Inline: true},
-				{Name: "Owner:", Value: user.Username + "#" + user.Discriminator, Inline: true},
-			},
-		})
+		embed.Color = 65280
+		s.ChannelMessageSendEmbed(logChan, embed)
+		infoLog.Println("Joined server", m.Guild.ID, m.Guild.Name)
 
 		sMap.Server[m.Guild.ID] = &server{
 			LogChannel:  m.Guild.ID,
@@ -380,57 +380,41 @@ func joined(s *discordgo.Session, m *discordgo.GuildCreate) {
 			Nsfw:        false,
 			JoinMessage: [3]string{"false", "", ""},
 		}
-
-		infoLog.Println("Joined server", m.Guild.ID, m.Guild.Name)
 	} else if val := sMap.Server[m.Guild.ID]; val.Kicked == true {
 		//If previously kicked and then readded
-		s.ChannelMessageSendEmbed(logChan, &discordgo.MessageEmbed{
-			Color: 16751104,
-
-			Image: &discordgo.MessageEmbedImage{
-				URL: discordgo.EndpointGuildIcon(m.Guild.ID, m.Guild.Icon),
-			},
-
-			Footer: &discordgo.MessageEmbedFooter{
-				Text: "Brought to you by 2Bot :)\nLast Bot reboot: " + lastReboot + " GMT",
-			},
-
-			Fields: []*discordgo.MessageEmbedField{
-				{Name: "Name:", Value: m.Guild.Name, Inline: true},
-				{Name: "User Count:", Value: strconv.Itoa(m.Guild.MemberCount), Inline: true},
-				{Name: "Region:", Value: m.Guild.Region, Inline: true},
-				{Name: "Channel Count:", Value: strconv.Itoa(len(m.Guild.Channels)), Inline: true},
-				{Name: "ID:", Value: m.Guild.ID, Inline: true},
-				{Name: "Owner:", Value: user.Username + "#" + user.Discriminator, Inline: true},
-			},
-		})
-
+		embed.Color = 16751104
+		s.ChannelMessageSendEmbed(logChan, embed)
 		infoLog.Println("Rejoined server", m.Guild.ID, m.Guild.Name)
 	}
 
 	sMap.Server[m.Guild.ID].Kicked = false
+	sMap.Mutex.Lock()
+	defer sMap.Mutex.Unlock()
+	sMap.Count++
 	saveServers()
-
-	return
 }
 
 func kicked(s *discordgo.Session, m *discordgo.GuildDelete) {
-	if !m.Unavailable {
-		s.ChannelMessageSendEmbed(logChan, &discordgo.MessageEmbed{
-			Color: 16711680,
-			Footer: &discordgo.MessageEmbedFooter{
-				Text: "Brought to you by 2Bot :)\nLast Bot reboot: " + lastReboot + " GMT",
-			},
-			Fields: []*discordgo.MessageEmbedField{
-				{Name: "Name:", Value: m.Name, Inline: true},
-				{Name: "ID:", Value: m.Guild.ID, Inline: true},
-			},
-		})
-
-		infoLog.Println("Kicked from", m.Guild.ID, m.Name)
-
-		sMap.Server[m.Guild.ID].Kicked = true
-		saveServers()
+	if m.Unavailable {
+		return
 	}
-	return
+
+	s.ChannelMessageSendEmbed(logChan, &discordgo.MessageEmbed{
+		Color: 16711680,
+		Footer: &discordgo.MessageEmbedFooter{
+			Text: "Brought to you by 2Bot :)\nLast Bot reboot: " + lastReboot + " GMT",
+		},
+		Fields: []*discordgo.MessageEmbedField{
+			{Name: "Name:", Value: m.Name, Inline: true},
+			{Name: "ID:", Value: m.Guild.ID, Inline: true},
+		},
+	})
+
+	infoLog.Println("Kicked from", m.Guild.ID, m.Name)
+
+	sMap.Server[m.Guild.ID].Kicked = true
+	sMap.Mutex.Lock()
+	defer sMap.Mutex.Unlock()
+	sMap.Count--
+	saveServers()
 }

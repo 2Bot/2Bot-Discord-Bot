@@ -141,7 +141,7 @@ func msgAnnounce(s *discordgo.Session, m *discordgo.MessageCreate, msglist []str
 	}
 
 	for _, guild := range s.State.Guilds {
-		if !isIn(guild.ID, blacklist) {
+		if !isIn(guild.ID, c.Blacklist) {
 			if val, ok := sMap.Server[guild.ID]; !ok || val.Kicked {
 				errorLog.Println("State and config mis-match!")
 				s.ChannelMessageSend(logChan, "State and config mis-match!")

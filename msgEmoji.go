@@ -8,7 +8,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-//Thanks to iopred
+// Thanks to iopred
 func emojiFile(s string) string {
 	found := ""
 	filename := ""
@@ -71,7 +71,7 @@ func msgEmoji(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 					}
 				}
 			}
-			//not bigMoji
+			// not bigMoji
 		} else if len(msglist) > 0 {
 			if len(submatch) != 0 {
 				emojiID := submatch[1]

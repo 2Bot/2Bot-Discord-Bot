@@ -113,7 +113,6 @@ func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, message stri
 	//if data passed as command isnt a valid command,
 	//check if its an emoji
 	bigMoji.Exec(s, m, msglist)
-	return
 }
 
 func (c command) helpCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -127,7 +126,6 @@ func (c command) helpCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 			},
 		},
 	})
-	return
 }
 
 func (c command) add() command {
