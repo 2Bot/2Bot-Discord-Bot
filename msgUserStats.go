@@ -74,9 +74,8 @@ func msgUserStats(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 			Name:    user.Username,
 			IconURL: discordgo.EndpointUserAvatar(userID, user.Avatar),
 		},
-		Footer: &discordgo.MessageEmbedFooter{
-			Text: "Brought to you by 2Bot :)",
-		},
+		Footer: footer,
+		
 		Fields: []*discordgo.MessageEmbedField{
 			{Name: "Username:", Value: user.Username, Inline: true},
 			{Name: "Nickname:", Value: nick, Inline: true},

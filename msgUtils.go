@@ -89,9 +89,8 @@ func msgInfo(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
 			Name:    s.State.User.Username,
 			IconURL: discordgo.EndpointUserAvatar(s.State.User.ID, s.State.User.Avatar),
 		},
-		Footer: &discordgo.MessageEmbedFooter{
-			Text: "Brought to you by 2Bot :)\nLast Bot reboot: " + lastReboot + " GMT",
-		},
+		Footer: footer, 
+
 		Fields: []*discordgo.MessageEmbedField{
 			{Name: "Bot Name:", Value: codeBlock(s.State.User.Username), Inline: true},
 			{Name: "Creator:", Value: codeBlock("Strum355#1180"), Inline: true},
@@ -113,26 +112,26 @@ func msgListUsers(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 		return
 	}
 
-	if guild, ok := sMap.Server[msglist[1]]; ok && !guild.Kicked {
-		s.ChannelTyping(m.ChannelID)
-
-		var out []string
-
-		guild, err := guildDetails(msglist[1], s)
-		if err != nil {
-			return
-		}
-
-		for _, user := range guild.Members {
-			out = append(out, user.User.Username)
-		}
-
-		s.ChannelMessageSend(m.ChannelID, "Users in: "+guild.Name+"\n`"+strings.Join(out, "`, `")+"`")
+	if guild, ok := sMap.Server[msglist[1]]; !ok || guild.Kicked {
+		s.ChannelMessageSend(m.ChannelID, "2Bot isn't in that server")
 		return
 	}
 
-	s.ChannelMessageSend(m.ChannelID, "2Bot isn't in that server")
-	return
+	s.ChannelTyping(m.ChannelID)
+	
+	guild, err := guildDetails(msglist[1], s)
+	if err != nil {
+		return
+	}
+
+	var out []string
+
+	for _, user := range guild.Members {
+		//TODO limit check
+		out = append(out, user.User.Username)
+	}
+
+	s.ChannelMessageSend(m.ChannelID, "Users in: "+guild.Name+"\n`"+strings.Join(out, ", ")+"`")
 }
 
 func msgAnnounce(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
@@ -175,7 +174,6 @@ func msgNSFW(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("NSFW %s", onOrOff[guild.Nsfw]))
 		saveServers()
 	}
-	return
 }
 
 func msgJoinMessage(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
@@ -243,20 +241,21 @@ func msgReloadConfig(s *discordgo.Session, m *discordgo.MessageCreate, msglist [
 	if len(msglist) < 2 {
 		return
 	}
+
 	var reloaded string
 	switch msglist[1] {
 	case "c":
-		c = &config{}
+		c = new(config)
 		if err := loadConfig(); err != nil {
-			errorLog.Println("Error reloading config", err.Error())
+			errorLog.Println("Error reloading config", err)
 			s.ChannelMessageSend(m.ChannelID, "Error reloading config")
 			return
 		}
 		reloaded = "config"
 	case "u":
-		u = &users{}
+		u = new(users)
 		if err := loadUsers(); err != nil {
-			errorLog.Println("Error reloading config", err.Error())
+			errorLog.Println("Error reloading config", err)
 			s.ChannelMessageSend(m.ChannelID, "Error reloading config")
 			return
 		}
@@ -276,22 +275,4 @@ func msgInvite(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
 			{Name: "Invite me with this link!", Value: "https://discordapp.com/oauth2/authorize?client_id=301819949683572738&scope=bot&permissions=3533824", Inline: true},
 		},
 	})
-}
-
-func msgPrintJSON(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	if len(msglist) < 3 {
-		return
-	}
-	switch msglist[1] {
-	case "u":
-		if _, ok := u.User[msglist[2]]; ok {
-			var out bytes.Buffer
-			err := json.Indent(&out, []byte(fmt.Sprintf("%v", *u)), "", "  ")
-			if err != nil {
-				fmt.Println(err)
-			}
-			fmt.Println(fmt.Sprintf("%v", *u))
-			s.ChannelMessageSend(m.ChannelID, string(out.Bytes()))
-		}
-	}
 }

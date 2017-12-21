@@ -14,7 +14,6 @@ var (
 	listUsersComm = command{"listUsers", "", true, false, msgListUsers}.add()
 	globalPrefix  = command{"setGlobalPrefix", "", true, false, msgGlobalPrefix}.add()
 	//reloadConf    = command{"reload", "", true, false, msgReloadConfig}
-	//printJSON     = command{"printJSON", "", true, false, msgPrintJSON}
 
 	avatar = command{"avatar",
 		"Args: [@user]\n\nReturns the given users avatar.\nIf no user ID is given, your own avatar is sent.\n\nExample:\n`!owo avatar @Strum355#2298`",

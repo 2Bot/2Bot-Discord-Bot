@@ -7,12 +7,12 @@ import (
 type servers struct {
 	Count int
 
-	Mutex *sync.RWMutex
+	Mutex sync.RWMutex
 
 	Server map[string]*server
 }
 
-func (s servers) getCount() int {
+func (s *servers) getCount() int {
 	s.Mutex.RLock()
 	defer s.Mutex.RUnlock()
 	return s.Count

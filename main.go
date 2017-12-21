@@ -20,7 +20,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -59,7 +58,7 @@ var (
 	userIDRegex  = regexp.MustCompile("<@!?([0-9]{18})>")
 	channelRegex = regexp.MustCompile("<#([0-9]{18})>")
 	status       = map[discordgo.Status]string{"dnd": "busy", "online": "online", "idle": "idle", "offline": "offline"}
-	errEmptyFile = errors.New("file is empty")
+	footer       = &discordgo.MessageEmbedFooter{Text: "Brought to you by 2Bot :)\nLast Bot reboot: " + lastReboot + " GMT"}
 )
 
 func main() {
@@ -78,33 +77,22 @@ func main() {
 	loadUsers()
 	loadQueue()
 	loadServers()
-
 	defer cleanup()
 
-	var err error
-	dg, err = discordgo.New("Bot " + c.Token)
-	if err != nil {
-		log.Fatalln("Error creating Discord session,", err)
-	}
-
-	err = dg.Open()
-	if err != nil {
-		log.Fatalln("Error opening connection,", err)
-	}
+	start()
 	defer dg.Close()
 
-	//Register handlers
 	dg.AddHandler(messageCreate)
 	dg.AddHandler(membPresChange)
 	dg.AddHandler(kicked)
 	dg.AddHandler(membJoin)
 
-	setInitialGame(dg)
+	setInitialGame()
 
-	go setQueuedImageHandlers(dg)
+	go setQueuedImageHandlers()
 
 	if !c.InDev {
-		go dailyJobs(dg)
+		go dailyJobs()
 		dg.AddHandler(joined)
 	}
 
@@ -120,6 +108,19 @@ func main() {
 
 	fmt.Println("Bot is now running. Press CTRL-C to exit.")
 	errorLog.Println(http.ListenAndServe("0.0.0.0"+c.Port, router))
+}
+
+func start() {
+	var err error
+	dg, err = discordgo.New("Bot " + c.Token)
+	if err != nil {
+		log.Fatalln("Error creating Discord session,", err)
+	}
+
+	err = dg.Open()
+	if err != nil {
+		log.Fatalln("Error opening connection,", err)
+	}
 }
 
 func cleanup() {
@@ -155,10 +156,10 @@ func loadLog() *os.File {
 	return logF
 }
 
-func dailyJobs(s *discordgo.Session) {
+func dailyJobs() {
 	for {
 		postServerCount()
-		setInitialGame(s)
+		setInitialGame()
 		time.Sleep(time.Hour * 24)
 	}
 }
@@ -186,8 +187,8 @@ func postServerCount() {
 	infoLog.Println("POSTed " + strconv.Itoa(count) + " to bots.discord.pw")
 }
 
-func setInitialGame(s *discordgo.Session) {
-	err := s.UpdateStatus(0, c.Game)
+func setInitialGame() {
+	err := dg.UpdateStatus(0, c.Game)
 	if err != nil {
 		errorLog.Println("Update status err:", err)
 		return
@@ -319,14 +320,14 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 // Set all handlers for queued images, in case the bot crashes
 // with images still in queue
-func setQueuedImageHandlers(s *discordgo.Session) {
+func setQueuedImageHandlers() {
 	for imgNum := range q.QueuedMsgs {
 		imgNumInt, err := strconv.Atoi(imgNum)
 		if err != nil {
 			errorLog.Println("Error converting string to num for queue: ", err)
 			continue
 		}
-		go fimageReview(s, q, imgNumInt)
+		go fimageReview(dg, q, imgNumInt)
 	}
 }
 
@@ -354,9 +355,7 @@ func joined(s *discordgo.Session, m *discordgo.GuildCreate) {
 			URL: discordgo.EndpointGuildIcon(m.Guild.ID, m.Guild.Icon),
 		},
 
-		Footer: &discordgo.MessageEmbedFooter{
-			Text: "Brought to you by 2Bot :)\nLast Bot reboot: " + lastReboot + " GMT",
-		},
+		Footer: footer,
 
 		Fields: []*discordgo.MessageEmbedField{
 			{Name: "Name:", Value: m.Guild.Name, Inline: true},
@@ -400,10 +399,8 @@ func kicked(s *discordgo.Session, m *discordgo.GuildDelete) {
 	}
 
 	s.ChannelMessageSendEmbed(logChan, &discordgo.MessageEmbed{
-		Color: 16711680,
-		Footer: &discordgo.MessageEmbedFooter{
-			Text: "Brought to you by 2Bot :)\nLast Bot reboot: " + lastReboot + " GMT",
-		},
+		Color:  16711680,
+		Footer: footer,
 		Fields: []*discordgo.MessageEmbedField{
 			{Name: "Name:", Value: m.Name, Inline: true},
 			{Name: "ID:", Value: m.Guild.ID, Inline: true},
