@@ -100,7 +100,7 @@ func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, message stri
 
 	submatch := emojiRegex.FindStringSubmatch(msglist[0])
 	if len(submatch) > 0 {
-		bigMoji.Exec(s, m, msglist)
+		bigMoji.Exec(s, m, append([]string{""}, msglist...))
 		return
 	}
 
@@ -108,10 +108,6 @@ func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, message stri
 		commMap[command].Exec(s, m, msglist)
 		return
 	}
-
-	//if data passed as command isnt a valid command,
-	//check if its an emoji
-	bigMoji.Exec(s, m, msglist)
 }
 
 func (c command) helpCommand(s *discordgo.Session, m *discordgo.MessageCreate) {

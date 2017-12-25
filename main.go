@@ -54,7 +54,7 @@ var (
 	infoLog      *log.Logger
 	logF         *os.File
 	lastReboot   string
-	emojiRegex   = regexp.MustCompile("<:.*?:(.*?)>")
+	emojiRegex   = regexp.MustCompile("<(a)?:.*?:(.*?)>")
 	userIDRegex  = regexp.MustCompile("<@!?([0-9]{18})>")
 	channelRegex = regexp.MustCompile("<#([0-9]{18})>")
 	status       = map[discordgo.Status]string{"dnd": "busy", "online": "online", "idle": "idle", "offline": "offline"}
