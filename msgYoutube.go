@@ -162,9 +162,7 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate, srvr *server, vc *di
 	if len(srvr.VoiceInst.Queue) == 0 {
 		srvr.VoiceInst.Mutex.Lock()
 		defer srvr.VoiceInst.Mutex.Unlock()
-		vc.Disconnect()
-		srvr.VoiceInst.ChannelID = ""
-		srvr.VoiceInst.Playing = false
+		srvr.youtubeCleanup()
 		s.ChannelMessageSend(m.ChannelID, "🔇 Done queue!")
 		return
 	}
@@ -227,9 +225,7 @@ Done:
 		switch {
 		case err.Error() == "stop":
 			vc.Disconnect()
-			srvr.VoiceInst.Playing = false
-			srvr.VoiceInst.ChannelID = ""
-			srvr.VoiceInst.Queue = []song{}
+			srvr.youtubeCleanup()
 			srvr.VoiceInst.Mutex.Unlock()
 			s.ChannelMessageSend(m.ChannelID, "🔇 Stopped")
 			return
@@ -240,9 +236,7 @@ Done:
 			break Done
 		case err != nil && err != io.EOF:
 			vc.Disconnect()
-			srvr.VoiceInst.ChannelID = ""
-			srvr.VoiceInst.Playing = false
-			srvr.VoiceInst.Queue = []song{}
+			srvr.youtubeCleanup()
 			srvr.VoiceInst.Mutex.Unlock()
 			s.ChannelMessageSend(m.ChannelID, "There was an error streaming music :(")
 			errorLog.Println("Music stream error", err)
@@ -251,6 +245,13 @@ Done:
 	}
 
 	go play(s, m, srvr, vc)
+}
+
+func (s *server) youtubeCleanup() {
+	s.VoiceInst.ChannelID = ""
+	s.VoiceInst.Playing = false
+	s.VoiceInst.Queue = []song{}
+	sMap.VoiceInsts--
 }
 
 func stopQueue(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {

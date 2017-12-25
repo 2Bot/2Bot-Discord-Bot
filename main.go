@@ -121,6 +121,8 @@ func start() {
 	if err != nil {
 		log.Fatalln("Error opening connection,", err)
 	}
+
+	sMap.Count = len(sMap.Server)
 }
 
 func cleanup() {

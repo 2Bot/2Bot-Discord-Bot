@@ -5,7 +5,8 @@ import (
 )
 
 type servers struct {
-	Count int
+	Count      int
+	VoiceInsts int
 
 	Mutex sync.RWMutex
 
@@ -13,8 +14,8 @@ type servers struct {
 }
 
 func (s *servers) getCount() int {
-	s.Mutex.RLock()
-	defer s.Mutex.RUnlock()
+	//not gonna mutex this because am i really gonna cry over
+	//an inaccurate result for a single request? 
 	return s.Count
 }
 
