@@ -26,7 +26,7 @@ func msgSetGame(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 
 	err := s.UpdateStatus(0, game)
 	if err != nil {
-		errorLog.Println("Game change error", err.Error())
+		errorLog.Println("Game change error", err)
 		return
 	}
 
@@ -87,7 +87,7 @@ func msgInfo(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
 			Name:    s.State.User.Username,
 			IconURL: discordgo.EndpointUserAvatar(s.State.User.ID, s.State.User.Avatar),
 		},
-		Footer: footer, 
+		Footer: footer,
 
 		Fields: []*discordgo.MessageEmbedField{
 			{Name: "Bot Name:", Value: codeBlock(s.State.User.Username), Inline: true},
@@ -116,7 +116,7 @@ func msgListUsers(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 	}
 
 	s.ChannelTyping(m.ChannelID)
-	
+
 	guild, err := guildDetails(msglist[1], s)
 	if err != nil {
 		return
@@ -158,7 +158,7 @@ func msgNSFW(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was an error toggling NSFW :( Try again please~")
-		errorLog.Println("nsfw guild details error", err.Error())
+		errorLog.Println("nsfw guild details error", err)
 		return
 	}
 
@@ -178,7 +178,7 @@ func msgJoinMessage(s *discordgo.Session, m *discordgo.MessageCreate, msglist []
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was an error with discord :( Try again please~")
-		errorLog.Println("join message guild details error", err.Error())
+		errorLog.Println("join message guild details error", err)
 		return
 	}
 
@@ -213,7 +213,7 @@ func msgJoinMessage(s *discordgo.Session, m *discordgo.MessageCreate, msglist []
 			}
 			channelStruct, err := s.State.Channel(split[2])
 			if err != nil {
-				errorLog.Println("Join message channel struct or bad channel ID?", split[2], err.Error())
+				errorLog.Println("Join message channel struct or bad channel ID?", split[2], err)
 				s.ChannelMessageSend(m.ChannelID, "Please give me a proper channel ID :(")
 				return
 			}

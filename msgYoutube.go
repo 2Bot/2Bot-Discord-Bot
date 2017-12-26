@@ -183,6 +183,7 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate, srvr *server, vc *di
 		go func() {
 			defer writer.Close()
 			if err := vid.Download(formats[0], writer); err != nil {
+				s.ChannelMessageSend(m.ChannelID, xmark+" Error downloading the music")
 				errorLog.Println(err)
 				return
 			}
@@ -204,6 +205,7 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate, srvr *server, vc *di
 		CompressionLevel: 10,
 	})
 	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, xmark+" Error downloading the music")
 		errorLog.Println(err)
 		return
 	}

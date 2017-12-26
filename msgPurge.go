@@ -12,17 +12,34 @@ func msgPurge(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was a problem purging :( Please try again~")
-		errorLog.Println("purge guild details error", err.Error())
+		errorLog.Println("purge guild details error", err)
 		return
 	}
 
 	if m.Author.ID != guild.OwnerID && m.Author.ID != noah {
-		s.ChannelMessageSend(m.ChannelID, "Sorry, only the owner can do this")
+		s.ChannelMessageSend(m.ChannelID, "Sorry, only the owner can do this~")
 		return
 	}
 
 	if len(msglist) < 2 {
 		s.ChannelMessageSend(m.ChannelID, "Gotta specify a number of messages to delete~")
+		return
+	}
+
+	if perm, err := s.State.UserChannelPermissions(s.State.User.ID, m.ChannelID); err == nil {
+		if perm&discordgo.PermissionManageMessages <= 0 {
+			s.ChannelMessageSend(m.ChannelID, "Dont have permissions :(")
+			return
+		}
+	} else {
+		s.ChannelMessageSend(m.ChannelID, "Couldn't determine permissions :(")
+		errorLog.Println("error getting permissions", err)
+		return
+	}
+
+	purgeAmount, err := strconv.Atoi(msglist[1])
+	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("How do i delete %s messages O.o Please only give numbers!", msglist[1]))
 		return
 	}
 
@@ -36,15 +53,7 @@ func msgPurge(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 		userToPurge = submatch[1]
 	}
 
-	purgeAmount, err := strconv.Atoi(msglist[1])
-	if err != nil {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("How do i delete %s messages O.o Please only give numbers!", msglist[1]))
-		return
-	}
-
-	if m != nil {
-		s.ChannelMessageDelete(m.ChannelID, m.ID)
-	}
+	deleteMessage(m, s)
 
 	if userToPurge == "" {
 		standardPurge(purgeAmount, s, m)
@@ -62,25 +71,28 @@ func msgPurge(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 	return
 }
 
-func standardPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCreate) {
+func standardPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCreate) error {
 	outOfDate := false
 	for purgeAmount > 0 {
-		del := min(purgeAmount, 100)
-		list, err := s.ChannelMessages(m.ChannelID, del, "", "", "")
+		list, err := s.ChannelMessages(m.ChannelID, purgeAmount%100, "", "", "")
 		if err != nil {
-			errorLog.Println("Purge populate message list err:", err.Error())
-			s.ChannelMessageSend(m.ChannelID, "There was a problem purging the chat :(")
-			return
+			errorLog.Println("Purge populate message list err:", err)
+			s.ChannelMessageSend(m.ChannelID, "There was an issue deleting messages :(")
+			return err
 		}
 
+		//if more was requested to be deleted than exists
 		if len(list) == 0 {
 			break
 		}
 
 		var purgeList []string
 		for _, msg := range list {
-			then, _ := msg.Timestamp.Parse()
-			timeSince := time.Since(then)
+			timeSince, err := getMessageAge(msg, s, m)
+			if err != nil {
+				//if the time is malformed for whatever reason, we'll try the next message
+				continue
+			}
 
 			if timeSince.Hours()/24 >= 14 {
 				outOfDate = true
@@ -90,10 +102,8 @@ func standardPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCr
 			purgeList = append(purgeList, msg.ID)
 		}
 
-		err = s.ChannelMessagesBulkDelete(m.ChannelID, purgeList)
-		if err != nil {
-			s.ChannelMessageSend(m.ChannelID, "Dont have permissions to delete messages :(")
-			return
+		if err := massDelete(purgeList, s, m); err != nil {
+			return err
 		}
 
 		if outOfDate {
@@ -102,6 +112,8 @@ func standardPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCr
 
 		purgeAmount -= 100
 	}
+
+	return nil
 }
 
 func userPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCreate, userToPurge string) error {
@@ -109,12 +121,12 @@ func userPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCreate
 		del := min(purgeAmount, 100)
 		var purgeList []string
 
-	IfOutOfDate:
+	OutOfDate:
 		for len(purgeList) < del {
 			list, err := s.ChannelMessages(m.ChannelID, 100, "", "", "")
 			if err != nil {
-				errorLog.Println("Purge populate message list err:", err.Error())
-				s.ChannelMessageSend(m.ChannelID, "There was a problem purging the chat :(")
+				s.ChannelMessageSend(m.ChannelID, "There was an issue deleting messages :(")
+				errorLog.Println("Purge populate message list err:", err)
 				return err
 			}
 
@@ -128,11 +140,14 @@ func userPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCreate
 				}
 
 				if msg.Author.ID == userToPurge {
-					then, _ := msg.Timestamp.Parse()
-					timeSince := time.Since(then)
+					timeSince, err := getMessageAge(msg, s, m)
+					if err != nil {
+						//if the time is malformed for whatever reason, we'll try the next message
+						continue
+					}
 
 					if timeSince.Hours()/24 >= 14 {
-						break IfOutOfDate
+						break OutOfDate
 					}
 
 					purgeList = append(purgeList, msg.ID)
@@ -140,9 +155,7 @@ func userPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCreate
 			}
 		}
 
-		err := s.ChannelMessagesBulkDelete(m.ChannelID, purgeList)
-		if err != nil {
-			s.ChannelMessageSend(m.ChannelID, "Dont have permissions to delete messages :( \n"+err.Error())
+		if err := massDelete(purgeList, s, m); err != nil {
 			return err
 		}
 
@@ -150,4 +163,23 @@ func userPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCreate
 	}
 
 	return nil
+}
+
+func massDelete(list []string, s *discordgo.Session, m *discordgo.MessageCreate) error {
+	err := s.ChannelMessagesBulkDelete(m.ChannelID, list)
+	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, "There was an issue deleting messages :(")
+		errorLog.Println("error purging", err)
+	}
+	return err
+}
+
+func getMessageAge(msg *discordgo.Message, s *discordgo.Session, m *discordgo.MessageCreate) (time.Duration, error) {
+	then, err := msg.Timestamp.Parse()
+	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, "There was an issue deleting messages :(")
+		errorLog.Println("time parse error", err)
+		return time.Duration(0), err
+	}
+	return time.Since(then), nil
 }

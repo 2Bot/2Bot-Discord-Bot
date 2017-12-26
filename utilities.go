@@ -90,6 +90,12 @@ func trimSlice(s []string) (ret []string) {
 	return
 }
 
+func deleteMessage(m *discordgo.MessageCreate, s *discordgo.Session) {
+	if m != nil {
+		s.ChannelMessageDelete(m.ChannelID, m.ID)
+	}
+}
+
 func guildDetails(channelID string, s *discordgo.Session) (*discordgo.Guild, error) {
 	channelInGuild, err := s.State.Channel(channelID)
 	if err != nil {

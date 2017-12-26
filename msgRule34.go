@@ -13,13 +13,13 @@ func msgRule34(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was a problem getting some details :( Please try again!")
-		errorLog.Println("rule34 guild details error", err.Error())
+		errorLog.Println("rule34 guild details error", err)
 		return
 	}
 
 	channel, err := s.State.Channel(m.ChannelID)
 	if err != nil {
-		errorLog.Println("Channel error", err.Error())
+		errorLog.Println("Channel error", err)
 		return
 	}
 
@@ -42,7 +42,7 @@ func msgRule34(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 	}
 	page, err := http.Get(fmt.Sprintf("https://rule34.xxx/index.php?page=dapi&s=post&q=index&tags=%s", query))
 	if err != nil {
-		errorLog.Println("R34 response err:", err.Error())
+		errorLog.Println("R34 response err:", err)
 		return
 	}
 	if page.StatusCode != 200 {
@@ -53,7 +53,7 @@ func msgRule34(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 
 	err = xml.NewDecoder(page.Body).Decode(&r34)
 	if err != nil {
-		errorLog.Println("R34 xml unmarshal err:", err.Error())
+		errorLog.Println("R34 xml unmarshal err:", err)
 		return
 	}
 

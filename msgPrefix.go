@@ -11,7 +11,7 @@ func msgPrefix(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was a problem changing the prefix :( Try again please~")
-		errorLog.Println("prefix guild details error", err.Error())
+		errorLog.Println("prefix guild details error", err)
 		return
 	}
 

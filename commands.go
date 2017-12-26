@@ -13,7 +13,7 @@ var (
 	announceComm  = command{"announce", "", true, false, msgAnnounce}.add()
 	listUsersComm = command{"listUsers", "", true, false, msgListUsers}.add()
 	globalPrefix  = command{"setGlobalPrefix", "", true, false, msgGlobalPrefix}.add()
-	//reloadConf    = command{"reload", "", true, false, msgReloadConfig}
+	reloadConf    = command{"reload", "", true, false, msgReloadConfig}
 
 	avatar = command{"avatar",
 		"Args: [@user]\n\nReturns the given users avatar.\nIf no user ID is given, your own avatar is sent.\n\nExample:\n`!owo avatar @Strum355#2298`",
@@ -45,7 +45,8 @@ var (
 		false, true, msgNSFW}.add()
 	joinMsg = command{"joinMessage",
 		"Args: [true,false] | [message] | [channelID]\n\nEnables or disables join messages.\nthe message and channel that the bot welcomes new people in.\n" +
-			"To mention the user in the message, put `%s` where you want the user to be mentioned in the message.\nLeave message \n\nExample to set message:\n`!owo joinMessage true | Hey there %s! | 312294858582654978`\n>On member join\n`Hey there [@new member]`\n\n" +
+			"To mention the user in the message, put `%s` where you want the user to be mentioned in the message.\nLeave message \n\nExample to set message:\n" +
+			"`!owo joinMessage true | Hey there %s! | 312294858582654978`\n>On member join\n`Hey there [@new member]`\n\n" +
 			"Example to disable:\n`!owo joinMessage false`",
 		false, true, msgJoinMessage}.add()
 	loggingComm = command{"logging",

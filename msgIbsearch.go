@@ -14,13 +14,13 @@ import (
 func msgIbsearch(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
-		errorLog.Println("ibsearch guild details err", err.Error())
+		errorLog.Println("ibsearch guild details err", err)
 		return
 	}
 
 	channel, err := s.State.Channel(m.ChannelID)
 	if err != nil {
-		errorLog.Println("Channel error", err.Error())
+		errorLog.Println("Channel error", err)
 		return
 	}
 
@@ -40,7 +40,7 @@ func msgIbsearch(s *discordgo.Session, m *discordgo.MessageCreate, msglist []str
 	queries := []string{}
 	URL, err := url.Parse("https://ibsearch.xxx")
 	if err != nil {
-		errorLog.Println("IBSearch query error", err.Error())
+		errorLog.Println("IBSearch query error", err)
 		return
 	}
 
@@ -72,7 +72,7 @@ func msgIbsearch(s *discordgo.Session, m *discordgo.MessageCreate, msglist []str
 
 	page, err := http.Get(URL.String())
 	if err != nil {
-		errorLog.Println("Ibsearch http error", err.Error())
+		errorLog.Println("Ibsearch http error", err)
 	}
 	if page.StatusCode != http.StatusOK {
 		s.ChannelMessageSend(m.ChannelID, "IBSearch didn't respond :(")
@@ -82,13 +82,13 @@ func msgIbsearch(s *discordgo.Session, m *discordgo.MessageCreate, msglist []str
 
 	body, err := ioutil.ReadAll(page.Body)
 	if err != nil {
-		errorLog.Println("IBSearch response body err:", err.Error())
+		errorLog.Println("IBSearch response body err:", err)
 		return
 	}
 
 	err = json.Unmarshal([]byte(strings.TrimPrefix(strings.TrimSuffix(string(body), "]"), "[")), &ibsearchStruct)
 	if err != nil {
-		errorLog.Println("IBSearch json unmarshal err:", err.Error())
+		errorLog.Println("IBSearch json unmarshal err:", err)
 		s.ChannelMessageSend(m.ChannelID, "No results ¯\\_(ツ)_/¯")
 		return
 	}

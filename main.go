@@ -42,6 +42,7 @@ const (
 	noah       string = "149612775587446784"
 	logChan    string = "312352242504040448"
 	serverID   string = "312292616089894924"
+	xmark      string = "<:xmark:314349398824058880>"
 )
 
 var (

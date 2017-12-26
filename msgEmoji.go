@@ -36,16 +36,14 @@ func sendEmojiFromFile(s *discordgo.Session, m *discordgo.MessageCreate, e strin
 
 	file, err := os.Open(fmt.Sprintf("emoji/%s.png", emoji))
 	if err != nil {
-		errorLog.Println("BM in-built emoji err:", err.Error())
+		errorLog.Println("BM in-built emoji err:", err)
 		return
 	}
 	defer file.Close()
 
 	s.ChannelFileSend(m.ChannelID, "emoji.png", file)
 
-	if m != nil {
-		s.ChannelMessageDelete(m.ChannelID, m.ID)
-	}
+	deleteMessage(m, s)
 }
 
 func msgEmoji(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
@@ -77,7 +75,5 @@ func msgEmoji(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 
 	s.ChannelFileSend(m.ChannelID, file, resp.Body)
 
-	if m != nil {
-		s.ChannelMessageDelete(m.ChannelID, m.ID)
-	}
+	deleteMessage(m, s)
 }

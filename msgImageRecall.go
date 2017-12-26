@@ -28,7 +28,7 @@ func msgImageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []
 		guild, err := guildDetails(m.ChannelID, s)
 		if err != nil {
 			s.ChannelMessageSend(m.ChannelID, "There was an issue recalling your image :( Try again please~")
-			errorLog.Println("image recall guild details error", err.Error())
+			errorLog.Println("image recall guild details error", err)
 			return
 		} else if sMap.Server[guild.ID].Prefix != "" {
 			prefix = sMap.Server[guild.ID].Prefix
@@ -91,7 +91,7 @@ func fimageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 
 	resp, err := http.Head(imgURL)
 	if err != nil {
-		errorLog.Println("Error recalling image", err.Error())
+		errorLog.Println("Error recalling image", err)
 		s.ChannelMessageSend(m.ChannelID, "Error getting the image :( Please pester Strum355#1180 about this")
 		return ""
 	} else if resp.StatusCode != http.StatusOK {
@@ -180,14 +180,14 @@ func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	resp, err := http.Get(m.Attachments[0].URL)
 	if err != nil || resp.StatusCode != http.StatusOK {
 		s.ChannelMessageSend(m.ChannelID, "Error downloading the image :( Please pester Strum355#1180 about this")
-		errorLog.Println("Error downloading image ", err.Error())
+		errorLog.Println("Error downloading image ", err)
 		return
 	}
 	defer resp.Body.Close()
 
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
-		errorLog.Println("image save guild details error", err.Error())
+		errorLog.Println("image save guild details error", err)
 	}
 
 	tempFilepath := "../../public_html/2Bot/images/temp/" + imgFileName
@@ -195,7 +195,7 @@ func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	//create temp file in temp path
 	tempFile, err := os.Create(tempFilepath)
 	if err != nil {
-		errorLog.Println("Error creating temp file", err.Error())
+		errorLog.Println("Error creating temp file", err)
 		s.ChannelMessageSend(m.ChannelID, "There was an error saving the image :( Please pester Strum355#1180 about this")
 		return
 	}
@@ -203,13 +203,13 @@ func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 
 	bodyImg, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		errorLog.Println("Error parsing body", err.Error())
+		errorLog.Println("Error parsing body", err)
 		return
 	}
 
 	_, err = tempFile.Write(bodyImg)
 	if err != nil {
-		errorLog.Println("Error writing image to file", err.Error())
+		errorLog.Println("Error writing image to file", err)
 		return
 	}
 
@@ -241,12 +241,12 @@ func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	err = s.MessageReactionAdd(reviewMsg.ChannelID, reviewMsg.ID, "✅")
 	if err != nil {
 		s.ChannelMessageSend(reviewChan, "Couldn't add ✅ to message")
-		errorLog.Println("Error attaching reaction", err.Error())
+		errorLog.Println("Error attaching reaction", err)
 	}
 	err = s.MessageReactionAdd(reviewMsg.ChannelID, reviewMsg.ID, "❌")
 	if err != nil {
 		s.ChannelMessageSend(reviewChan, "Couldn't add ❌ to message")
-		errorLog.Println("Error attaching reaction", err.Error())
+		errorLog.Println("Error attaching reaction", err)
 	}
 
 	currUser.TempImages = append(currUser.TempImages, imgName)
@@ -339,7 +339,7 @@ func fimageReview(s *discordgo.Session, queue *imageQueue, currentImageNumber in
 
 					err := os.Remove(tempFilepath)
 					if err != nil {
-						errorLog.Println("Error deleting temp image", err.Error())
+						errorLog.Println("Error deleting temp image", err)
 					}
 
 					//Make PM channel to inform user that image was rejected
@@ -380,7 +380,7 @@ func fimageReview(s *discordgo.Session, queue *imageQueue, currentImageNumber in
 	os.Rename(tempFilepath, filepath)
 	if err = os.Chmod(filepath, 0755); err != nil {
 		s.ChannelMessageSend(reviewChan, "Can't chmod "+err.Error())
-		errorLog.Println("Cant chmod", err.Error())
+		errorLog.Println("Cant chmod", err)
 	}
 
 	delete(q.QueuedMsgs, strconv.Itoa(currentImageNumber))
@@ -411,7 +411,7 @@ func fimageDelete(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 	err := os.Remove("../../public_html/2Bot/images/" + filename)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "Image couldnt be deleted :( Please pester Strum355#1180 for me")
-		errorLog.Println("Error deleting image", err.Error())
+		errorLog.Println("Error deleting image", err)
 		return
 	}
 
@@ -446,7 +446,7 @@ func fimageList(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 			escapedFile := url.PathEscape(img)
 			imgURL, err := url.Parse("http://noahsc.xyz/2Bot/images/" + escapedFile)
 			if err != nil {
-				errorLog.Println("Error parsing img url", err.Error())
+				errorLog.Println("Error parsing img url", err)
 				success = false
 				continue
 			}
@@ -465,7 +465,7 @@ func fimageList(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 		p.Widget.Timeout = time.Minute * 2
 		err := p.Spawn()
 		if err != nil {
-			errorLog.Println("Error creating image list", err.Error())
+			errorLog.Println("Error creating image list", err)
 			s.ChannelMessageSend(m.ChannelID, "Couldn't make the list :( Go pester Strum355#1180 about this")
 			return
 		}
