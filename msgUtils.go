@@ -24,16 +24,15 @@ func msgSetGame(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 
 	game := strings.Join(msglist[1:], " ")
 
-	err := s.UpdateStatus(0, game)
-	if err != nil {
+	if err := s.UpdateStatus(0, game); err != nil {
 		errorLog.Println("Game change error", err)
 		return
 	}
 
-	s.ChannelMessageSend(m.ChannelID, ":ok_hand: | Game changed successfully!")
-
 	c.Game = game
 	saveConfig()
+
+	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(":ok_hand: | Game changed to %s!", game))
 	return
 }
 
@@ -132,29 +131,11 @@ func msgListUsers(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 	s.ChannelMessageSend(m.ChannelID, "Users in: "+guild.Name+"\n`"+strings.Join(out, ", ")+"`")
 }
 
-func msgAnnounce(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	if m.Author.ID != noah && len(msglist) < 2 {
-		return
-	}
-
-	for _, guild := range s.State.Guilds {
-		if !isIn(guild.ID, c.Blacklist) {
-			if val, ok := sMap.Server[guild.ID]; !ok || val.Kicked {
-				errorLog.Println("State and config mis-match!")
-				s.ChannelMessageSend(logChan, "State and config mis-match!")
-			}
-			s.ChannelMessageSend(guild.ID, strings.Join(msglist[1:], " "))
-		}
-	}
-}
-
 func msgGit(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
 	s.ChannelMessageSend(m.ChannelID, "Check me out here https://github.com/Strum355/2Bot-Discord-Bot\nGive it star to make my creators day! ⭐")
 }
 
-func msgNSFW(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
-	onOrOff := map[bool]string{true: "enabled", false: "disabled"}
-
+func msgNSFW(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was an error toggling NSFW :( Try again please~")
@@ -167,7 +148,14 @@ func msgNSFW(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
 		return
 	}
 
-	if guild, ok := sMap.Server[guild.ID]; ok && !guild.Kicked {
+	if len(msglist) < 2 {
+		s.ChannelMessageSend(m.ChannelID, "Need to specify whether to enable or disable")
+		return
+	}
+
+	onOrOff := map[bool]string{true: "enabled", false: "disabled"}
+
+	if guild, ok := sMap.Server[guild.ID]; ok {
 		guild.Nsfw = !guild.Nsfw
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("NSFW %s", onOrOff[guild.Nsfw]))
 		saveServers()
@@ -194,7 +182,7 @@ func msgJoinMessage(s *discordgo.Session, m *discordgo.MessageCreate, msglist []
 	}
 
 	if len(split) > 0 {
-		if guild, ok := sMap.Server[guild.ID]; ok && !guild.Kicked {
+		if guild, ok := sMap.Server[guild.ID]; ok {
 			if split[0] != "false" && split[0] != "true" {
 				s.ChannelMessageSend(m.ChannelID, "Please say either `true` or `false` for enabling or disabling join messages~")
 				return

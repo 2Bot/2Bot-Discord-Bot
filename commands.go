@@ -10,7 +10,6 @@ var (
 	commMap = make(map[string]command)
 
 	setGame       = command{"setGame", "", true, false, msgSetGame}.add()
-	announceComm  = command{"announce", "", true, false, msgAnnounce}.add()
 	listUsersComm = command{"listUsers", "", true, false, msgListUsers}.add()
 	globalPrefix  = command{"setGlobalPrefix", "", true, false, msgGlobalPrefix}.add()
 	reloadConf    = command{"reload", "", true, false, msgReloadConfig}
@@ -92,6 +91,9 @@ func l(s string) (r string) {
 
 func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, message string) {
 	msglist := strings.Fields(message)
+	if len(msglist) == 0 {
+		return
+	}
 	command := l(func() string {
 		if strings.HasPrefix(message, " ") {
 			return " " + msglist[0]

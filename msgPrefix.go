@@ -63,6 +63,7 @@ func msgGlobalPrefix(s *discordgo.Session, m *discordgo.MessageCreate, msglist [
 			msg = "with"
 		}
 
+		
 		c.Prefix = parts[0] + space
 
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(":ok_hand: | All done! Prefix changed to %s %s trailing space!", c.Prefix, msg))

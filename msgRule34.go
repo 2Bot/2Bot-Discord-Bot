@@ -63,6 +63,6 @@ func msgRule34(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 	} else {
 		url = r34.Posts[randRange(0, len(r34.Posts)-1)].URL
 
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s searched for `%s` \n%s", m.Author.Username, strings.Replace(query, "+", " ", -1), "https:"+url))
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s searched for `%s` \n%s", m.Author.Username, strings.Replace(query, "+", " ", -1), url))
 	}
 }

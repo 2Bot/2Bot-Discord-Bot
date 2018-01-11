@@ -9,92 +9,94 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-type ibStruct struct {
-	Path   string `json:"path"`
-	Server string `json:"server"`
-}
+type (
+	ibStruct struct {
+		Path   string `json:"path"`
+		Server string `json:"server"`
+	}
 
-type rule34 struct {
-	PostCount int `xml:"count,attr"`
+	rule34 struct {
+		PostCount int `xml:"count,attr"`
 
-	Posts []struct {
-		URL string `xml:"file_url,attr"`
-	} `xml:"post"`
-}
+		Posts []struct {
+			URL string `xml:"file_url,attr"`
+		} `xml:"post"`
+	}
 
-type config struct {
-	Game   string `json:"game"`
-	Prefix string `json:"prefix"`
-	Token  string `json:"token"`
-	Port   string `json:"port"`
+	config struct {
+		Game   string `json:"game"`
+		Prefix string `json:"prefix"`
+		Token  string `json:"token"`
+		Port   string `json:"port"`
 
-	InDev bool `json:"indev"`
+		InDev bool `json:"indev"`
 
-	DiscordPWKey string `json:"discord.pw_key"`
+		DiscordPWKey string `json:"discord.pw_key"`
 
-	CurrImg int `json:"curr_img_id"`
-	MaxProc int `json:"maxproc"`
+		CurrImg int `json:"curr_img_id"`
+		MaxProc int `json:"maxproc"`
 
-	Blacklist []string `json:"blacklist"`
-}
+		Blacklist []string `json:"blacklist"`
+	}
 
-type voiceInst struct {
-	ChannelID string
+	voiceInst struct {
+		ChannelID string
 
-	Queue []song
+		Queue []song
 
-	Playing bool
+		Playing bool
 
-	Done chan error
+		Done chan error
 
-	Mutex *sync.Mutex
+		Mutex *sync.Mutex
 
-	StreamingSession *dca.StreamingSession
-}
+		StreamingSession *dca.StreamingSession
+	}
 
-type song struct {
-	URL   string `json:"url"`
-	Name  string `json:"name"`
-	Image string `json:"image"`
+	song struct {
+		URL   string `json:"url"`
+		Name  string `json:"name"`
+		Image string `json:"image"`
 
-	Duration time.Duration `json:"duration"`
-}
+		Duration time.Duration `json:"duration"`
+	}
 
-type imageQueue struct {
-	QueuedMsgs map[string]*queuedImage
-}
+	imageQueue struct {
+		QueuedMsgs map[string]*queuedImage
+	}
 
-type queuedImage struct {
-	ReviewMsgID   string `json:"reviewMsgID"`
-	AuthorID      string `json:"author_id"`
-	AuthorDiscrim string `json:"author_discrim"`
-	AuthorName    string `json:"author_name"`
-	ImageName     string `json:"image_name"`
-	ImageURL      string `json:"image_url"`
+	queuedImage struct {
+		ReviewMsgID   string `json:"reviewMsgID"`
+		AuthorID      string `json:"author_id"`
+		AuthorDiscrim string `json:"author_discrim"`
+		AuthorName    string `json:"author_name"`
+		ImageName     string `json:"image_name"`
+		ImageURL      string `json:"image_url"`
 
-	FileSize int `json:"file_size"`
-}
+		FileSize int `json:"file_size"`
+	}
 
-type command struct {
-	Name string
-	Help string
+	command struct {
+		Name string
+		Help string
 
-	NoahOnly  bool
-	AdminOnly bool
+		NoahOnly  bool
+		AdminOnly bool
 
-	Exec func(*discordgo.Session, *discordgo.MessageCreate, []string)
-}
+		Exec func(*discordgo.Session, *discordgo.MessageCreate, []string)
+	}
 
-type users struct {
-	User map[string]*user
-}
+	users struct {
+		User map[string]*user
+	}
 
-type user struct {
-	Images map[string]string `json:"images"`
+	user struct {
+		Images map[string]string `json:"images"`
 
-	DiskQuota    int `json:"quota"`
-	CurrDiskUsed int `json:"curr_used"`
-	QueueSize    int `json:"queue_size"`
+		DiskQuota    int `json:"quota"`
+		CurrDiskUsed int `json:"curr_used"`
+		QueueSize    int `json:"queue_size"`
 
-	TempImages []string `json:"temp_images"`
-}
+		TempImages []string `json:"temp_images"`
+	}
+)

@@ -19,7 +19,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -46,10 +45,6 @@ const (
 )
 
 var (
-	c            = new(config)
-	u            = new(users)
-	q            = new(imageQueue)
-	sMap         = new(servers)
 	dg           *discordgo.Session
 	errorLog     *log.Logger
 	infoLog      *log.Logger
@@ -59,6 +54,8 @@ var (
 	userIDRegex  = regexp.MustCompile("<@!?([0-9]{18})>")
 	channelRegex = regexp.MustCompile("<#([0-9]{18})>")
 	status       = map[discordgo.Status]string{"dnd": "busy", "online": "online", "idle": "idle", "offline": "offline"}
+	falsey 		 = []string{"false", "no", "disabled", "disable", "off"}
+	truthy		 = []string{"true", "yes", "enabled", "enable", "on"}
 	footer       = &discordgo.MessageEmbedFooter{Text: "Brought to you by 2Bot :)\nLast Bot reboot: " + lastReboot + " GMT"}
 )
 
@@ -73,11 +70,15 @@ func main() {
 
 	infoLog = log.New(logF, "INFO:  ", log.Ldate|log.Ltime)
 	errorLog = log.New(logF, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
+	if c.InDev {
+		errorLog = log.New(os.Stdout, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
+	}
 
 	loadConfig()
 	loadUsers()
 	loadQueue()
 	loadServers()
+	grafana()
 	defer cleanup()
 
 	start()
@@ -98,9 +99,6 @@ func main() {
 	}
 
 	fmt.Fprintln(logF, "/*********BOT RESTARTED*********\\")
-	errorLog.Println("error test")
-
-	grafana()
 
 	// Setup http server for selfbots
 	router := mux.NewRouter().StrictSlash(true)
@@ -126,13 +124,6 @@ func start() {
 	sMap.Count = len(sMap.Server)
 }
 
-func cleanup() {
-	saveConfig()
-	saveQueue()
-	saveServers()
-	saveUsers()
-}
-
 func grafana() {
 	dash := grada.GetDashboard()
 	ActiveServers, err := dash.CreateMetric("Active Servers", 5*time.Minute, time.Second)
@@ -151,8 +142,7 @@ func grafana() {
 }
 
 func loadLog() *os.File {
-	var err error
-	logF, err = os.OpenFile("log.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	logF, err := os.OpenFile("log.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -181,7 +171,7 @@ func postServerCount() {
 	req.Header.Set("Authorization", c.DiscordPWKey)
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
+	client := new(http.Client)
 	if _, err := client.Do(req); err != nil {
 		errorLog.Println("bots.discord.pw error", err)
 		return
@@ -196,103 +186,8 @@ func setInitialGame() {
 		errorLog.Println("Update status err:", err)
 		return
 	}
-	infoLog.Println("set initial game to ", c.Game)
+	infoLog.Println("set initial game to", c.Game)
 	return
-}
-
-func saveJSON(path string, data interface{}) error {
-	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0600)
-	if err != nil {
-		return err
-	}
-
-	enc := json.NewEncoder(f)
-	enc.SetIndent("", "  ")
-	return enc.Encode(data)
-}
-
-func loadJSON(path string, v interface{}) error {
-	f, err := os.OpenFile(path, os.O_RDONLY, 0600)
-	if err != nil {
-		return err
-	}
-
-	return json.NewDecoder(f).Decode(v)
-}
-
-func loadConfig() error {
-	err := loadJSON("config.json", c)
-	if err != nil {
-		errorLog.Println("Error loading config: ", err)
-		return err
-	}
-
-	return nil
-}
-
-func saveConfig() {
-	err := saveJSON("config.json", c)
-	if err != nil {
-		errorLog.Println("Config save error:", err)
-		return
-	}
-}
-
-func loadServers() error {
-	sMap.Server = make(map[string]*server)
-	err := loadJSON("servers.json", sMap)
-	if err != nil {
-		errorLog.Println("Error loading servers: ", err)
-		return err
-	}
-
-	for gID, guild := range sMap.Server {
-		if guild.LogChannel == "" {
-			guild.LogChannel = gID
-			saveServers()
-		}
-	}
-
-	return nil
-}
-
-func saveServers() {
-	err := saveJSON("servers.json", sMap)
-	if err != nil {
-		errorLog.Println("Save servers err: ", err)
-	}
-}
-
-func loadUsers() error {
-	u.User = make(map[string]*user)
-	err := loadJSON("users.json", u)
-	if err != nil {
-		errorLog.Println("Error loading users: ", err)
-	}
-	return err
-}
-
-func saveUsers() {
-	err := saveJSON("users.json", u)
-	if err != nil {
-		errorLog.Println("Save user err: ", err)
-	}
-}
-
-func loadQueue() error {
-	q.QueuedMsgs = make(map[string]*queuedImage)
-	err := loadJSON("queue.json", q)
-	if err != nil {
-		errorLog.Println("Load queue error: ", err)
-	}
-	return err
-}
-
-func saveQueue() {
-	err := saveJSON("queue.json", q)
-	if err != nil {
-		errorLog.Println("Save Queue error: ", err)
-	}
 }
 
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -302,7 +197,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	guildDetails, err := guildDetails(m.ChannelID, s)
 	if err != nil {
-		errorLog.Println("Message create guild details err: ", err)
+		errorLog.Println("Message create guild details err:", err)
 		return
 	}
 
@@ -327,7 +222,7 @@ func setQueuedImageHandlers() {
 	for imgNum := range q.QueuedMsgs {
 		imgNumInt, err := strconv.Atoi(imgNum)
 		if err != nil {
-			errorLog.Println("Error converting string to num for queue: ", err)
+			errorLog.Println("Error converting string to num for queue:", err)
 			continue
 		}
 		go fimageReview(dg, q, imgNumInt)
