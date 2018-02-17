@@ -20,11 +20,6 @@ func msgPrefix(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 		return
 	}
 
-	if m.Author.ID != guild.OwnerID && m.Author.ID != noah {
-		s.ChannelMessageSend(m.ChannelID, "Sorry, only the owner can do this")
-		return
-	}
-
 	var parts []string
 	var space string
 	msg := "without"
@@ -66,7 +61,7 @@ func msgGlobalPrefix(s *discordgo.Session, m *discordgo.MessageCreate, msglist [
 		
 		c.Prefix = parts[0] + space
 
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(":ok_hand: | All done! Prefix changed to %s %s trailing space!", c.Prefix, msg))
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(":ok_hand: All done! Prefix changed to %s %s trailing space!", c.Prefix, msg))
 		saveConfig()
 	}
 	return

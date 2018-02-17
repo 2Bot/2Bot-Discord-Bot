@@ -32,7 +32,7 @@ func msgRule34(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 		return
 	}
 
-	var r34 = rule34{}
+	var r34 rule34
 	var query string
 
 	s.ChannelTyping(m.ChannelID)
@@ -42,6 +42,7 @@ func msgRule34(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 	}
 	page, err := http.Get(fmt.Sprintf("https://rule34.xxx/index.php?page=dapi&s=post&q=index&tags=%s", query))
 	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, "error getting data from Rule34 :(")
 		errorLog.Println("R34 response err:", err)
 		return
 	}

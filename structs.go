@@ -80,8 +80,10 @@ type (
 		Name string
 		Help string
 
-		NoahOnly  bool
-		AdminOnly bool
+		NoahOnly      bool
+		RequiresPerms bool
+		
+		PermsRequired int
 
 		Exec func(*discordgo.Session, *discordgo.MessageCreate, []string)
 	}

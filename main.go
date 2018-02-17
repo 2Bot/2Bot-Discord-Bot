@@ -30,7 +30,6 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/christophberger/grada"
 	"github.com/gorilla/mux"
 )
 
@@ -54,13 +53,14 @@ var (
 	userIDRegex  = regexp.MustCompile("<@!?([0-9]{18})>")
 	channelRegex = regexp.MustCompile("<#([0-9]{18})>")
 	status       = map[discordgo.Status]string{"dnd": "busy", "online": "online", "idle": "idle", "offline": "offline"}
-	falsey 		 = []string{"false", "no", "disabled", "disable", "off"}
-	truthy		 = []string{"true", "yes", "enabled", "enable", "on"}
-	footer       = &discordgo.MessageEmbedFooter{Text: "Brought to you by 2Bot :)\nLast Bot reboot: " + lastReboot + " GMT"}
+	footer       = new(discordgo.MessageEmbedFooter)
 )
 
+func init() {
+	footer.Text = "Brought to you by 2Bot :)\nLast Bot reboot: " + time.Now().Format("Mon, 02-Jan-06 15:04:05 MST")
+}
+
 func main() {
-	lastReboot = time.Now().Format(time.RFC1123)[:22]
 	runtime.GOMAXPROCS(c.MaxProc)
 
 	loadLog()
@@ -78,7 +78,6 @@ func main() {
 	loadUsers()
 	loadQueue()
 	loadServers()
-	grafana()
 	defer cleanup()
 
 	start()
@@ -88,8 +87,7 @@ func main() {
 	dg.AddHandler(membPresChange)
 	dg.AddHandler(kicked)
 	dg.AddHandler(membJoin)
-
-	setInitialGame()
+	dg.AddHandler(ready)
 
 	go setQueuedImageHandlers()
 
@@ -124,35 +122,17 @@ func start() {
 	sMap.Count = len(sMap.Server)
 }
 
-func grafana() {
-	dash := grada.GetDashboard()
-	ActiveServers, err := dash.CreateMetric("Active Servers", 5*time.Minute, time.Second)
+func loadLog() {
+	var err error
+	logF, err = os.OpenFile("log.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		log.Fatalln(err)
 	}
-
-	go func() {
-		for {
-			ActiveServers.Add(func() float64 {
-				time.Sleep(time.Duration(1000) * time.Millisecond)
-				return float64(sMap.getCount())
-			}())
-		}
-	}()
-}
-
-func loadLog() *os.File {
-	logF, err := os.OpenFile("log.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	return logF
 }
 
 func dailyJobs() {
 	for {
 		postServerCount()
-		setInitialGame()
 		time.Sleep(time.Hour * 24)
 	}
 }
@@ -180,8 +160,8 @@ func postServerCount() {
 	infoLog.Println("POSTed " + strconv.Itoa(count) + " to bots.discord.pw")
 }
 
-func setInitialGame() {
-	err := dg.UpdateStatus(0, c.Game)
+func setBotGame(s *discordgo.Session) {
+	err := s.UpdateStatus(0, c.Game)
 	if err != nil {
 		errorLog.Println("Update status err:", err)
 		return
@@ -227,6 +207,11 @@ func setQueuedImageHandlers() {
 		}
 		go fimageReview(dg, q, imgNumInt)
 	}
+}
+
+func ready(s *discordgo.Session, m *discordgo.Ready) {
+	s.ChannelMessageSend(logChan, "Received ready payload")
+	setBotGame(s)
 }
 
 func joined(s *discordgo.Session, m *discordgo.GuildCreate) {

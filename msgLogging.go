@@ -14,19 +14,19 @@ func msgLogChannel(s *discordgo.Session, m *discordgo.MessageCreate, msglist []s
 		return
 	}
 
-	if m.Author.ID != guild.OwnerID && m.Author.ID != noah {
-		s.ChannelMessageSend(m.ChannelID, "Sorry, only the owner can do this!")
-		return
-	}
-
 	if len(msglist) < 2 {
 		return
 	}
 
-	channelID := channelRegex.FindStringSubmatch(msglist[1])
-	if len(channelID) != 2 {
-		s.ChannelMessageSend(m.ChannelID, "Not a valid channel!")
-		return
+	var channelID string
+	channelIDMatch := channelRegex.FindStringSubmatch(msglist[1])
+	if len(channelIDMatch) != 2 {
+		if len(msglist[1]) == 18 {
+			channelID = msglist[1]
+		} else {
+			s.ChannelMessageSend(m.ChannelID, "Not a valid channel!")
+			return
+		}
 	}
 
 	var chanList []string
@@ -34,15 +34,15 @@ func msgLogChannel(s *discordgo.Session, m *discordgo.MessageCreate, msglist []s
 		chanList = append(chanList, channel.ID)
 	}
 
-	if !isIn(channelID[1], chanList) {
+	if !isIn(channelID, chanList) {
 		s.ChannelMessageSend(m.ChannelID, "That channel isn't in this server <:2BThink:333694872802426880>")
 		return
 	}
 
 	if guild, ok := sMap.Server[guild.ID]; ok && !guild.Kicked {
-		guild.LogChannel = channelID[1]
+		guild.LogChannel = channelID
 		saveServers()
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Log channel changed to %s", channelID[0]))
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Log channel changed to <#%s>", channelID))
 	}
 	return
 }
@@ -52,11 +52,6 @@ func msgLogging(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was a problem toggling logging :( Try again please~")
 		errorLog.Println("logging guild details error", err)
-		return
-	}
-
-	if m.Author.ID != guild.OwnerID && m.Author.ID != noah {
-		s.ChannelMessageSend(m.ChannelID, "Sorry, only the owner can do this!")
 		return
 	}
 

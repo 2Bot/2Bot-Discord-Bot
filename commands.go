@@ -9,58 +9,33 @@ import (
 var (
 	commMap = make(map[string]command)
 
-	setGame       = command{"setGame", "", true, false, msgSetGame}.add()
-	listUsersComm = command{"listUsers", "", true, false, msgListUsers}.add()
-	globalPrefix  = command{"setGlobalPrefix", "", true, false, msgGlobalPrefix}.add()
-	reloadConf    = command{"reload", "", true, false, msgReloadConfig}
+	setGame       = command{"setGame", "", true, false, 0, msgSetGame}.add()
+	listUsersComm = command{"listUsers", "", true, false, 0, msgListUsers}.add()
+	globalPrefix  = command{"setGlobalPrefix", "", true, false, 0, msgGlobalPrefix}.add()
+	reloadConf    = command{"reload", "", true, false, 0, msgReloadConfig}
 
 	avatar = command{"avatar",
 		"Args: [@user]\n\nReturns the given users avatar.\nIf no user ID is given, your own avatar is sent.\n\nExample:\n`!owo avatar @Strum355#2298`",
-		false, false, msgAvatar}.add()
+		false, false, 0, msgAvatar}.add()
 	encodeComm = command{"encode",
 		"Args: [base] [text]\n\nBases: `base64`, `bcrypt`, `md5`, `sh256`\nEncodes the given text in the given base.\n\nExample:\n`!owo encode md5 some text`",
-		false, false, msgEncode}.add()
+		false, false, 0, msgEncode}.add()
 	ibsearch = command{"ibsearch",
 		"Args: [search] | rating=[e,s,q] | format=[gif,png,jpg]\n\nReturns a random image from ibsearch for the given search term with the given filters applied.\n\n" +
 			"Example:\n`!owo ibsearch lewds | rating=e | format=gif`",
-		false, false, msgIbsearch}.add()
+		false, false, 0, msgIbsearch}.add()
 	r34Comm = command{"r34",
 		"Args: [search]\n\nReturns a random image from rule34 for the given search term.\n\nExample:\n`!owo r34 lewds`",
-		false, false, msgRule34}.add()
+		false, false, 0, msgRule34}.add()
 	userStats = command{"whois",
 		"Args: [@user]\n\nSome info about the given user.\n\nExample:\n`!owo whois @Strum355#2298`",
-		false, false, msgUserStats}.add()
+		false, false, 0, msgUserStats}.add()
 	infoComm = command{"info",
 		"Args: none\n\nSome info about 2Bot.\n\nExample:\n`!owo info`",
-		false, false, msgInfo}.add()
+		false, false, 0, msgInfo}.add()
 	bigMoji = command{"bigMoji",
 		"Args: [emoji]\n\nSends a large image of the given emoji.\nCommand 'bigMoji' can be excluded for shorthand.\n\nExample:\n`!owo :smile:`\nor\n`!owo bigMoji :smile:`",
-		false, false, msgEmoji}.add()
-	logChannel = command{"logChannel",
-		"Args: [channelID]\n\nSets the log channel to the given channel.\nAdmin only.\n\nExample:\n`!owo logChannel 312292616089894924`",
-		false, true, msgLogChannel}.add()
-	nsfwComm = command{"setNSFW",
-		"Args: none\n\nToggles NSFW commands in NSFW channels.\nAdmin only.\n\nExample:\n`!owo setNSFW`",
-		false, true, msgNSFW}.add()
-	joinMsg = command{"joinMessage",
-		"Args: [true,false] | [message] | [channelID]\n\nEnables or disables join messages.\nthe message and channel that the bot welcomes new people in.\n" +
-			"To mention the user in the message, put `%s` where you want the user to be mentioned in the message.\nLeave message \n\nExample to set message:\n" +
-			"`!owo joinMessage true | Hey there %s! | 312294858582654978`\n>On member join\n`Hey there [@new member]`\n\n" +
-			"Example to disable:\n`!owo joinMessage false`",
-		false, true, msgJoinMessage}.add()
-	loggingComm = command{"logging",
-		"Args: none\n\nToggles user presence logging.\n\nExample:\n`!owo logging`",
-		false, true, msgLogging}.add()
-	gitComm = command{"git",
-		"Args: none\n\nLinks 2Bots github page.\n\nExample:\n`!owo git`",
-		false, false, msgGit}.add()
-	purgeComm = command{"purge",
-		"Args: [number] [@user]\n\nPurges 'number' amount of messages. Optionally, purge only the messages from a given user!\nAdmin only\n\nExample:\n`!owo purge 300`\n" +
-			"Example 2:\n`!owo purge 300 @Strum355#1180`",
-		false, true, msgPurge}.add()
-	prefixComm = command{"setPrefix",
-		"Args: [prefix] | [whitespace?]\n\nSets the servers prefix to 'prefix'\nAdmin only.\n\nExample:\n`!owo setPrefix . | false`\nNew Example command:\n`.help`",
-		false, true, msgPrefix}.add()
+		false, false, 0, msgEmoji}.add()
 	imageRecall = command{"image",
 		"Args: [save,recall,delete,list,status] [name]\n\nSave images and recall them at anytime! Everyone gets 8MB of image storage. Any name counts so long theres no `/` in it." +
 			"Only you can 'recall' your saved images. There's a review process to make sure nothing illegal is being uploaded but we're fairly relaxed for the most part\n\n" +
@@ -69,19 +44,45 @@ var (
 			"`!owo image delete 2B Happy`\nThis will delete the image you saved called `2B Happy`\n\n" +
 			"`!owo image list`\nThis will list your saved images along with a preview!\n\n" +
 			"`!owo image status`\nShows some details on your saved images and quota",
-		false, false, msgImageRecall}.add()
+		false, false, 0, msgImageRecall}.add()
 	inviteLink = command{"invite",
 		"Args: none\n\nSends an invite link for 2Bot!\n\nExample:\n`!owo invite`",
-		false, false, msgInvite}.add()
+		false, false, 0, msgInvite}.add()
 	helpComm = command{"help",
-		"", false, false, msgHelp}.add()
+		"", false, false, 0, msgHelp}.add()
 	musicComm = command{"yt",
 		"Args: [play,stop] [url]\n\nWork In Progress!!! Play music from Youtube straight to your Discord Server!\n\n" +
 			"Example 1: `!owo yt play https://www.youtube.com/watch?v=MvLdxtICOIY`\n" +
 			"Example 2: `!owo yt stop`",
-		false, false, msgYoutube}.add()
+		false, false, 0, msgYoutube}.add()
 	playlistComm = command{"playlist", "",
-		false, false, msgPlaylist}
+		false, false, 0, msgPlaylist}
+
+	nsfwComm = command{"setNSFW",
+		"Args: none\n\nToggles NSFW commands in NSFW channels.\nAdmin only.\n\nExample:\n`!owo setNSFW`",
+		false, true, discordgo.PermissionAdministrator | discordgo.PermissionManageServer, msgNSFW}.add()
+	joinMsg = command{"joinMessage",
+		"Args: [true,false] | [message] | [channelID]\n\nEnables or disables join messages.\nthe message and channel that the bot welcomes new people in.\n" +
+			"To mention the user in the message, put `%s` where you want the user to be mentioned in the message.\nLeave message \n\nExample to set message:\n" +
+			"`!owo joinMessage true | Hey there %s! | 312294858582654978`\n>On member join\n`Hey there [@new member]`\n\n" +
+			"Example to disable:\n`!owo joinMessage false`",
+		false, true, discordgo.PermissionAdministrator | discordgo.PermissionManageServer, msgJoinMessage}.add()
+	logChannel = command{"logChannel",
+		"Args: [channelID,channel tag]\n\nSets the log channel to the given channel.\nAdmin only.\n\nExample:\n`!owo logChannel 312292616089894924`\n`!owo logChannel #bot-channel`",
+		false, true, discordgo.PermissionAdministrator | discordgo.PermissionManageServer, msgLogChannel}.add()
+	loggingComm = command{"logging",
+		"Args: none\n\nToggles user presence logging.\n\nExample:\n`!owo logging`",
+		false, true, discordgo.PermissionAdministrator | discordgo.PermissionManageServer, msgLogging}.add()
+	gitComm = command{"git",
+		"Args: none\n\nLinks 2Bots github page.\n\nExample:\n`!owo git`",
+		false, false, discordgo.PermissionAdministrator | discordgo.PermissionManageServer, msgGit}.add()
+	purgeComm = command{"purge",
+		"Args: [number] [@user]\n\nPurges 'number' amount of messages. Optionally, purge only the messages from a given user!\nAdmin only\n\nExample:\n`!owo purge 300`\n" +
+			"Example 2:\n`!owo purge 300 @Strum355#1180`",
+		false, true, discordgo.PermissionAdministrator | discordgo.PermissionManageMessages, msgPurge}.add()
+	prefixComm = command{"setPrefix",
+		"Args: [prefix] | [whitespace?]\n\nSets the servers prefix to 'prefix'\nAdmin only.\n\nExample:\n`!owo setPrefix . | false`\nNew Example command:\n`.help`",
+		false, true, discordgo.PermissionAdministrator | discordgo.PermissionManageServer, msgPrefix}.add()
 )
 
 //Small wrapper function to reduce clutter
@@ -107,9 +108,22 @@ func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, message stri
 		return
 	}
 
-	if command == strings.ToLower(commMap[command].Name) {
-		commMap[command].Exec(s, m, msglist)
-		return
+
+	if fromMap, ok := commMap[command]; ok && command == l(fromMap.Name) {
+		userPerms, err := s.State.UserChannelPermissions(m.Author.ID, m.ChannelID)
+		if err != nil {
+			s.ChannelMessageSend(m.ChannelID, "Error verifying permissions :(")
+			errorLog.Println("error getting user permissions", err)
+			return
+		}
+
+		hasPerms := userPerms & fromMap.PermsRequired > 0
+	
+		if (fromMap.RequiresPerms && hasPerms) || !fromMap.RequiresPerms {
+			fromMap.Exec(s, m, msglist)
+			return
+		}
+		s.ChannelMessageSend(m.ChannelID, "You don't have the correct permissions to run this!")
 	}
 }
 

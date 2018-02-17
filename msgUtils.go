@@ -90,7 +90,7 @@ func msgInfo(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
 
 		Fields: []*discordgo.MessageEmbedField{
 			{Name: "Bot Name:", Value: codeBlock(s.State.User.Username), Inline: true},
-			{Name: "Creator:", Value: codeBlock("Strum355#1180"), Inline: true},
+			{Name: "Creator:", Value: codeBlock("Strum355#1998"), Inline: true},
 			{Name: "Creation Date:", Value: codeBlock(creationTime), Inline: true},
 			{Name: "Global Prefix:", Value: codeBlock(c.Prefix), Inline: true},
 			{Name: "Local Prefix", Value: codeBlock(prefix), Inline: true},
@@ -143,16 +143,6 @@ func msgNSFW(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string)
 		return
 	}
 
-	if m.Author.ID != guild.OwnerID && m.Author.ID != noah {
-		s.ChannelMessageSend(m.ChannelID, "Sorry, only the owner can do this")
-		return
-	}
-
-	if len(msglist) < 2 {
-		s.ChannelMessageSend(m.ChannelID, "Need to specify whether to enable or disable")
-		return
-	}
-
 	onOrOff := map[bool]string{true: "enabled", false: "disabled"}
 
 	if guild, ok := sMap.Server[guild.ID]; ok {
@@ -167,11 +157,6 @@ func msgJoinMessage(s *discordgo.Session, m *discordgo.MessageCreate, msglist []
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was an error with discord :( Try again please~")
 		errorLog.Println("join message guild details error", err)
-		return
-	}
-
-	if m.Author.ID != guild.OwnerID && m.Author.ID != noah {
-		s.ChannelMessageSend(m.ChannelID, "Sorry, only the owner can do this")
 		return
 	}
 

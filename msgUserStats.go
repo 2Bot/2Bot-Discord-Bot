@@ -24,7 +24,6 @@ func msgUserStats(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 
 	var userID string
 	var nick string
-	roleStruct := guild.Roles
 
 	if len(msglist) > 1 {
 		submatch := userIDRegex.FindStringSubmatch(msglist[1])
@@ -50,7 +49,7 @@ func msgUserStats(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 	var roleNames []string
 
 	for _, role := range memberStruct.Roles {
-		for _, guildRole := range roleStruct {
+		for _, guildRole := range guild.Roles {
 			if guildRole.ID == role {
 				roleNames = append(roleNames, guildRole.Name)
 			}
@@ -84,6 +83,4 @@ func msgUserStats(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 			{Name: "ID Number:", Value: user.ID, Inline: true},
 		},
 	})
-
-	return
 }

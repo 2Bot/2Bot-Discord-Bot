@@ -9,31 +9,8 @@ import (
 )
 
 func msgPurge(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	guild, err := guildDetails(m.ChannelID, s)
-	if err != nil {
-		s.ChannelMessageSend(m.ChannelID, "There was a problem purging :( Please try again~")
-		errorLog.Println("purge guild details error", err)
-		return
-	}
-
-	if m.Author.ID != guild.OwnerID && m.Author.ID != noah {
-		s.ChannelMessageSend(m.ChannelID, "Sorry, only the owner can do this~")
-		return
-	}
-
 	if len(msglist) < 2 {
 		s.ChannelMessageSend(m.ChannelID, "Gotta specify a number of messages to delete~")
-		return
-	}
-
-	if perm, err := s.State.UserChannelPermissions(s.State.User.ID, m.ChannelID); err == nil {
-		if perm&discordgo.PermissionManageMessages <= 0 {
-			s.ChannelMessageSend(m.ChannelID, "Dont have permissions :(")
-			return
-		}
-	} else {
-		s.ChannelMessageSend(m.ChannelID, "Couldn't determine permissions :(")
-		errorLog.Println("error getting permissions", err)
 		return
 	}
 
@@ -56,7 +33,7 @@ func msgPurge(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 	deleteMessage(m, s)
 
 	if userToPurge == "" {
-		standardPurge(purgeAmount, s, m)
+		err = standardPurge(purgeAmount, s, m)
 	} else {
 		err = userPurge(purgeAmount, s, m, userToPurge)
 	}
@@ -72,7 +49,7 @@ func msgPurge(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 }
 
 func standardPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCreate) error {
-	outOfDate := false
+	var outOfDate bool
 	for purgeAmount > 0 {
 		list, err := s.ChannelMessages(m.ChannelID, purgeAmount%100, "", "", "")
 		if err != nil {
@@ -110,18 +87,18 @@ func standardPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCr
 			break
 		}
 
-		purgeAmount -= 100
+		purgeAmount -= len(purgeList)
 	}
 
 	return nil
 }
 
 func userPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCreate, userToPurge string) error {
+	var outOfDate bool
 	for purgeAmount > 0 {
-		del := min(purgeAmount, 100)
+		del := purgeAmount%100
 		var purgeList []string
 
-	OutOfDate:
 		for len(purgeList) < del {
 			list, err := s.ChannelMessages(m.ChannelID, 100, "", "", "")
 			if err != nil {
@@ -130,6 +107,7 @@ func userPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCreate
 				return err
 			}
 
+			//if more was requested to be deleted than exists
 			if len(list) == 0 {
 				break
 			}
@@ -147,11 +125,16 @@ func userPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCreate
 					}
 
 					if timeSince.Hours()/24 >= 14 {
-						break OutOfDate
+						outOfDate = true
+						break
 					}
 
 					purgeList = append(purgeList, msg.ID)
 				}
+			}
+
+			if outOfDate {
+				break
 			}
 		}
 
@@ -159,7 +142,11 @@ func userPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCreate
 			return err
 		}
 
-		purgeAmount -= 100
+		if outOfDate {
+			break
+		}
+
+		purgeAmount -= len(purgeList)
 	}
 
 	return nil
