@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -17,7 +16,6 @@ func l(s string) string {
 }
 
 func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, message string) {
-	fmt.Println(message)
 	msglist := strings.Fields(message)
 	if len(msglist) == 0 {
 		return
