@@ -82,7 +82,7 @@ type (
 
 		NoahOnly      bool
 		RequiresPerms bool
-		
+
 		PermsRequired int
 
 		Exec func(*discordgo.Session, *discordgo.MessageCreate, []string)

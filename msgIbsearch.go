@@ -11,6 +11,11 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+func init() {
+	newCommand("ibsearch", 0, false, false, msgIbsearch).setHelp("Args: [search] | rating=[e,s,q] | format=[gif,png,jpg]\n\nReturns a random image from ibsearch for the given search term with the given filters applied.\n\n" +
+		"Example:\n`!owo ibsearch lewds | rating=e | format=gif`")
+}
+
 func msgIbsearch(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {

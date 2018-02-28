@@ -8,6 +8,13 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+func init() {
+	newCommand("purge",
+		discordgo.PermissionAdministrator|discordgo.PermissionManageMessages|discordgo.PermissionManageServer,
+		false, true, msgPurge).setHelp("Args: [number] [@user]\n\nPurges 'number' amount of messages. Optionally, purge only the messages from a given user!\nAdmin only\n\nExample:\n`!owo purge 300`\n" +
+		"Example 2:\n`!owo purge 300 @Strum355#1180`").add()
+}
+
 func msgPurge(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	if len(msglist) < 2 {
 		s.ChannelMessageSend(m.ChannelID, "Gotta specify a number of messages to delete~")
@@ -96,7 +103,7 @@ func standardPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCr
 func userPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCreate, userToPurge string) error {
 	var outOfDate bool
 	for purgeAmount > 0 {
-		del := purgeAmount%100
+		del := purgeAmount % 100
 		var purgeList []string
 
 		for len(purgeList) < del {

@@ -12,6 +12,29 @@ import (
 
 var mem runtime.MemStats
 
+func init() {
+	newCommand("setGame", 0, true, false, msgSetGame).add()
+	newCommand("listUsers", 0, true, false, msgListUsers).add()
+	newCommand("reloadConfig", 0, true, false, msgReloadConfig)
+
+	newCommand("help", 0, false, false, msgHelp).setHelp("ok").add()
+	newCommand("info", 0, false, false, msgInfo).setHelp("Args: none\n\nSome info about 2Bot.\n\nExample:\n`!owo info`").add()
+	newCommand("invite", 0, false, false, msgInvite).setHelp("Args: none\n\nSends an invite link for 2Bot!\n\nExample:\n`!owo invite`").add()
+	newCommand("git", 0, false, false, msgGit).setHelp("Args: none\n\nLinks 2Bots github page.\n\nExample:\n`!owo git`").add()
+
+	newCommand("setNSFW",
+		discordgo.PermissionAdministrator|discordgo.PermissionManageServer,
+		false, true, msgNSFW).setHelp("Args: none\n\nToggles NSFW commands in NSFW channels.\nAdmin only.\n\nExample:\n`!owo setNSFW`").add()
+
+	newCommand("joinMessage",
+		discordgo.PermissionAdministrator|discordgo.PermissionManageServer,
+		false, true, msgJoinMessage).setHelp("Args: [true,false] | [message] | [channelID]\n\nEnables or disables join messages.\nthe message and channel that the bot welcomes new people in.\n" +
+		"To mention the user in the message, put `%s` where you want the user to be mentioned in the message.\nLeave message \n\nExample to set message:\n" +
+		"`!owo joinMessage true | Hey there %s! | 312294858582654978`\n>On member join\n`Hey there [@new member]`\n\n" +
+		"Example to disable:\n`!owo joinMessage false`").add()
+
+}
+
 /*
 	These are usually short commands that dont warrant their own file
 	or are only for me, the creator..usually
@@ -65,6 +88,19 @@ func msgHelp(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string)
 	})
 }
 
+func (c command) helpCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
+	s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
+		Color: 0,
+
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Name:  c.Name,
+				Value: c.Help,
+			},
+		},
+	})
+}
+
 func msgInfo(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
 	ct1, _ := getCreationTime(s.State.User.ID)
 	creationTime := ct1.Format(time.UnixDate)[:10]
@@ -90,7 +126,7 @@ func msgInfo(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
 
 		Fields: []*discordgo.MessageEmbedField{
 			{Name: "Bot Name:", Value: codeBlock(s.State.User.Username), Inline: true},
-			{Name: "Creator:", Value: codeBlock("Strum355#1998"), Inline: true},
+			{Name: "Creator:", Value: codeBlock("Strum355#0554"), Inline: true},
 			{Name: "Creation Date:", Value: codeBlock(creationTime), Inline: true},
 			{Name: "Global Prefix:", Value: codeBlock(c.Prefix), Inline: true},
 			{Name: "Local Prefix", Value: codeBlock(prefix), Inline: true},

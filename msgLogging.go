@@ -6,6 +6,15 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+func init() {
+	newCommand("logging",
+		discordgo.PermissionAdministrator|discordgo.PermissionManageServer,
+		false, true, msgLogging).setHelp("Args: none\n\nToggles user presence logging.\n\nExample:\n`!owo logging`").add()
+	newCommand("logChannel",
+		discordgo.PermissionAdministrator|discordgo.PermissionManageServer,
+		false, true, msgLogChannel).setHelp("Args: [channelID,channel tag]\n\nSets the log channel to the given channel.\nAdmin only.\n\nExample:\n`!owo logChannel 312292616089894924`\n`!owo logChannel #bot-channel`").add()
+}
+
 func msgLogChannel(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {

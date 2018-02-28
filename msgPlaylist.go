@@ -7,6 +7,10 @@ import (
 	"github.com/rylio/ytdl"
 )
 
+func init() {
+	newCommand("playlist", 0, false, false, msgPlaylist) //TODO
+}
+
 func msgPlaylist(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	if len(msglist) < 2 {
 		return

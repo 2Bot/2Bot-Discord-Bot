@@ -7,6 +7,13 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+func init() {
+	newCommand("setGlobalPrefix", 0, true, false, msgGlobalPrefix).add()
+	newCommand("setPrefix",
+		discordgo.PermissionAdministrator|discordgo.PermissionManageServer,
+		false, true, msgPrefix).setHelp("Args: [prefix] | [whitespace?]\n\nSets the servers prefix to 'prefix'\nAdmin only.\n\nExample:\n`!owo setPrefix . | false`\nNew Example command:\n`.help`").add()
+}
+
 func msgPrefix(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
@@ -58,7 +65,6 @@ func msgGlobalPrefix(s *discordgo.Session, m *discordgo.MessageCreate, msglist [
 			msg = "with"
 		}
 
-		
 		c.Prefix = parts[0] + space
 
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(":ok_hand: All done! Prefix changed to %s %s trailing space!", c.Prefix, msg))

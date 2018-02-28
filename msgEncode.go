@@ -11,6 +11,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+func init() {
+	newCommand("encode", 0, false, false, msgEncode).setHelp("Args: [base] [text]\n\nBases: `base64`, `bcrypt`, `md5`, `sh256`\nEncodes the given text in the given base.\n\nExample:\n`!owo encode md5 some text`").add()
+}
+
 func msgEncode(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	if len(msglist) < 3 {
 		return

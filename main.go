@@ -188,11 +188,13 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 
-	if strings.HasPrefix(m.Content, prefix) {
-		parseCommand(s, m, strings.TrimPrefix(m.Content, prefix))
-	} else if prefix != c.Prefix && strings.HasPrefix(m.Content, c.Prefix) {
-		parseCommand(s, m, strings.TrimPrefix(m.Content, c.Prefix))
-	}
+	parseCommand(s, m, func() string {
+		if strings.HasPrefix(m.Content, c.Prefix) {
+			return strings.TrimPrefix(m.Content, c.Prefix)
+		}
+		return strings.TrimPrefix(m.ChannelID, prefix)
+	}())
+
 	return
 }
 
@@ -210,7 +212,12 @@ func setQueuedImageHandlers() {
 }
 
 func ready(s *discordgo.Session, m *discordgo.Ready) {
-	s.ChannelMessageSend(logChan, "Received ready payload")
+	_, err := s.ChannelMessageSendEmbed(logChan, &discordgo.MessageEmbed{
+		Fields: []*discordgo.MessageEmbedField{
+			{Name: "Info:", Value: "Received ready payload"},
+		},
+	})
+	fmt.Println(err)
 	setBotGame(s)
 }
 
