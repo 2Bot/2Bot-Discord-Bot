@@ -65,14 +65,6 @@ func newCommand(name string, permissions int, noah, needsPerms bool, f func(*dis
 	}
 }
 
-func (c command) help() string {
-	return c.Help
-}
-
-func (c command) sendHelp(s *discordgo.Session, id string) {
-	s.ChannelMessageSend(id, c.help())
-}
-
 func (c command) setHelp(help string) command {
 	c.Help = help
 	return c
