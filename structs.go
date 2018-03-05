@@ -48,7 +48,7 @@ type (
 
 		Done chan error
 
-		Mutex *sync.Mutex
+		*sync.Mutex
 
 		StreamingSession *dca.StreamingSession
 	}
