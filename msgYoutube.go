@@ -294,15 +294,15 @@ func pauseQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 		errorLog.Println("Guild details error", err)
 		return
 	}
-	
+
 	srvr := sMap.Server[guild.ID]
 
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("⏸ Paused. To unpause, use the command %s unpause", func() string { 
-			if srvr.Prefix == "" { 
-				return c.Prefix 
-				} 
-			return srvr.Prefix 
-		}()))
+	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("⏸ Paused. To unpause, use the command %s unpause", func() string {
+		if srvr.Prefix == "" {
+			return c.Prefix
+		}
+		return srvr.Prefix
+	}()))
 
 	srvr.VoiceInst.Lock()
 	defer srvr.VoiceInst.Unlock()

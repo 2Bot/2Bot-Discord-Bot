@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/go-chi/chi"
 )
 
 //From Necroforger's dgwidgets
@@ -109,7 +110,9 @@ func guildDetails(channelID string, s *discordgo.Session) (*discordgo.Guild, err
 }
 
 func isInServer(w http.ResponseWriter, r *http.Request) {
-	authorID := r.FormValue("id")
+	defer r.Body.Close()
+
+	id := chi.URLParam(r, "id")
 	guild, err := guildDetails(serverID, dg)
 	if err != nil {
 		errorLog.Println(err)
@@ -117,7 +120,7 @@ func isInServer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, member := range guild.Members {
-		if member.User.ID == authorID {
+		if member.User.ID == id {
 			w.WriteHeader(http.StatusOK)
 			return
 		}

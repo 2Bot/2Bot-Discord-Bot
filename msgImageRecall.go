@@ -5,10 +5,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/gorilla/mux"
-
 	"github.com/Necroforger/dgwidgets"
 	"github.com/bwmarrin/discordgo"
+	"github.com/go-chi/chi"
 
 	"encoding/hex"
 	"fmt"
@@ -66,10 +65,11 @@ func httpImageRecall(w http.ResponseWriter, r *http.Request) {
 	// 404 for user not found, 410 for image not found
 	defer r.Body.Close()
 
-	vars := mux.Vars(r)
-	if val, ok := u.User[vars["id"]]; ok {
+	id := chi.URLParam(r, "id")
+	img := chi.URLParam(r, "img")
+	if val, ok := u.User[id]; ok {
 		for _, val := range val.Images {
-			if strings.HasPrefix(val, vars["img"]) {
+			if strings.HasPrefix(val, img) {
 				w.WriteHeader(http.StatusOK)
 				fmt.Fprint(w, "http://noahsc.xyz/2Bot/images/"+val)
 				return

@@ -19,7 +19,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -30,7 +29,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi"
 )
 
 const (
@@ -47,7 +46,6 @@ var (
 	dg           *discordgo.Session
 	errorLog     *log.Logger
 	infoLog      *log.Logger
-	logF         *os.File
 	lastReboot   string
 	emojiRegex   = regexp.MustCompile("<(a)?:.*?:(.*?)>")
 	userIDRegex  = regexp.MustCompile("<@!?([0-9]{18})>")
@@ -58,53 +56,6 @@ var (
 
 func init() {
 	footer.Text = "Brought to you by 2Bot :)\nLast Bot reboot: " + time.Now().Format("Mon, 02-Jan-06 15:04:05 MST")
-}
-
-func main() {
-	runtime.GOMAXPROCS(c.MaxProc)
-
-	loadLog()
-	defer logF.Close()
-
-	log.SetOutput(logF)
-
-	infoLog = log.New(logF, "INFO:  ", log.Ldate|log.Ltime)
-	errorLog = log.New(logF, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
-	if c.InDev {
-		errorLog = log.New(os.Stdout, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
-	}
-
-	loadConfig()
-	loadUsers()
-	loadQueue()
-	loadServers()
-	defer cleanup()
-
-	start()
-	defer dg.Close()
-
-	dg.AddHandler(messageCreate)
-	dg.AddHandler(membPresChange)
-	dg.AddHandler(kicked)
-	dg.AddHandler(membJoin)
-	dg.AddHandler(ready)
-
-	go setQueuedImageHandlers()
-
-	if !c.InDev {
-		go dailyJobs()
-		dg.AddHandler(joined)
-	}
-
-	fmt.Fprintln(logF, "/*********BOT RESTARTED*********\\")
-
-	// Setup http server for selfbots
-	router := mux.NewRouter().StrictSlash(true)
-	router.HandleFunc("/image/{id:[0-9]{18}}/recall/{img:[0-9a-z]{64}}", httpImageRecall)
-	router.HandleFunc("/inServer", isInServer).Methods("GET")
-
-	fmt.Println("Bot is now running. Press CTRL-C to exit.")
-	errorLog.Println(http.ListenAndServe("0.0.0.0"+c.Port, router))
 }
 
 func start() {
@@ -120,14 +71,6 @@ func start() {
 	}
 
 	sMap.Count = len(sMap.Server)
-}
-
-func loadLog() {
-	var err error
-	logF, err = os.OpenFile("log.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
-	if err != nil {
-		log.Fatalln(err)
-	}
 }
 
 func dailyJobs() {
@@ -217,7 +160,7 @@ func ready(s *discordgo.Session, m *discordgo.Ready) {
 			{Name: "Info:", Value: "Received ready payload"},
 		},
 	})
-	fmt.Println(err)
+	errorLog.Println(err)
 	setBotGame(s)
 }
 
@@ -304,4 +247,44 @@ func kicked(s *discordgo.Session, m *discordgo.GuildDelete) {
 	defer sMap.Mutex.Unlock()
 	sMap.Count--
 	saveServers()
+}
+
+func main() {
+	runtime.GOMAXPROCS(c.MaxProc)
+
+	infoLog = log.New(os.Stdout, "INFO:  ", log.Ldate|log.Ltime)
+	errorLog = log.New(os.Stdout, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
+
+	for _, f := range []func() error{loadConfig, loadUsers, loadServers, loadQueue} {
+		if err := f(); err != nil {
+			log.Fatalln(err)
+		}
+	}
+	defer cleanup()
+
+	start()
+	defer dg.Close()
+
+	dg.AddHandler(messageCreate)
+	dg.AddHandler(membPresChange)
+	dg.AddHandler(kicked)
+	dg.AddHandler(membJoin)
+	dg.AddHandler(ready)
+
+	go setQueuedImageHandlers()
+
+	if !c.InDev {
+		go dailyJobs()
+		dg.AddHandler(joined)
+	}
+
+	errorLog.Println("/*********BOT RESTARTED*********\\")
+
+	// Setup http server for selfbots
+	router := chi.NewRouter()
+	router.Get("/image/{id:[0-9]{18}}/recall/{img:[0-9a-z]{64}}", httpImageRecall)
+	router.Get("/inServer/{id:[0-9]{18}", isInServer)
+
+	infoLog.Println("Bot is now running. Press CTRL-C to exit.")
+	errorLog.Println(http.ListenAndServe("0.0.0.0:80", router))
 }
