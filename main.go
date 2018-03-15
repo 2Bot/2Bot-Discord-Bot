@@ -62,12 +62,11 @@ func start() {
 	var err error
 	dg, err = discordgo.New("Bot " + c.Token)
 	if err != nil {
-		log.Fatalln("Error creating Discord session,", err)
+		errorLog.Fatalln("Error creating Discord session,", err)
 	}
 
-	err = dg.Open()
-	if err != nil {
-		log.Fatalln("Error opening connection,", err)
+	if err := dg.Open(); err != nil {
+		errorLog.Fatalln("Error opening connection,", err)
 	}
 
 	sMap.Count = len(sMap.Server)
@@ -89,13 +88,13 @@ func postServerCount() {
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
 	if err != nil {
 		errorLog.Println("error making bots.discord.pw request", err)
+		return
 	}
 
 	req.Header.Set("Authorization", c.DiscordPWKey)
 	req.Header.Set("Content-Type", "application/json")
 
-	client := new(http.Client)
-	if _, err := client.Do(req); err != nil {
+	if _, err := new(http.Client).Do(req); err != nil {
 		errorLog.Println("bots.discord.pw error", err)
 		return
 	}
@@ -104,13 +103,11 @@ func postServerCount() {
 }
 
 func setBotGame(s *discordgo.Session) {
-	err := s.UpdateStatus(0, c.Game)
-	if err != nil {
+	if err := s.UpdateStatus(0, c.Game); err != nil {
 		errorLog.Println("Update status err:", err)
 		return
 	}
 	infoLog.Println("set initial game to", c.Game)
-	return
 }
 
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -141,8 +138,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	return
 }
 
-// Set all handlers for queued images, in case the bot crashes
-// with images still in queue
+// Set all handlers for queued images, in case the bot crashes with images still in queue
 func setQueuedImageHandlers() {
 	for imgNum := range q.QueuedMsgs {
 		imgNumInt, err := strconv.Atoi(imgNum)
@@ -155,12 +151,11 @@ func setQueuedImageHandlers() {
 }
 
 func ready(s *discordgo.Session, m *discordgo.Ready) {
-	_, err := s.ChannelMessageSendEmbed(logChan, &discordgo.MessageEmbed{
+	s.ChannelMessageSendEmbed(logChan, &discordgo.MessageEmbed{
 		Fields: []*discordgo.MessageEmbedField{
 			{Name: "Info:", Value: "Received ready payload"},
 		},
 	})
-	errorLog.Println(err)
 	setBotGame(s)
 }
 
@@ -255,9 +250,14 @@ func main() {
 	infoLog = log.New(os.Stdout, "INFO:  ", log.Ldate|log.Ltime)
 	errorLog = log.New(os.Stdout, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
 
-	for _, f := range []func() error{loadConfig, loadUsers, loadServers, loadQueue} {
+	for i, f := range []func() error{loadConfig, loadUsers, loadServers, loadQueue} {
 		if err := f(); err != nil {
-			log.Fatalln(err)
+			switch i {
+			case 0:
+				errorLog.Fatalln(err)
+			default:
+				errorLog.Println(err)
+			}
 		}
 	}
 	defer cleanup()
@@ -283,7 +283,7 @@ func main() {
 	// Setup http server for selfbots
 	router := chi.NewRouter()
 	router.Get("/image/{id:[0-9]{18}}/recall/{img:[0-9a-z]{64}}", httpImageRecall)
-	router.Get("/inServer/{id:[0-9]{18}", isInServer)
+	router.Get("/inServer/{id:[0-9]{18}}", isInServer)
 
 	infoLog.Println("Bot is now running. Press CTRL-C to exit.")
 	errorLog.Println(http.ListenAndServe("0.0.0.0:80", router))
