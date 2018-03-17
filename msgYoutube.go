@@ -32,7 +32,7 @@ func msgYoutube(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 		listQueue(s, m)
 	case "pause":
 		pauseQueue(s, m)
-	case "unpause":
+	case "resume", "unpause":
 		unpauseQueue(s, m)
 	case "skip":
 		skipSong(s, m)
@@ -46,13 +46,14 @@ func listQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	val, ok := sMap.Server[guild.ID]
+	srvr, ok := sMap.Server[guild.ID]
 	if !ok {
-		s.ChannelMessageSend(m.ChannelID, "Error (ill change this sometime)")
+		s.ChannelMessageSend(m.ChannelID, "An error occured that really shouldn't have happened...")
+		errorLog.Println(guild.ID, "not in server map?")
 		return
 	}
 
-	if len(val.VoiceInst.Queue) == 0 {
+	if len(srvr.VoiceInst.Queue) == 0 {
 		s.ChannelMessageSend(m.ChannelID, "No songs in queue!")
 		return
 	}
@@ -62,7 +63,7 @@ func listQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 		Title: guild.Name + "'s queue",
 
 		Fields: func() (out []*discordgo.MessageEmbedField) {
-			for i, song := range val.VoiceInst.Queue {
+			for i, song := range srvr.VoiceInst.Queue {
 				out = append(out, &discordgo.MessageEmbedField{
 					Name:  fmt.Sprintf("%d - %s", i, song.Name),
 					Value: song.Duration.String(),
@@ -72,7 +73,7 @@ func listQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}(),
 	})
 
-	for _, song := range val.VoiceInst.Queue {
+	for _, song := range srvr.VoiceInst.Queue {
 		p.Add(&discordgo.MessageEmbed{
 			Title: fmt.Sprintf("Title: %s\nDuration: %s", song.Name, song.Duration),
 
@@ -103,7 +104,8 @@ func addToQueue(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 
 	srvr, ok := sMap.Server[guild.ID]
 	if !ok {
-		s.ChannelMessageSend(m.ChannelID, "Error (ill change this sometime as well)")
+		s.ChannelMessageSend(m.ChannelID, "An error occured that really shouldn't have happened...")
+		errorLog.Println(guild.ID, "not in server map?")
 		return
 	}
 
@@ -117,9 +119,8 @@ func addToQueue(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 		srvr.VoiceInst.Done = make(chan error)
 	}
 
-	/* 	if !strings.HasPrefix(msglist[0], "https://www.youtube.com/watch?v") {
+	/* 	if !strings.HasPrefix(msglist[0], "https://www.youtube.com/watch?v") && !strings.HasPrefix(msglist[0], "https://youtu.be/") {
 		s.ChannelMessageSend(m.ChannelID, "Please make sure the URL starts with `https://www.youtube.com/watch?v`")
-		srvr.VoiceInst.Mutex.Unlock()
 		return
 	} */
 
@@ -177,7 +178,7 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate, srvr *server, vc *di
 	if len(srvr.VoiceInst.Queue) == 0 {
 		srvr.VoiceInst.Lock()
 		defer srvr.VoiceInst.Unlock()
-		srvr.youtubeCleanup()
+		srvr.youtubeCleanup(vc)
 		s.ChannelMessageSend(m.ChannelID, "🔇 Done queue!")
 		return
 	}
@@ -197,33 +198,20 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate, srvr *server, vc *di
 	if len(formats) > 0 {
 		go func() {
 			defer writer.Close()
-			//Do i have to send an error down the `down` channel here? investigate
+			//Do i have to send an error down the `down` channel here? result: yes i do
 			if err := vid.Download(formats[0], writer); err != nil && err != io.ErrClosedPipe {
 				s.ChannelMessageSend(m.ChannelID, xmark+" Error downloading the music")
 				errorLog.Println("Youtube download error", err)
+				srvr.VoiceInst.Done <- err
 				return
 			}
 		}()
 	}
 
-	encSesh, err := dca.EncodeMem(reader, &dca.EncodeOptions{
-		RawOutput:        true,
-		Bitrate:          96,
-		Application:      "lowdelay",
-		Volume:           200,
-		Threads:          4,
-		FrameDuration:    20,
-		FrameRate:        48000,
-		Channels:         2,
-		VBR:              true,
-		BufferedFrames:   100,
-		PacketLoss:       1,
-		CompressionLevel: 10,
-	})
+	encSesh, err := dca.EncodeMem(reader, dca.StdEncodeOptions)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, xmark+" Error starting the stream")
-		srvr.youtubeCleanup()
-		vc.Disconnect()
+		srvr.youtubeCleanup(vc)
 		srvr.VoiceInst.Unlock()
 		errorLog.Println("Encode mem error", err)
 		return
@@ -246,8 +234,7 @@ Done:
 		defer srvr.VoiceInst.Unlock()
 		switch {
 		case err.Error() == "stop":
-			vc.Disconnect()
-			srvr.youtubeCleanup()
+			srvr.youtubeCleanup(vc)
 			s.ChannelMessageSend(m.ChannelID, "🔇 Stopped")
 			return
 		case err.Error() == "skip":
@@ -255,8 +242,7 @@ Done:
 			s.ChannelMessageSend(m.ChannelID, "⏩ Skipping")
 			break Done
 		case err != nil && err != io.EOF:
-			vc.Disconnect()
-			srvr.youtubeCleanup()
+			srvr.youtubeCleanup(vc)
 			s.ChannelMessageSend(m.ChannelID, "There was an error streaming music :(")
 			errorLog.Println("Music stream error", err)
 			return
@@ -266,7 +252,8 @@ Done:
 	go play(s, m, srvr, vc)
 }
 
-func (s *server) youtubeCleanup() {
+func (s *server) youtubeCleanup(vc *discordgo.VoiceConnection) {
+	vc.Disconnect()
 	s.VoiceInst.ChannelID = ""
 	s.VoiceInst.Playing = false
 	s.VoiceInst.Queue = []song{}
@@ -297,6 +284,9 @@ func pauseQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	srvr := sMap.Server[guild.ID]
 
+	srvr.VoiceInst.Lock()
+	defer srvr.VoiceInst.Unlock()
+
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("⏸ Paused. To unpause, use the command %s unpause", func() string {
 		if srvr.Prefix == "" {
 			return c.Prefix
@@ -304,8 +294,6 @@ func pauseQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return srvr.Prefix
 	}()))
 
-	srvr.VoiceInst.Lock()
-	defer srvr.VoiceInst.Unlock()
 	srvr.VoiceInst.StreamingSession.SetPaused(true)
 }
 
