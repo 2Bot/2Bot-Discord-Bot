@@ -47,7 +47,10 @@ func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, message stri
 			return
 		}
 		s.ChannelMessageSend(m.ChannelID, "You don't have the correct permissions to run this!")
+		return
 	}
+
+	commMap["bigmoji"].Exec(s, m, append([]string{""}, msglist...))
 }
 
 func (c command) add() command {

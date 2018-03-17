@@ -278,7 +278,7 @@ func main() {
 		dg.AddHandler(joined)
 	}
 
-	errorLog.Println("/*********BOT RESTARTED*********\\")
+	infoLog.Println("/*********BOT RESTARTED*********\\")
 
 	// Setup http server for selfbots
 	router := chi.NewRouter()
@@ -286,5 +286,5 @@ func main() {
 	router.Get("/inServer/{id:[0-9]{18}}", isInServer)
 
 	infoLog.Println("Bot is now running. Press CTRL-C to exit.")
-	errorLog.Println(http.ListenAndServe("0.0.0.0:80", router))
+	errorLog.Println(http.ListenAndServe("0.0.0.0:8080", router))
 }

@@ -9,7 +9,8 @@ import (
 )
 
 func init() {
-	newCommand("bigMoji", 0, false, false, msgEmoji).setHelp("Args: [emoji]\n\nSends a large image of the given emoji.\nCommand 'bigMoji' can be excluded for shorthand.\n\nExample:\n`!owo :smile:`\nor\n`!owo bigMoji :smile:`").add()
+	newCommand("bigMoji", 0, false, false, msgEmoji).setHelp("Args: [emoji]\n\nSends a large image of the given emoji.\n" +
+		"Command 'bigMoji' can be excluded for shorthand.\n\nExample:\n`!owo :smile:`\nor\n`!owo bigMoji :smile:`").add()
 }
 
 // Thanks to iopred

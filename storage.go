@@ -41,12 +41,12 @@ func loadJSON(path string, v interface{}) error {
 }
 
 func cleanup() {
-	for _, f := range []func() error {saveConfig, saveQueue, saveServers, saveUsers} {
+	for _, f := range []func() error{saveConfig, saveQueue, saveServers, saveUsers} {
 		if err := f(); err != nil {
 			errorLog.Println(err)
 		}
 	}
-	infoLog.Println("Done. Exiting.")
+	infoLog.Println("Done cleanup. Exiting.")
 }
 
 func loadConfig() error {
