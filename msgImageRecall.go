@@ -199,7 +199,7 @@ func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 		errorLog.Println("image save guild details error", err)
 	}
 
-	tempFilepath := "../../public_html/2Bot/images/temp/" + imgFileName
+	tempFilepath := "/images/temp/" + imgFileName
 
 	//create temp file in temp path
 	tempFile, err := os.Create(tempFilepath)
@@ -286,7 +286,7 @@ func fimageReview(s *discordgo.Session, queue *imageQueue, currentImageNumber in
 
 	fileExtension := strings.ToLower(path.Ext(imgInQueue.ImageURL))
 	imgFileName := hex.EncodeToString(hash[:]) + fileExtension
-	tempFilepath := "../../public_html/2Bot/images/temp/" + imgFileName
+	tempFilepath := "/images/temp/" + imgFileName
 	currUser := u.User[imgInQueue.AuthorID]
 
 	//Wait here for a relevant reaction to the confirmation message
@@ -384,7 +384,7 @@ func fimageReview(s *discordgo.Session, queue *imageQueue, currentImageNumber in
 		s.ChannelMessageSend("334092230845267988", fmt.Sprintf("Couldn't inform %s#%s ID: %s about confirmation\n%s", imgInQueue.AuthorName, imgInQueue.AuthorDiscrim, imgInQueue.AuthorID, err))
 	}
 
-	filepath := "../../public_html/2Bot/images/" + imgFileName
+	filepath := "t/images/" + imgFileName
 
 	os.Rename(tempFilepath, filepath)
 	if err = os.Chmod(filepath, 0755); err != nil {
@@ -417,7 +417,7 @@ func fimageDelete(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 		s.ChannelMessageSend(m.ChannelID, "You've no saved images! Get storin'!")
 	}
 
-	err := os.Remove("../../public_html/2Bot/images/" + filename)
+	err := os.Remove("/images/" + filename)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "Image couldnt be deleted :( Please pester Strum355#1180 for me")
 		errorLog.Println("Error deleting image", err)
