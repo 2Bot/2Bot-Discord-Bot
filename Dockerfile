@@ -19,4 +19,4 @@ RUN go install -v ./...
 
 VOLUME ["/go/2Bot/images", "/go/2Bot/json"]
 
-CMD 2Bot
+CMD ["2Bot"]
