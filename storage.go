@@ -13,7 +13,7 @@ var (
 )
 
 func saveJSON(path string, data interface{}) error {
-	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0600)
+	f, err := os.OpenFile("json/"+path, os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
 		errorLog.Printf("Error saving %s: %s\n", path, err)
 		return err
@@ -27,7 +27,7 @@ func saveJSON(path string, data interface{}) error {
 }
 
 func loadJSON(path string, v interface{}) error {
-	f, err := os.OpenFile(path, os.O_RDONLY, 0600)
+	f, err := os.OpenFile("json/"+path, os.O_RDONLY, 0600)
 	if err != nil {
 		errorLog.Printf("Error loading %s: %s\n", path, err)
 		return err
@@ -41,10 +41,12 @@ func loadJSON(path string, v interface{}) error {
 }
 
 func cleanup() {
-	saveConfig()
-	saveQueue()
-	saveServers()
-	saveUsers()
+	for _, f := range []func() error{saveConfig, saveQueue, saveServers, saveUsers} {
+		if err := f(); err != nil {
+			errorLog.Println(err)
+		}
+	}
+	infoLog.Println("Done cleanup. Exiting.")
 }
 
 func loadConfig() error {
