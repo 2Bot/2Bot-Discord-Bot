@@ -296,7 +296,12 @@ func fimageReview(s *discordgo.Session, queue *imageQueue, currentImageNumber in
 			continue
 		}
 
-		user, _ := s.User(confirm.UserID)
+		user, err := s.User(confirm.UserID)
+		if err != nil {
+			errorLog.Println("Error getting user for image confirming", err)
+			s.ChannelMessageSend(reviewChan, "Error getting user for image confirming")
+			continue
+		}
 
 		if confirm.MessageReaction.Emoji.Name == "✅" {
 			//IF CONFIRMED
@@ -335,6 +340,7 @@ func fimageReview(s *discordgo.Session, queue *imageQueue, currentImageNumber in
 					if len(rejectMsgList) < 1 || rejectMsgList[0] != strconv.Itoa(currentImageNumber) {
 						continue
 					}
+
 					if strings.Join(rejectMsgList[1:], " ") != "None" {
 						reason = "Reason: " + strings.Join(rejectMsgList[1:], " ")
 					}
@@ -346,9 +352,9 @@ func fimageReview(s *discordgo.Session, queue *imageQueue, currentImageNumber in
 					saveUsers()
 					saveQueue()
 
-					err := os.Remove(tempFilepath)
-					if err != nil {
+					if err := os.Remove(tempFilepath); err != nil {
 						errorLog.Println("Error deleting temp image", err)
+						s.ChannelMessageSend(reviewChan, "Error deleting temp image")
 					}
 
 					//Make PM channel to inform user that image was rejected
@@ -360,9 +366,7 @@ func fimageReview(s *discordgo.Session, queue *imageQueue, currentImageNumber in
 					}
 
 					//Try PMing
-					_, err = s.ChannelMessageSend(channel.ID, "Your image got rejected :( Sorry\n"+reason)
-					//Couldn't PM
-					if err != nil {
+					if _, err = s.ChannelMessageSend(channel.ID, "Your image got rejected :( Sorry\n"+reason); err != nil {
 						s.ChannelMessageSend(reviewChan, fmt.Sprintf("Couldn't inform %s#%s ID: %s about rejection\n%s", imgInQueue.AuthorName, imgInQueue.AuthorDiscrim, imgInQueue.AuthorID, err))
 					}
 
@@ -381,15 +385,19 @@ func fimageReview(s *discordgo.Session, queue *imageQueue, currentImageNumber in
 	//If image has been reviewed and confirmed
 	channel, err := s.UserChannelCreate(imgInQueue.AuthorID)
 	if err != nil {
-		s.ChannelMessageSend("334092230845267988", fmt.Sprintf("Couldn't inform %s#%s ID: %s about confirmation\n%s", imgInQueue.AuthorName, imgInQueue.AuthorDiscrim, imgInQueue.AuthorID, err))
+		s.ChannelMessageSend(reviewChan, fmt.Sprintf("Couldn't inform %s#%s ID: %s about confirmation\n%s", imgInQueue.AuthorName, imgInQueue.AuthorDiscrim, imgInQueue.AuthorID, err))
 	}
 
-	filepath := "t/images/" + imgFileName
+	filepath := "/images/" + imgFileName
 
-	os.Rename(tempFilepath, filepath)
-	if err = os.Chmod(filepath, 0755); err != nil {
-		s.ChannelMessageSend(reviewChan, "Can't chmod "+err.Error())
-		errorLog.Println("Cant chmod", err)
+	if err := os.Rename(tempFilepath, filepath); err != nil {
+		s.ChannelMessageSend(reviewChan, "Error moving file from temp dir")
+		errorLog.Println("Error moving file from temp dir", err)
+	} else {
+		if err := os.Chmod(filepath, 0755); err != nil {
+			s.ChannelMessageSend(reviewChan, "Can't chmod "+err.Error())
+			errorLog.Println("Cant chmod", err)
+		}
 	}
 
 	delete(q.QueuedMsgs, strconv.Itoa(currentImageNumber))
@@ -432,58 +440,53 @@ func fimageDelete(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 }
 
 func fimageList(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	if val, ok := u.User[m.Author.ID]; ok {
-		if len(u.User[m.Author.ID].Images) == 0 {
-			s.ChannelMessageSend(m.ChannelID, "You've no saved images! Get storin'!")
-			return
-		}
-
-		var out []string
-		var files []string
-		//var usedSpace float32
-		for key, value := range val.Images {
-			out = append(out, key)
-			files = append(files, value)
-		}
-		s.ChannelMessageSend(m.ChannelID, "Your saved images are: `"+strings.Join(out, ", ")+
-			"`\nAssemblin' a preview your images! **Don't click the reactions until all 5 are there!** Blame Discords rate-limit...")
-
-		p := dgwidgets.NewPaginator(s, m.ChannelID)
-
-		success := true
-		for i, img := range files {
-			escapedFile := url.PathEscape(img)
-			imgURL, err := url.Parse("http://noahsc.xyz/2Bot/images/" + escapedFile)
-			if err != nil {
-				errorLog.Println("Error parsing img url", err)
-				success = false
-				continue
-			}
-			p.Add(&discordgo.MessageEmbed{
-				Description: out[i],
-				Image: &discordgo.MessageEmbedImage{
-					URL: imgURL.String(),
-				},
-			})
-		}
-
-		p.SetPageFooters()
-		p.Loop = true
-		p.ColourWhenDone = 0xff0000
-		p.DeleteReactionsWhenDone = true
-		p.Widget.Timeout = time.Minute * 2
-		err := p.Spawn()
-		if err != nil {
-			errorLog.Println("Error creating image list", err)
-			s.ChannelMessageSend(m.ChannelID, "Couldn't make the list :( Go pester Strum355#1180 about this")
-			return
-		}
-
-		if !success {
-			s.ChannelMessageSend(m.ChannelID, "I couldn't assemble all of your images, but here are the ones i could get!")
-		}
-	} else {
+	val, ok := u.User[m.Author.ID]
+	if (ok && len(u.User[m.Author.ID].Images) == 0) || !ok {
 		s.ChannelMessageSend(m.ChannelID, "You've no saved images! Get storin'!")
+		return
+	}
+
+	var out []string
+	var files []string
+	for key, value := range val.Images {
+		out = append(out, key)
+		files = append(files, value)
+	}
+	s.ChannelMessageSend(m.ChannelID, "Your saved images are: `"+strings.Join(out, ", ")+
+		"`\nAssemblin' a preview your images! **Don't click the reactions until all 5 are there!** Blame Discords rate-limit...")
+
+	p := dgwidgets.NewPaginator(s, m.ChannelID)
+
+	success := true
+	for i, img := range files {
+		imgURL, err := url.Parse("http://noahsc.xyz/2Bot/images/" + url.PathEscape(img))
+		if err != nil {
+			errorLog.Println("Error parsing img url", err)
+			success = false
+			continue
+		}
+		p.Add(&discordgo.MessageEmbed{
+			Description: out[i],
+			Image: &discordgo.MessageEmbedImage{
+				URL: imgURL.String(),
+			},
+		})
+	}
+
+	p.SetPageFooters()
+	p.Loop = true
+	p.ColourWhenDone = 0xff0000
+	p.DeleteReactionsWhenDone = true
+	p.Widget.Timeout = time.Minute * 2
+	err := p.Spawn()
+	if err != nil {
+		errorLog.Println("Error creating image list", err)
+		s.ChannelMessageSend(m.ChannelID, "Couldn't make the list :( Go pester Strum355#1180 about this")
+		return
+	}
+
+	if !success {
+		s.ChannelMessageSend(m.ChannelID, "I couldn't assemble all of your images, but here are the ones i could get!")
 	}
 }
 
