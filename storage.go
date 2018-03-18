@@ -46,6 +46,12 @@ func cleanup() {
 			errorLog.Println(err)
 		}
 	}
+
+	for _, srvr := range sMap.Server {
+		if srvr.VoiceInst.Playing {
+			srvr.VoiceInst.VoiceCon.Disconnect()
+		}
+	}
 	infoLog.Println("Done cleanup. Exiting.")
 }
 

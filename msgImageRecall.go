@@ -67,18 +67,24 @@ func httpImageRecall(w http.ResponseWriter, r *http.Request) {
 
 	id := chi.URLParam(r, "id")
 	img := chi.URLParam(r, "img")
+
+	infoLog.Println(fmt.Sprintf("Image request from %s for %s", id, img))
+
 	if val, ok := u.User[id]; ok {
 		for _, val := range val.Images {
 			if strings.HasPrefix(val, img) {
 				w.WriteHeader(http.StatusOK)
-				fmt.Fprint(w, "http://noahsc.xyz/2Bot/images/"+val)
+				infoLog.Println(fmt.Sprintf("User %s has image %s", id, img))
+				fmt.Fprint(w, "https://noahsc.xyz/2Bot/images/"+val)
 				return
 			}
 		}
 		w.WriteHeader(http.StatusGone)
+		infoLog.Println(fmt.Sprintf("User %s doesn't have image %s", id, img))
 		return
 	}
 
+	infoLog.Println(fmt.Sprintf("User %s not in map", id))
 	w.WriteHeader(http.StatusNotFound)
 }
 

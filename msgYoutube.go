@@ -149,6 +149,7 @@ func addToQueue(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 				s.ChannelMessageSend(m.ChannelID, "Added "+vid.Title+" to the queue!")
 
 				if !srvr.VoiceInst.Playing {
+					srvr.VoiceInst.VoiceCon = vc
 					go play(s, m, sMap.Server[guild.ID], vc)
 				}
 				return
@@ -178,7 +179,7 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate, srvr *server, vc *di
 	if len(srvr.VoiceInst.Queue) == 0 {
 		srvr.VoiceInst.Lock()
 		defer srvr.VoiceInst.Unlock()
-		srvr.youtubeCleanup(vc)
+		srvr.youtubeCleanup()
 		s.ChannelMessageSend(m.ChannelID, "🔇 Done queue!")
 		return
 	}
@@ -211,7 +212,7 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate, srvr *server, vc *di
 	encSesh, err := dca.EncodeMem(reader, dca.StdEncodeOptions)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, xmark+" Error starting the stream")
-		srvr.youtubeCleanup(vc)
+		srvr.youtubeCleanup()
 		srvr.VoiceInst.Unlock()
 		errorLog.Println("Encode mem error", err)
 		return
@@ -234,7 +235,7 @@ Done:
 		defer srvr.VoiceInst.Unlock()
 		switch {
 		case err.Error() == "stop":
-			srvr.youtubeCleanup(vc)
+			srvr.youtubeCleanup()
 			s.ChannelMessageSend(m.ChannelID, "🔇 Stopped")
 			return
 		case err.Error() == "skip":
@@ -242,7 +243,7 @@ Done:
 			s.ChannelMessageSend(m.ChannelID, "⏩ Skipping")
 			break Done
 		case err != nil && err != io.EOF:
-			srvr.youtubeCleanup(vc)
+			srvr.youtubeCleanup()
 			s.ChannelMessageSend(m.ChannelID, "There was an error streaming music :(")
 			errorLog.Println("Music stream error", err)
 			return
@@ -252,11 +253,12 @@ Done:
 	go play(s, m, srvr, vc)
 }
 
-func (s *server) youtubeCleanup(vc *discordgo.VoiceConnection) {
-	vc.Disconnect()
+func (s *server) youtubeCleanup() {
+	s.VoiceInst.VoiceCon.Disconnect()
 	s.VoiceInst.ChannelID = ""
 	s.VoiceInst.Playing = false
-	s.VoiceInst.Queue = []song{}
+	s.VoiceInst.Queue = make([]song, 0)
+	s.VoiceInst.VoiceCon = nil
 	sMap.VoiceInsts--
 }
 

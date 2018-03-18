@@ -1,1 +1,6 @@
 json/*.json
+emoji/*
+LICENSE
+README
+.gitignore
+.dockerignore

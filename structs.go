@@ -51,6 +51,8 @@ type (
 		*sync.Mutex
 
 		StreamingSession *dca.StreamingSession
+
+		VoiceCon *discordgo.VoiceConnection
 	}
 
 	song struct {
