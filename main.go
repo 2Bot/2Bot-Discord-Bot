@@ -69,6 +69,8 @@ func start() {
 
 	infoLog.Println("session created")
 
+	addHandlers()
+
 	if err := dg.Open(); err != nil {
 		errorLog.Fatalln("Error opening connection,", err)
 	}
@@ -76,6 +78,15 @@ func start() {
 	infoLog.Println("connection opened")
 
 	sMap.Count = len(sMap.Server)
+}
+
+func addHandlers() {
+	dg.AddHandler(messageCreate)
+	dg.AddHandler(membPresChange)
+	dg.AddHandler(kicked)
+	dg.AddHandler(membJoin)
+	dg.AddHandler(ready)
+	dg.AddHandler(joined)
 }
 
 func dailyJobs() {
@@ -172,7 +183,12 @@ func joined(s *discordgo.Session, m *discordgo.GuildCreate) {
 
 	guildDetails, err := s.State.Guild(m.Guild.ID)
 	if err != nil {
-		errorLog.Println("Join guild struct", err)
+		errorLog.Println("Join guild err", err)
+		guildDetails, err = s.Guild(m.Guild.ID)
+		if err != nil {
+			errorLog.Println("Join guild request err", err)
+			return
+		}
 	}
 
 	user, err := s.User(guildDetails.OwnerID)
@@ -270,22 +286,16 @@ func main() {
 	}
 	defer cleanup()
 
+
 	infoLog.Println("files loaded")
 
 	start()
 	defer dg.Close()
 
-	dg.AddHandler(messageCreate)
-	dg.AddHandler(membPresChange)
-	dg.AddHandler(kicked)
-	dg.AddHandler(membJoin)
-	dg.AddHandler(ready)
-
 	go setQueuedImageHandlers()
 
 	if !c.InDev {
 		go dailyJobs()
-		dg.AddHandler(joined)
 	}
 
 	// Setup http server for selfbots

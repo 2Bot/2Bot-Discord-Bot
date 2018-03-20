@@ -4,39 +4,200 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"sync"
 	"time"
+	"strings"
 
 	"github.com/Necroforger/dgwidgets"
 	"github.com/bwmarrin/discordgo"
 	"github.com/jonas747/dca"
-	"github.com/rylio/ytdl"
+	"github.com/Strum355/ytdl"
+)
+
+const (
+	stdURL = "https://www.youtube.com/watch"
+	shortURL = "https://youtu.be/"
+	embedURL = "https://www.youtube.com/embed/"
 )
 
 func init() {
 	newCommand("yt", 0, false, false, msgYoutube).setHelp("Args: [play,stop] [url]\n\nWork In Progress!!! Play music from Youtube straight to your Discord Server!\n\n" +
 		"Example 1: `!owo yt play https://www.youtube.com/watch?v=MvLdxtICOIY`\n" +
-		"Example 2: `!owo yt stop`").add()
+		"Example 2: `!owo yt stop`\n\nSubCommands:\nplay\nstop\nlist, queue, songs\npause\nresume, unpause\nskip, next").add()
 }
 
 func msgYoutube(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	if len(msglist) == 1 {
 		return
 	}
+	
 	switch msglist[1] {
 	case "play":
 		addToQueue(s, m, msglist[2:])
 	case "stop":
-		stopQueue(s, m, msglist[2:])
-	case "list":
+		stopQueue(s, m)
+	case "list", "queue", "songs":
 		listQueue(s, m)
 	case "pause":
 		pauseQueue(s, m)
 	case "resume", "unpause":
 		unpauseQueue(s, m)
-	case "skip":
+	case "skip", "next":
 		skipSong(s, m)
 	}
+}
+
+func addToQueue(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
+	if len(msglist) == 0 {
+		return
+	}
+
+	guild, err := guildDetails(m.ChannelID, s)
+	if err != nil {
+		errorLog.Println(err)
+		return
+	}
+	
+	srvr, ok := sMap.Server[guild.ID]
+	if !ok {
+		s.ChannelMessageSend(m.ChannelID, "An error occured that really shouldn't have happened...")
+		errorLog.Println(guild.ID, "not in server map?")
+		return
+	}
+
+	if srvr.VoiceInst == nil {
+		srvr.newVoiceInstance()
+	}
+	
+	srvr.VoiceInst.Lock()
+	defer srvr.VoiceInst.Unlock()
+	
+	if !strings.HasPrefix(msglist[0], stdURL) && !strings.HasPrefix(msglist[0], shortURL) && !strings.HasPrefix(msglist[0], embedURL) {
+		s.ChannelMessageSend(m.ChannelID, "Please make sure the URL is a valid YouTube URL. If I got this wrong, please let my creator know~")
+		return
+	}
+		
+	for _, vs := range guild.VoiceStates {
+		if vs.UserID == m.Author.ID {
+			if vs.ChannelID == srvr.VoiceInst.ChannelID || !srvr.VoiceInst.Playing {
+				vid, err := getVideoInfo(msglist[0], s, m)
+				if err != nil {
+					return
+				}
+				
+				vc, err := s.ChannelVoiceJoin(guild.ID, vs.ChannelID, false, true)
+				if err != nil {
+					s.ChannelMessageSend(m.ChannelID, "Error joining voice channel")
+					errorLog.Println("Error joining voice channel", err)
+					return
+				}
+				
+				srvr.VoiceInst.Queue = append(srvr.VoiceInst.Queue, song{
+					URL:      msglist[0],
+					Name:     vid.Title,
+					Duration: vid.Duration,
+					Image:    vid.GetThumbnailURL(ytdl.ThumbnailQualityMedium).String(),
+				})
+				
+				s.ChannelMessageSend(m.ChannelID, "Added "+vid.Title+" to the queue!")
+				
+				if !srvr.VoiceInst.Playing {
+					srvr.VoiceInst.VoiceCon = vc
+					srvr.VoiceInst.Playing = true
+					srvr.VoiceInst.ChannelID = vc.ChannelID
+					go play(s, m, sMap.Server[guild.ID], vc)
+				}
+				return
+			}
+		}
+	}
+		
+	s.ChannelMessageSend(m.ChannelID, "Need to be in a voice channel!")
+}
+	
+func getVideoInfo(url string, s *discordgo.Session, m *discordgo.MessageCreate) (*ytdl.VideoInfo, error) {
+	vid, err := ytdl.GetVideoInfo(url)
+	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, "Error getting video info")
+		errorLog.Println("Error getting video info", err)
+		return nil, err
+	}
+	return vid, nil
+}
+		
+func play(s *discordgo.Session, m *discordgo.MessageCreate, srvr *server, vc *discordgo.VoiceConnection) {
+	if len(srvr.VoiceInst.Queue) == 0 {
+		srvr.VoiceInst.Lock()
+		defer srvr.VoiceInst.Unlock()
+		srvr.youtubeCleanup()
+		s.ChannelMessageSend(m.ChannelID, "🔇 Done queue!")
+		return
+	}
+	
+	srvr.VoiceInst.Lock()
+	
+	vid, err := getVideoInfo(srvr.VoiceInst.Queue[0].URL, s, m)
+	if err != nil {
+		srvr.VoiceInst.Unlock()
+		return
+	}
+	
+	reader, writer := io.Pipe()
+	defer reader.Close()
+	
+	formats := vid.Formats.Best(ytdl.FormatAudioBitrateKey)
+	if len(formats) > 0 {
+		go func() {
+			defer writer.Close()
+			if err := vid.Download(formats[0], writer); err != nil && err != io.ErrClosedPipe {
+				s.ChannelMessageSend(m.ChannelID, xmark+" Error downloading the music")
+				errorLog.Println("Youtube download error", err)
+				srvr.VoiceInst.Done <- err
+				return
+			}
+		}()
+	}
+
+	encSesh, err := dca.EncodeMem(reader, dca.StdEncodeOptions)
+	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, xmark+" Error starting the stream")
+		srvr.youtubeCleanup()
+		srvr.VoiceInst.Unlock()
+		errorLog.Println("Encode mem error", err)
+		return
+	}
+	defer encSesh.Cleanup()
+
+	srvr.VoiceInst.StreamingSession = dca.NewStream(encSesh, vc, srvr.VoiceInst.Done)
+	
+	s.ChannelMessageSend(m.ChannelID, "🔊 Playing: "+vid.Title)
+
+	srvr.VoiceInst.Unlock()
+	
+	err = <-srvr.VoiceInst.Done
+
+	srvr.VoiceInst.Lock()
+
+	done, _ := srvr.VoiceInst.StreamingSession.Finished()
+	
+	defer srvr.VoiceInst.Unlock()
+
+	switch {
+	case err.Error() == "stop":
+		srvr.youtubeCleanup()
+		s.ChannelMessageSend(m.ChannelID, "🔇 Stopped")
+		return
+	case err.Error() == "skip":
+		srvr.VoiceInst.Queue = srvr.VoiceInst.Queue[1:]
+		s.ChannelMessageSend(m.ChannelID, "⏩ Skipping")
+		break
+	case !done:
+		srvr.youtubeCleanup()
+		s.ChannelMessageSend(m.ChannelID, "There was an error streaming music :(")
+		errorLog.Println("Music stream error", err)
+		return
+	}
+
+	go play(s, m, srvr, vc)
 }
 
 func listQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -91,178 +252,7 @@ func listQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 	p.Spawn()
 }
 
-func addToQueue(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	if len(msglist) == 0 {
-		return
-	}
-
-	guild, err := guildDetails(m.ChannelID, s)
-	if err != nil {
-		errorLog.Println(err)
-		return
-	}
-
-	srvr, ok := sMap.Server[guild.ID]
-	if !ok {
-		s.ChannelMessageSend(m.ChannelID, "An error occured that really shouldn't have happened...")
-		errorLog.Println(guild.ID, "not in server map?")
-		return
-	}
-
-	if srvr.VoiceInst.Mutex == nil {
-		srvr.VoiceInst.Mutex = new(sync.Mutex)
-	}
-
-	srvr.VoiceInst.Lock()
-	defer srvr.VoiceInst.Unlock()
-	if srvr.VoiceInst.Done == nil {
-		srvr.VoiceInst.Done = make(chan error)
-	}
-
-	/* 	if !strings.HasPrefix(msglist[0], "https://www.youtube.com/watch?v") && !strings.HasPrefix(msglist[0], "https://youtu.be/") {
-		s.ChannelMessageSend(m.ChannelID, "Please make sure the URL starts with `https://www.youtube.com/watch?v`")
-		return
-	} */
-
-	for _, vs := range guild.VoiceStates {
-		if vs.UserID == m.Author.ID {
-			if vs.ChannelID == srvr.VoiceInst.ChannelID || !srvr.VoiceInst.Playing {
-				vc, err := s.ChannelVoiceJoin(guild.ID, vs.ChannelID, false, true)
-				if err != nil {
-					s.ChannelMessageSend(m.ChannelID, "Error joining voice channel")
-					errorLog.Println("Error joining voice channel", err)
-					return
-				}
-
-				vid, err := getVideoInfo(msglist[0], s, m)
-				if err != nil {
-					return
-				}
-
-				srvr.VoiceInst.Queue = append(srvr.VoiceInst.Queue, song{
-					URL:      msglist[0],
-					Name:     vid.Title,
-					Duration: vid.Duration,
-					Image:    vid.GetThumbnailURL(ytdl.ThumbnailQualityMedium).String(),
-				})
-
-				s.ChannelMessageSend(m.ChannelID, "Added "+vid.Title+" to the queue!")
-
-				if !srvr.VoiceInst.Playing {
-					srvr.VoiceInst.VoiceCon = vc
-					go play(s, m, sMap.Server[guild.ID], vc)
-				}
-				return
-			}
-
-			/* 			if vs.ChannelID != srvr.VoiceInst.ChannelID {
-				s.ChannelMessageSend(m.ChannelID, "Already playing in a different voice channel :(")
-				return
-			} */
-		}
-	}
-
-	s.ChannelMessageSend(m.ChannelID, "Need to be in a voice channel!")
-}
-
-func getVideoInfo(url string, s *discordgo.Session, m *discordgo.MessageCreate) (*ytdl.VideoInfo, error) {
-	vid, err := ytdl.GetVideoInfo(url)
-	if err != nil {
-		s.ChannelMessageSend(m.ChannelID, "Error getting video info")
-		errorLog.Println("Error getting video info", err)
-		return nil, err
-	}
-	return vid, nil
-}
-
-func play(s *discordgo.Session, m *discordgo.MessageCreate, srvr *server, vc *discordgo.VoiceConnection) {
-	if len(srvr.VoiceInst.Queue) == 0 {
-		srvr.VoiceInst.Lock()
-		defer srvr.VoiceInst.Unlock()
-		srvr.youtubeCleanup()
-		s.ChannelMessageSend(m.ChannelID, "🔇 Done queue!")
-		return
-	}
-
-	srvr.VoiceInst.Lock()
-
-	vid, err := getVideoInfo(srvr.VoiceInst.Queue[0].URL, s, m)
-	if err != nil {
-		srvr.VoiceInst.Unlock()
-		return
-	}
-
-	reader, writer := io.Pipe()
-	defer reader.Close()
-
-	formats := vid.Formats.Extremes(ytdl.FormatAudioBitrateKey, true)
-	if len(formats) > 0 {
-		go func() {
-			defer writer.Close()
-			//Do i have to send an error down the `down` channel here? result: yes i do
-			if err := vid.Download(formats[0], writer); err != nil && err != io.ErrClosedPipe {
-				s.ChannelMessageSend(m.ChannelID, xmark+" Error downloading the music")
-				errorLog.Println("Youtube download error", err)
-				srvr.VoiceInst.Done <- err
-				return
-			}
-		}()
-	}
-
-	encSesh, err := dca.EncodeMem(reader, dca.StdEncodeOptions)
-	if err != nil {
-		s.ChannelMessageSend(m.ChannelID, xmark+" Error starting the stream")
-		srvr.youtubeCleanup()
-		srvr.VoiceInst.Unlock()
-		errorLog.Println("Encode mem error", err)
-		return
-	}
-	defer encSesh.Cleanup()
-
-	srvr.VoiceInst.StreamingSession = dca.NewStream(encSesh, vc, srvr.VoiceInst.Done)
-
-	s.ChannelMessageSend(m.ChannelID, "🔊 Playing: "+vid.Title)
-
-	srvr.VoiceInst.Playing = true
-	srvr.VoiceInst.ChannelID = vc.ChannelID
-
-	srvr.VoiceInst.Unlock()
-
-Done:
-	for {
-		err := <-srvr.VoiceInst.Done
-		srvr.VoiceInst.Lock()
-		defer srvr.VoiceInst.Unlock()
-		switch {
-		case err.Error() == "stop":
-			srvr.youtubeCleanup()
-			s.ChannelMessageSend(m.ChannelID, "🔇 Stopped")
-			return
-		case err.Error() == "skip":
-			srvr.VoiceInst.Queue = srvr.VoiceInst.Queue[1:]
-			s.ChannelMessageSend(m.ChannelID, "⏩ Skipping")
-			break Done
-		case err != nil && err != io.EOF:
-			srvr.youtubeCleanup()
-			s.ChannelMessageSend(m.ChannelID, "There was an error streaming music :(")
-			errorLog.Println("Music stream error", err)
-			return
-		}
-	}
-
-	go play(s, m, srvr, vc)
-}
-
-func (s *server) youtubeCleanup() {
-	s.VoiceInst.VoiceCon.Disconnect()
-	s.VoiceInst.ChannelID = ""
-	s.VoiceInst.Playing = false
-	s.VoiceInst.Queue = make([]song, 0)
-	s.VoiceInst.VoiceCon = nil
-	sMap.VoiceInsts--
-}
-
-func stopQueue(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
+func stopQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 	guild, err := guildDetails(m.ChannelID, s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "Error stopping queue. Please try again.")
@@ -323,4 +313,10 @@ func skipSong(s *discordgo.Session, m *discordgo.MessageCreate) {
 	srvr.VoiceInst.Lock()
 	defer srvr.VoiceInst.Unlock()
 	srvr.VoiceInst.Done <- errors.New("skip")
+}
+
+func (s *server) youtubeCleanup() {
+	s.VoiceInst.VoiceCon.Disconnect()
+	s.newVoiceInstance()
+	sMap.VoiceInsts--
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+
 	"sync"
 	"time"
 
@@ -9,98 +10,121 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-type (
-	ibStruct struct {
-		Path   string `json:"path"`
-		Server string `json:"server"`
-	}
+type ibStruct struct {
+	Path   string `json:"path"`
+	Server string `json:"server"`
+}
 
-	rule34 struct {
-		PostCount int `xml:"count,attr"`
+type rule34 struct {
+	PostCount int `xml:"count,attr"`
 
-		Posts []struct {
-			URL string `xml:"file_url,attr"`
-		} `xml:"post"`
-	}
+	Posts []struct {
+		URL string `xml:"file_url,attr"`
+	} `xml:"post"`
+}
 
-	config struct {
-		Game   string `json:"game"`
-		Prefix string `json:"prefix"`
-		Token  string `json:"token"`
-		Port   string `json:"port"`
+type config struct {
+	Game   string `json:"game"`
+	Prefix string `json:"prefix"`
+	Token  string `json:"token"`
+	Port   string `json:"port"`
 
-		InDev bool `json:"indev"`
+	InDev bool `json:"indev"`
 
-		DiscordPWKey string `json:"discord.pw_key"`
+	DiscordPWKey string `json:"discord.pw_key"`
 
-		CurrImg int `json:"curr_img_id"`
-		MaxProc int `json:"maxproc"`
+	CurrImg int `json:"curr_img_id"`
+	MaxProc int `json:"maxproc"`
 
-		Blacklist []string `json:"blacklist"`
-	}
+	Blacklist []string `json:"blacklist"`
+}
 
-	voiceInst struct {
-		ChannelID string
+type servers struct {
+	Count      int
+	VoiceInsts int
 
-		Queue []song
+	Mutex sync.RWMutex `json:"-"`
 
-		Playing bool
+	Server map[string]*server
+}
 
-		Done chan error
+type server struct {
+	LogChannel string `json:"log_channel"`
+	Prefix     string `json:"server_prefix"`
 
-		*sync.Mutex
+	Log    bool `json:"log_active"`
+	Kicked bool `json:"kicked"`
+	Nsfw   bool `json:"nsfw"`
 
-		StreamingSession *dca.StreamingSession
+	//Enabled, Message, Channel
+	JoinMessage [3]string `json:"join"`
 
-		VoiceCon *discordgo.VoiceConnection
-	}
+	VoiceInst *voiceInst `json:"-"`
 
-	song struct {
-		URL   string `json:"url"`
-		Name  string `json:"name"`
-		Image string `json:"image"`
+	Playlists map[string][]song `json:"playlists"`
+}
 
-		Duration time.Duration `json:"duration"`
-	}
+type voiceInst struct {
+	ChannelID string
 
-	imageQueue struct {
-		QueuedMsgs map[string]*queuedImage
-	}
+	Queue []song
 
-	queuedImage struct {
-		ReviewMsgID   string `json:"reviewMsgID"`
-		AuthorID      string `json:"author_id"`
-		AuthorDiscrim string `json:"author_discrim"`
-		AuthorName    string `json:"author_name"`
-		ImageName     string `json:"image_name"`
-		ImageURL      string `json:"image_url"`
+	Playing bool
 
-		FileSize int `json:"file_size"`
-	}
+	Done chan error
 
-	command struct {
-		Name string
-		Help string
+	*sync.Mutex
 
-		NoahOnly      bool
-		RequiresPerms bool
+	StreamingSession *dca.StreamingSession
 
-		PermsRequired int
+	VoiceCon *discordgo.VoiceConnection
+}
 
-		Exec func(*discordgo.Session, *discordgo.MessageCreate, []string)
-	}
+type song struct {
+	URL   string `json:"url"`
+	Name  string `json:"name"`
+	Image string `json:"image"`
 
-	users struct {
-		User map[string]*user
-	}
+	Duration time.Duration `json:"duration"`
+}
 
-	user struct {
-		Images map[string]string `json:"images"`
+type imageQueue struct {
+	QueuedMsgs map[string]*queuedImage
+}
 
-		DiskQuota    int `json:"quota"`
-		CurrDiskUsed int `json:"curr_used"`
-		QueueSize    int `json:"queue_size"`
+type queuedImage struct {
+	ReviewMsgID   string `json:"reviewMsgID"`
+	AuthorID      string `json:"author_id"`
+	AuthorDiscrim string `json:"author_discrim"`
+	AuthorName    string `json:"author_name"`
+	ImageName     string `json:"image_name"`
+	ImageURL      string `json:"image_url"`
 
-		TempImages []string `json:"temp_images"`
-	}
-)
+	FileSize int `json:"file_size"`
+}
+
+type command struct {
+	Name string
+	Help string
+
+	NoahOnly      bool
+	RequiresPerms bool
+
+	PermsRequired int
+
+	Exec func(*discordgo.Session, *discordgo.MessageCreate, []string)
+}
+
+type users struct {
+	User map[string]*user
+}
+
+type user struct {
+	Images map[string]string `json:"images"`
+
+	DiskQuota    int `json:"quota"`
+	CurrDiskUsed int `json:"curr_used"`
+	QueueSize    int `json:"queue_size"`
+
+	TempImages []string `json:"temp_images"`
+}
