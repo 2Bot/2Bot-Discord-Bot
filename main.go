@@ -286,7 +286,6 @@ func main() {
 	}
 	defer cleanup()
 
-
 	infoLog.Println("files loaded")
 
 	start()

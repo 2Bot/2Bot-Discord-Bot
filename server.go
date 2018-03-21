@@ -11,9 +11,9 @@ func (s *servers) getCount() int {
 }
 
 func (s *server) newVoiceInstance() {
-	s.VoiceInst = &voiceInst {
+	s.VoiceInst = &voiceInst{
 		Queue: make([]song, 0),
-		Done: make(chan error),
+		Done:  make(chan error),
 		Mutex: new(sync.Mutex),
 	}
 }

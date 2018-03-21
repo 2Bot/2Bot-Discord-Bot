@@ -4,17 +4,17 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"time"
 	"strings"
+	"time"
 
 	"github.com/Necroforger/dgwidgets"
+	"github.com/Strum355/ytdl"
 	"github.com/bwmarrin/discordgo"
 	"github.com/jonas747/dca"
-	"github.com/Strum355/ytdl"
 )
 
 const (
-	stdURL = "https://www.youtube.com/watch"
+	stdURL   = "https://www.youtube.com/watch"
 	shortURL = "https://youtu.be/"
 	embedURL = "https://www.youtube.com/embed/"
 )
@@ -29,7 +29,7 @@ func msgYoutube(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	if len(msglist) == 1 {
 		return
 	}
-	
+
 	switch msglist[1] {
 	case "play":
 		addToQueue(s, m, msglist[2:])
@@ -56,7 +56,7 @@ func addToQueue(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 		errorLog.Println(err)
 		return
 	}
-	
+
 	srvr, ok := sMap.Server[guild.ID]
 	if !ok {
 		s.ChannelMessageSend(m.ChannelID, "An error occured that really shouldn't have happened...")
@@ -67,53 +67,55 @@ func addToQueue(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	if srvr.VoiceInst == nil {
 		srvr.newVoiceInstance()
 	}
-	
+
 	srvr.VoiceInst.Lock()
 	defer srvr.VoiceInst.Unlock()
-	
-	if !strings.HasPrefix(msglist[0], stdURL) && !strings.HasPrefix(msglist[0], shortURL) && !strings.HasPrefix(msglist[0], embedURL) {
+
+	url := msglist[0]
+
+	if !strings.HasPrefix(url, stdURL) && !strings.HasPrefix(url, shortURL) && !strings.HasPrefix(url, embedURL) {
 		s.ChannelMessageSend(m.ChannelID, "Please make sure the URL is a valid YouTube URL. If I got this wrong, please let my creator know~")
 		return
 	}
-		
+
 	for _, vs := range guild.VoiceStates {
 		if vs.UserID == m.Author.ID {
 			if vs.ChannelID == srvr.VoiceInst.ChannelID || !srvr.VoiceInst.Playing {
-				vid, err := getVideoInfo(msglist[0], s, m)
+				vid, err := getVideoInfo(url, s, m)
 				if err != nil {
 					return
 				}
-				
+
 				vc, err := s.ChannelVoiceJoin(guild.ID, vs.ChannelID, false, true)
 				if err != nil {
 					s.ChannelMessageSend(m.ChannelID, "Error joining voice channel")
 					errorLog.Println("Error joining voice channel", err)
 					return
 				}
-				
+
 				srvr.VoiceInst.Queue = append(srvr.VoiceInst.Queue, song{
-					URL:      msglist[0],
+					URL:      url,
 					Name:     vid.Title,
 					Duration: vid.Duration,
 					Image:    vid.GetThumbnailURL(ytdl.ThumbnailQualityMedium).String(),
 				})
-				
+
 				s.ChannelMessageSend(m.ChannelID, "Added "+vid.Title+" to the queue!")
-				
+
 				if !srvr.VoiceInst.Playing {
 					srvr.VoiceInst.VoiceCon = vc
 					srvr.VoiceInst.Playing = true
 					srvr.VoiceInst.ChannelID = vc.ChannelID
-					go play(s, m, sMap.Server[guild.ID], vc)
+					go play(s, m, srvr, vc)
 				}
 				return
 			}
 		}
 	}
-		
+
 	s.ChannelMessageSend(m.ChannelID, "Need to be in a voice channel!")
 }
-	
+
 func getVideoInfo(url string, s *discordgo.Session, m *discordgo.MessageCreate) (*ytdl.VideoInfo, error) {
 	vid, err := ytdl.GetVideoInfo(url)
 	if err != nil {
@@ -123,7 +125,7 @@ func getVideoInfo(url string, s *discordgo.Session, m *discordgo.MessageCreate) 
 	}
 	return vid, nil
 }
-		
+
 func play(s *discordgo.Session, m *discordgo.MessageCreate, srvr *server, vc *discordgo.VoiceConnection) {
 	if len(srvr.VoiceInst.Queue) == 0 {
 		srvr.VoiceInst.Lock()
@@ -132,18 +134,18 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate, srvr *server, vc *di
 		s.ChannelMessageSend(m.ChannelID, "🔇 Done queue!")
 		return
 	}
-	
+
 	srvr.VoiceInst.Lock()
-	
+
 	vid, err := getVideoInfo(srvr.VoiceInst.Queue[0].URL, s, m)
 	if err != nil {
 		srvr.VoiceInst.Unlock()
 		return
 	}
-	
+
 	reader, writer := io.Pipe()
 	defer reader.Close()
-	
+
 	formats := vid.Formats.Best(ytdl.FormatAudioBitrateKey)
 	if len(formats) > 0 {
 		go func() {
@@ -168,17 +170,17 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate, srvr *server, vc *di
 	defer encSesh.Cleanup()
 
 	srvr.VoiceInst.StreamingSession = dca.NewStream(encSesh, vc, srvr.VoiceInst.Done)
-	
+
 	s.ChannelMessageSend(m.ChannelID, "🔊 Playing: "+vid.Title)
 
 	srvr.VoiceInst.Unlock()
-	
+
 	err = <-srvr.VoiceInst.Done
 
 	srvr.VoiceInst.Lock()
 
 	done, _ := srvr.VoiceInst.StreamingSession.Finished()
-	
+
 	defer srvr.VoiceInst.Unlock()
 
 	switch {
@@ -187,7 +189,6 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate, srvr *server, vc *di
 		s.ChannelMessageSend(m.ChannelID, "🔇 Stopped")
 		return
 	case err.Error() == "skip":
-		srvr.VoiceInst.Queue = srvr.VoiceInst.Queue[1:]
 		s.ChannelMessageSend(m.ChannelID, "⏩ Skipping")
 		break
 	case !done:
@@ -197,6 +198,7 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate, srvr *server, vc *di
 		return
 	}
 
+	srvr.VoiceInst.Queue = srvr.VoiceInst.Queue[1:]
 	go play(s, m, srvr, vc)
 }
 
