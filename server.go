@@ -20,14 +20,10 @@ func (s *server) newVoiceInstance() {
 }
 
 func (s server) nextSong() song {
-	s.VoiceInst.Lock()
-	defer s.VoiceInst.Unlock()
 	return s.VoiceInst.Queue.PopFront().(song)
 }
 
 func (s server) addSong(song song) {
-	s.VoiceInst.Lock()
-	defer s.VoiceInst.Unlock()
 	s.VoiceInst.Queue.PushBack(song)
 }
 

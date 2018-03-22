@@ -134,7 +134,7 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate, srvr *server, vc *di
 	}
 
 	srvr.VoiceInst.Lock()
-
+	
 	vid, err := getVideoInfo(srvr.nextSong().URL, s, m)
 	if err != nil {
 		srvr.VoiceInst.Unlock()
