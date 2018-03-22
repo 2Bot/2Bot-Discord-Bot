@@ -93,7 +93,7 @@ func addToQueue(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 					return
 				}
 
-				srvr.VoiceInst.Queue = append(srvr.VoiceInst.Queue, song{
+				srvr.addSong(song{
 					URL:      url,
 					Name:     vid.Title,
 					Duration: vid.Duration,
@@ -127,9 +127,7 @@ func getVideoInfo(url string, s *discordgo.Session, m *discordgo.MessageCreate) 
 }
 
 func play(s *discordgo.Session, m *discordgo.MessageCreate, srvr *server, vc *discordgo.VoiceConnection) {
-	if len(srvr.VoiceInst.Queue) == 0 {
-		srvr.VoiceInst.Lock()
-		defer srvr.VoiceInst.Unlock()
+	if srvr.queueLength() == 0 {
 		srvr.youtubeCleanup()
 		s.ChannelMessageSend(m.ChannelID, "🔇 Done queue!")
 		return
@@ -137,7 +135,7 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate, srvr *server, vc *di
 
 	srvr.VoiceInst.Lock()
 
-	vid, err := getVideoInfo(srvr.VoiceInst.Queue[0].URL, s, m)
+	vid, err := getVideoInfo(srvr.nextSong().URL, s, m)
 	if err != nil {
 		srvr.VoiceInst.Unlock()
 		return
@@ -175,30 +173,28 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate, srvr *server, vc *di
 
 	srvr.VoiceInst.Unlock()
 
-	err = <-srvr.VoiceInst.Done
+Outer:
+	for {
+		err = <-srvr.VoiceInst.Done
 
-	srvr.VoiceInst.Lock()
+		done, _ := srvr.VoiceInst.StreamingSession.Finished()
 
-	done, _ := srvr.VoiceInst.StreamingSession.Finished()
-
-	defer srvr.VoiceInst.Unlock()
-
-	switch {
-	case err.Error() == "stop":
-		srvr.youtubeCleanup()
-		s.ChannelMessageSend(m.ChannelID, "🔇 Stopped")
-		return
-	case err.Error() == "skip":
-		s.ChannelMessageSend(m.ChannelID, "⏩ Skipping")
-		break
-	case !done:
-		srvr.youtubeCleanup()
-		s.ChannelMessageSend(m.ChannelID, "There was an error streaming music :(")
-		errorLog.Println("Music stream error", err)
-		return
+		switch {
+		case err.Error() == "stop":
+			srvr.youtubeCleanup()
+			s.ChannelMessageSend(m.ChannelID, "🔇 Stopped")
+			return
+		case err.Error() == "skip":
+			s.ChannelMessageSend(m.ChannelID, "⏩ Skipping")
+			break Outer
+		case !done && err != io.EOF:
+			srvr.youtubeCleanup()
+			s.ChannelMessageSend(m.ChannelID, "There was an error streaming music :(")
+			errorLog.Println("Music stream error", err)
+			return
+		}
 	}
 
-	srvr.VoiceInst.Queue = srvr.VoiceInst.Queue[1:]
 	go play(s, m, srvr, vc)
 }
 
@@ -216,7 +212,7 @@ func listQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	if len(srvr.VoiceInst.Queue) == 0 {
+	if srvr.queueLength() == 0 {
 		s.ChannelMessageSend(m.ChannelID, "No songs in queue!")
 		return
 	}
@@ -226,7 +222,7 @@ func listQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 		Title: guild.Name + "'s queue",
 
 		Fields: func() (out []*discordgo.MessageEmbedField) {
-			for i, song := range srvr.VoiceInst.Queue {
+			for i, song := range srvr.iterateQueue() {
 				out = append(out, &discordgo.MessageEmbedField{
 					Name:  fmt.Sprintf("%d - %s", i, song.Name),
 					Value: song.Duration.String(),
@@ -236,7 +232,7 @@ func listQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}(),
 	})
 
-	for _, song := range srvr.VoiceInst.Queue {
+	for _, song := range srvr.iterateQueue() {
 		p.Add(&discordgo.MessageEmbed{
 			Title: fmt.Sprintf("Title: %s\nDuration: %s", song.Name, song.Duration),
 
@@ -281,7 +277,7 @@ func pauseQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 	srvr.VoiceInst.Lock()
 	defer srvr.VoiceInst.Unlock()
 
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("⏸ Paused. To unpause, use the command %s unpause", func() string {
+	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("⏸ Paused. To unpause, use the command `%sunpause`", func() string {
 		if srvr.Prefix == "" {
 			return c.Prefix
 		}
@@ -318,7 +314,9 @@ func skipSong(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 func (s *server) youtubeCleanup() {
+	s.VoiceInst.Lock()
+	defer s.VoiceInst.Unlock()
 	s.VoiceInst.VoiceCon.Disconnect()
 	s.newVoiceInstance()
-	sMap.VoiceInsts--
+	//sMap.VoiceInsts--
 }

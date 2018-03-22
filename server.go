@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/Strum355/go-queue/queue"
 	"sync"
 )
 
@@ -12,8 +13,36 @@ func (s *servers) getCount() int {
 
 func (s *server) newVoiceInstance() {
 	s.VoiceInst = &voiceInst{
-		Queue: make([]song, 0),
-		Done:  make(chan error),
-		Mutex: new(sync.Mutex),
+		Queue:   queue.New(),
+		Done:    make(chan error),
+		RWMutex: new(sync.RWMutex),
 	}
+}
+
+func (s server) nextSong() song {
+	s.VoiceInst.Lock()
+	defer s.VoiceInst.Unlock()
+	return s.VoiceInst.Queue.PopFront().(song)
+}
+
+func (s server) addSong(song song) {
+	s.VoiceInst.Lock()
+	defer s.VoiceInst.Unlock()
+	s.VoiceInst.Queue.PushBack(song)
+}
+
+func (s server) queueLength() int {
+	s.VoiceInst.RLock()
+	defer s.VoiceInst.RUnlock()
+	return s.VoiceInst.Queue.Len()
+}
+
+func (s server) iterateQueue() []song {
+	s.VoiceInst.RLock()
+	defer s.VoiceInst.RUnlock()
+	ret := make([]song, s.VoiceInst.Queue.Len())
+	for i, val := range s.VoiceInst.Queue.List() {
+		ret[i] = val.(song)
+	}
+	return ret
 }

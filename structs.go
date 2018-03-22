@@ -4,9 +4,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jonas747/dca"
-
+	"github.com/Strum355/go-queue/queue"
 	"github.com/bwmarrin/discordgo"
+	"github.com/jonas747/dca"
 )
 
 type ibStruct struct {
@@ -66,13 +66,13 @@ type server struct {
 type voiceInst struct {
 	ChannelID string
 
-	Queue []song
+	Queue *queue.Queue
 
 	Playing bool
 
 	Done chan error
 
-	*sync.Mutex
+	*sync.RWMutex
 
 	StreamingSession *dca.StreamingSession
 
