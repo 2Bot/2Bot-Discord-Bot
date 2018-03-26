@@ -1,0 +1,7 @@
+pipeline:
+  docker-image:
+    image: plugins/docker
+    tags: latest
+    dockerfile: Dockerfile
+    repo: 2bot
+    registry: docker.netsoc.co
