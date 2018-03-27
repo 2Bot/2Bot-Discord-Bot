@@ -5,3 +5,4 @@ pipeline:
     dockerfile: Dockerfile
     repo: docker.netsoc.co/strum355/2bot
     registry: docker.netsoc.co
+    secrets: [ docker_username, docker_password ]
