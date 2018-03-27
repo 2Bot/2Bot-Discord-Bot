@@ -52,6 +52,10 @@ func sendEmojiFromFile(s *discordgo.Session, m *discordgo.MessageCreate, e strin
 }
 
 func msgEmoji(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
+	if len(msglist) < 2 {
+		return
+	}
+
 	submatch := emojiRegex.FindStringSubmatch(msglist[1])
 
 	if len(submatch) == 0 {
