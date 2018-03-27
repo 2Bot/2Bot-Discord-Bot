@@ -3,5 +3,5 @@ pipeline:
     image: plugins/docker
     tags: latest
     dockerfile: Dockerfile
-    repo: 2bot
+    repo: docker.netsoc.co/strum355/2bot
     registry: docker.netsoc.co
