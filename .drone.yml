@@ -11,10 +11,10 @@ pipeline:
     username: 2Bot CI
     avatar_url: https://cdn.worldvectorlogo.com/logos/drone.svg
     message: |
-      {{ success }}
-        build {{ build.number }} succeeded. Start - {{ build.started }} | Finish - {{ build.finished }}
+      {{ #success build.status }}
+        build {{ build.number }} succeeded. Good job.
       {{ else }}
-        build {{ build.number }} failed.
+        build {{ build.number }} failed. Fix me please.
       {{ /success }}
     secrets: [ discord_webhook_id, discord_webhook_token ]
 branches: master
