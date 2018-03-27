@@ -1,17 +1,9 @@
 package main
 
 import (
+	"github.com/Strum355/go-queue/queue"
 	"sync"
 )
-
-type servers struct {
-	Count      int
-	VoiceInsts int
-
-	Mutex sync.RWMutex
-
-	Server map[string]*server
-}
 
 func (s *servers) getCount() int {
 	//not gonna mutex this because am i really gonna cry over
@@ -19,18 +11,34 @@ func (s *servers) getCount() int {
 	return s.Count
 }
 
-type server struct {
-	LogChannel string `json:"log_channel"`
-	Prefix     string `json:"server_prefix"`
+func (s *server) newVoiceInstance() {
+	s.VoiceInst = &voiceInst{
+		Queue:   queue.New(),
+		Done:    make(chan error),
+		RWMutex: new(sync.RWMutex),
+	}
+}
 
-	Log    bool `json:"log_active"`
-	Kicked bool `json:"kicked"`
-	Nsfw   bool `json:"nsfw"`
+func (s server) nextSong() song {
+	return s.VoiceInst.Queue.PopFront().(song)
+}
 
-	//Enabled, Message, Channel
-	JoinMessage [3]string `json:"join"`
+func (s server) addSong(song song) {
+	s.VoiceInst.Queue.PushBack(song)
+}
 
-	VoiceInst voiceInst `json:"-"`
+func (s server) queueLength() int {
+	s.VoiceInst.RLock()
+	defer s.VoiceInst.RUnlock()
+	return s.VoiceInst.Queue.Len()
+}
 
-	Playlists map[string][]song `json:"playlists"`
+func (s server) iterateQueue() []song {
+	s.VoiceInst.RLock()
+	defer s.VoiceInst.RUnlock()
+	ret := make([]song, s.VoiceInst.Queue.Len())
+	for i, val := range s.VoiceInst.Queue.List() {
+		ret[i] = val.(song)
+	}
+	return ret
 }

@@ -22,10 +22,12 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -65,11 +67,26 @@ func start() {
 		errorLog.Fatalln("Error creating Discord session,", err)
 	}
 
+	infoLog.Println("session created")
+
+	addHandlers()
+
 	if err := dg.Open(); err != nil {
 		errorLog.Fatalln("Error opening connection,", err)
 	}
 
+	infoLog.Println("connection opened")
+
 	sMap.Count = len(sMap.Server)
+}
+
+func addHandlers() {
+	dg.AddHandler(messageCreate)
+	dg.AddHandler(membPresChange)
+	dg.AddHandler(kicked)
+	dg.AddHandler(membJoin)
+	dg.AddHandler(ready)
+	dg.AddHandler(joined)
 }
 
 func dailyJobs() {
@@ -166,7 +183,12 @@ func joined(s *discordgo.Session, m *discordgo.GuildCreate) {
 
 	guildDetails, err := s.State.Guild(m.Guild.ID)
 	if err != nil {
-		errorLog.Println("Join guild struct", err)
+		errorLog.Println("Join guild err", err)
+		guildDetails, err = s.Guild(m.Guild.ID)
+		if err != nil {
+			errorLog.Println("Join guild request err", err)
+			return
+		}
 	}
 
 	user, err := s.User(guildDetails.OwnerID)
@@ -250,6 +272,8 @@ func main() {
 	infoLog = log.New(os.Stdout, "INFO:  ", log.Ldate|log.Ltime)
 	errorLog = log.New(os.Stdout, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
 
+	infoLog.Println("/*********BOT RESTARTING*********\\")
+
 	for i, f := range []func() error{loadConfig, loadUsers, loadServers, loadQueue} {
 		if err := f(); err != nil {
 			switch i {
@@ -262,29 +286,27 @@ func main() {
 	}
 	defer cleanup()
 
+	infoLog.Println("files loaded")
+
 	start()
 	defer dg.Close()
-
-	dg.AddHandler(messageCreate)
-	dg.AddHandler(membPresChange)
-	dg.AddHandler(kicked)
-	dg.AddHandler(membJoin)
-	dg.AddHandler(ready)
 
 	go setQueuedImageHandlers()
 
 	if !c.InDev {
 		go dailyJobs()
-		dg.AddHandler(joined)
 	}
-
-	infoLog.Println("/*********BOT RESTARTED*********\\")
 
 	// Setup http server for selfbots
 	router := chi.NewRouter()
 	router.Get("/image/{id:[0-9]{18}}/recall/{img:[0-9a-z]{64}}", httpImageRecall)
 	router.Get("/inServer/{id:[0-9]{18}}", isInServer)
 
+	go func() { errorLog.Println(http.ListenAndServe("0.0.0.0:8080", router)) }()
+
 	infoLog.Println("Bot is now running. Press CTRL-C to exit.")
-	errorLog.Println(http.ListenAndServe("0.0.0.0:8080", router))
+
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, syscall.SIGSEGV, syscall.SIGHUP)
+	<-sc
 }

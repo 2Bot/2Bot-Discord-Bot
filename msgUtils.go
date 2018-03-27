@@ -16,7 +16,7 @@ func init() {
 	newCommand("setGame", 0, true, false, msgSetGame).add()
 	newCommand("listUsers", 0, true, false, msgListUsers).add()
 	newCommand("reloadConfig", 0, true, false, msgReloadConfig)
-
+	newCommand("command", 0, true, false, msgCommand).add()
 	newCommand("help", 0, false, false, msgHelp).setHelp("ok").add()
 	newCommand("info", 0, false, false, msgInfo).setHelp("Args: none\n\nSome info about 2Bot.\n\nExample:\n`!owo info`").add()
 	newCommand("invite", 0, false, false, msgInvite).setHelp("Args: none\n\nSends an invite link for 2Bot!\n\nExample:\n`!owo invite`").add()
@@ -40,6 +40,28 @@ func init() {
 	or are only for me, the creator..usually
 */
 
+func msgCommand(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
+	if len(msglist) != 3 {
+		return
+	}
+
+	command := msglist[2]
+	switch msglist[1] {
+	case "enable":
+		if comm, ok := disabledCommands[command]; ok {
+			activeCommands[command] = comm
+			delete(disabledCommands, command)
+			s.ChannelMessageSend(m.ChannelID, "Enabled "+command)
+		}
+	case "disable":
+		if comm, ok := activeCommands[command]; ok {
+			disabledCommands[command] = comm
+			delete(activeCommands, command)
+			s.ChannelMessageSend(m.ChannelID, "Disabled "+command)
+		}
+	}
+}
+
 func msgSetGame(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	if m.Author.ID != noah && len(msglist) < 2 {
 		return
@@ -61,14 +83,14 @@ func msgSetGame(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 
 func msgHelp(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	if len(msglist) == 2 {
-		if val, ok := commMap[l(msglist[1])]; ok {
+		if val, ok := activeCommands[l(msglist[1])]; ok {
 			val.helpCommand(s, m)
 			return
 		}
 	}
 
 	var commands []string
-	for _, val := range commMap {
+	for _, val := range activeCommands {
 		if !val.NoahOnly {
 			commands = append(commands, "`"+val.Name+"`")
 		}

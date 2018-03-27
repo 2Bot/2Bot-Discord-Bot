@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	commMap = make(map[string]command)
+	activeCommands   = make(map[string]command)
+	disabledCommands = make(map[string]command)
 )
 
 //Small wrapper function to reduce clutter
@@ -29,11 +30,11 @@ func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, message stri
 
 	submatch := emojiRegex.FindStringSubmatch(msglist[0])
 	if len(submatch) > 0 {
-		commMap["bigmoji"].Exec(s, m, append([]string{""}, msglist...))
+		activeCommands["bigmoji"].Exec(s, m, append([]string{""}, msglist...))
 		return
 	}
 
-	if fromMap, ok := commMap[command]; ok && command == l(fromMap.Name) {
+	if fromMap, ok := activeCommands[command]; ok && command == l(fromMap.Name) {
 		userPerms, err := s.State.UserChannelPermissions(m.Author.ID, m.ChannelID)
 		if err != nil {
 			s.ChannelMessageSend(m.ChannelID, "Error verifying permissions :(")
@@ -50,11 +51,11 @@ func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, message stri
 		return
 	}
 
-	commMap["bigmoji"].Exec(s, m, append([]string{""}, msglist...))
+	activeCommands["bigmoji"].Exec(s, m, append([]string{""}, msglist...))
 }
 
 func (c command) add() command {
-	commMap[l(c.Name)] = c
+	activeCommands[l(c.Name)] = c
 	return c
 }
 
