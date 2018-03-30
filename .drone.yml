@@ -11,6 +11,7 @@ pipeline:
     username: 2Bot CI
     avatar_url: https://noahsc.xyz/public_images/drone.png
     secrets: [discord_webhook_id, discord_webhook_token]
+    color: "#42f483"
     message: >
       {{#success build.status}}
         2Bot successfully built and pushed. Build num {{build.number}}.
