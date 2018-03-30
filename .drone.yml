@@ -12,9 +12,9 @@ pipeline:
     avatar_url: https://noahsc.xyz/public_images/drone.png
     secrets: [discord_webhook_id, discord_webhook_token]
     message: >
-      {{ #success build.status }}
-        2Bot successfully built and pushed. Build num {{ build.number }}.
-      {{ else }}
-        2Bot failed to build. Build num {{ build.number }}.
-      {{ /success }}    
+      {{#success build.status}}
+        2Bot successfully built and pushed. Build num {{build.number}}.
+      {{else}}
+        2Bot failed to build. Build num {{build.number}}.
+      {{/success}}    
 branches: master
