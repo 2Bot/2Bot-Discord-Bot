@@ -17,7 +17,7 @@ func init() {
 }
 
 func msgIbsearch(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	guild, err := guildDetails(m.ChannelID, s)
+	guild, err := guildDetails(m.ChannelID, "", s)
 	if err != nil {
 		errorLog.Println("ibsearch guild details err", err)
 		return

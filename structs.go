@@ -39,8 +39,8 @@ type config struct {
 }
 
 type servers struct {
-	Count      int
-	VoiceInsts int
+	Count      int `json:"-"`
+	VoiceInsts int `json:"-"`
 
 	Mutex sync.RWMutex `json:"-"`
 

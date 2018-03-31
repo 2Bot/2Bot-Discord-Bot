@@ -16,7 +16,7 @@ func init() {
 }
 
 func msgLogChannel(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	guild, err := guildDetails(m.ChannelID, s)
+	guild, err := guildDetails(m.ChannelID, "", s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was a problem setting the details :( Try again please~")
 		errorLog.Println("log channel guild details error", err)
@@ -57,7 +57,7 @@ func msgLogChannel(s *discordgo.Session, m *discordgo.MessageCreate, msglist []s
 }
 
 func msgLogging(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	guild, err := guildDetails(m.ChannelID, s)
+	guild, err := guildDetails(m.ChannelID, "", s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was a problem toggling logging :( Try again please~")
 		errorLog.Println("logging guild details error", err)

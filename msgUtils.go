@@ -97,7 +97,7 @@ func msgHelp(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string)
 	}
 
 	prefix := c.Prefix
-	if guild, err := guildDetails(m.ChannelID, s); err != nil {
+	if guild, err := guildDetails(m.ChannelID, "", s); err != nil {
 		prefix = sMap.Server[guild.ID].Prefix
 	}
 
@@ -128,7 +128,7 @@ func msgInfo(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
 	creationTime := ct1.Format(time.UnixDate)[:10]
 	runtime.ReadMemStats(&mem)
 	var prefix string
-	guild, err := guildDetails(m.ChannelID, s)
+	guild, err := guildDetails(m.ChannelID, "", s)
 	if err == nil {
 		if val, ok := sMap.Server[guild.ID]; ok {
 			prefix = val.Prefix
@@ -174,7 +174,7 @@ func msgListUsers(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 
 	s.ChannelTyping(m.ChannelID)
 
-	guild, err := guildDetails(msglist[1], s)
+	guild, err := guildDetails(msglist[1], "", s)
 	if err != nil {
 		return
 	}
@@ -194,7 +194,7 @@ func msgGit(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
 }
 
 func msgNSFW(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	guild, err := guildDetails(m.ChannelID, s)
+	guild, err := guildDetails(m.ChannelID, "", s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was an error toggling NSFW :( Try again please~")
 		errorLog.Println("nsfw guild details error", err)
@@ -211,7 +211,7 @@ func msgNSFW(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string)
 }
 
 func msgJoinMessage(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	guild, err := guildDetails(m.ChannelID, s)
+	guild, err := guildDetails(m.ChannelID, "", s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was an error with discord :( Try again please~")
 		errorLog.Println("join message guild details error", err)

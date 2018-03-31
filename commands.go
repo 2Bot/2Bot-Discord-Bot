@@ -35,7 +35,7 @@ func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, message stri
 	}
 
 	if fromMap, ok := activeCommands[command]; ok && command == l(fromMap.Name) {
-		userPerms, err := s.State.UserChannelPermissions(m.Author.ID, m.ChannelID)
+		userPerms, err := permissionDetails(m.Author.ID, m.ChannelID, s)
 		if err != nil {
 			s.ChannelMessageSend(m.ChannelID, "Error verifying permissions :(")
 			errorLog.Println("error getting user permissions", err)

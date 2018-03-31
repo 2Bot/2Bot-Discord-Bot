@@ -51,7 +51,7 @@ func addToQueue(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 		return
 	}
 
-	guild, err := guildDetails(m.ChannelID, s)
+	guild, err := guildDetails(m.ChannelID, "", s)
 	if err != nil {
 		errorLog.Println(err)
 		return
@@ -134,7 +134,7 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate, srvr *server, vc *di
 	}
 
 	srvr.VoiceInst.Lock()
-	
+
 	vid, err := getVideoInfo(srvr.nextSong().URL, s, m)
 	if err != nil {
 		srvr.VoiceInst.Unlock()
@@ -199,7 +199,7 @@ Outer:
 }
 
 func listQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
-	guild, err := guildDetails(m.ChannelID, s)
+	guild, err := guildDetails(m.ChannelID, "", s)
 	if err != nil {
 		errorLog.Println(err)
 		return
@@ -251,7 +251,7 @@ func listQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 func stopQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
-	guild, err := guildDetails(m.ChannelID, s)
+	guild, err := guildDetails(m.ChannelID, "", s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "Error stopping queue. Please try again.")
 		errorLog.Println("Guild details error", err)
@@ -265,7 +265,7 @@ func stopQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 func pauseQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
-	guild, err := guildDetails(m.ChannelID, s)
+	guild, err := guildDetails(m.ChannelID, "", s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "Error pausing video. Please try again.")
 		errorLog.Println("Guild details error", err)
@@ -288,7 +288,7 @@ func pauseQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 func unpauseQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
-	guild, err := guildDetails(m.ChannelID, s)
+	guild, err := guildDetails(m.ChannelID, "", s)
 	if err != nil {
 		errorLog.Println("Guild details error", err)
 		return
@@ -301,7 +301,7 @@ func unpauseQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 func skipSong(s *discordgo.Session, m *discordgo.MessageCreate) {
-	guild, err := guildDetails(m.ChannelID, s)
+	guild, err := guildDetails(m.ChannelID, "", s)
 	if err != nil {
 		errorLog.Println("Guild details error", err)
 		return

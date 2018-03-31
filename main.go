@@ -132,7 +132,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	guildDetails, err := guildDetails(m.ChannelID, s)
+	guildDetails, err := guildDetails(m.ChannelID, "", s)
 	if err != nil {
 		errorLog.Println("Message create guild details err:", err)
 		return

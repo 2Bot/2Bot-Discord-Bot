@@ -33,7 +33,7 @@ func init() {
 func msgImageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	if len(msglist) < 2 {
 		prefix := c.Prefix
-		guild, err := guildDetails(m.ChannelID, s)
+		guild, err := guildDetails(m.ChannelID, "", s)
 		if err != nil {
 			s.ChannelMessageSend(m.ChannelID, "There was an issue recalling your image :( Try again please~")
 			errorLog.Println("image recall guild details error", err)
@@ -200,7 +200,7 @@ func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	}
 	defer resp.Body.Close()
 
-	guild, err := guildDetails(m.ChannelID, s)
+	guild, err := guildDetails(m.ChannelID, "", s)
 	if err != nil {
 		errorLog.Println("image save guild details error", err)
 	}

@@ -62,6 +62,7 @@ func getCreationTime(ID string) (t time.Time, err error) {
 	if err != nil {
 		return
 	}
+
 	timestamp := (i >> 22) + 1420070400000
 	t = time.Unix(timestamp/1000, 0)
 	return
@@ -97,23 +98,61 @@ func deleteMessage(m *discordgo.MessageCreate, s *discordgo.Session) {
 	}
 }
 
-func guildDetails(channelID string, s *discordgo.Session) (*discordgo.Guild, error) {
-	channelInGuild, err := s.State.Channel(channelID)
+func channelDetails(channelID string, s *discordgo.Session) (channelDetails *discordgo.Channel, err error) {
+	channelDetails, err = s.State.Channel(channelID)
 	if err != nil {
-		return nil, err
+		if err == discordgo.ErrStateNotFound {
+			return s.Channel(channelID)
+		}
 	}
-	guildDetails, err := s.State.Guild(channelInGuild.GuildID)
+	return
+}
+
+func permissionDetails(authorID, channelID string, s *discordgo.Session) (perms int, err error) {
+	perms, err = s.State.UserChannelPermissions(authorID, channelID)
 	if err != nil {
-		return nil, err
+		if err == discordgo.ErrStateNotFound {
+			return s.UserChannelPermissions(authorID, channelID)
+		}
 	}
-	return guildDetails, nil
+	return
+}
+
+func memberDetails(guildID, memberID string, s *discordgo.Session) (member *discordgo.Member, err error) {
+	member, err = s.State.Member(guildID, memberID)
+	if err != nil {
+		if err == discordgo.ErrStateNotFound {
+			return s.GuildMember(guildID, memberID)
+		}
+	}
+	return
+}
+
+func guildDetails(channelID, guildID string, s *discordgo.Session) (guildDetails *discordgo.Guild, err error) {
+	if guildID == "" {
+		var channel *discordgo.Channel
+		channel, err = channelDetails(channelID, s)
+		if err != nil {
+			return
+		}
+
+		guildID = channel.GuildID
+	}
+
+	guildDetails, err = s.State.Guild(guildID)
+	if err != nil {
+		if err == discordgo.ErrStateNotFound {
+			return s.Guild(guildID)
+		}
+	}
+	return
 }
 
 func isInServer(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	id := chi.URLParam(r, "id")
-	guild, err := guildDetails(serverID, dg)
+	guild, err := guildDetails(serverID, "", dg)
 	if err != nil {
 		errorLog.Println(err)
 		return
