@@ -36,7 +36,6 @@ func msgImageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []
 		guild, err := guildDetails(m.ChannelID, "", s)
 		if err != nil {
 			s.ChannelMessageSend(m.ChannelID, "There was an issue recalling your image :( Try again please~")
-			errorLog.Println("image recall guild details error", err)
 			return
 		} else if sMap.Server[guild.ID].Prefix != "" {
 			prefix = sMap.Server[guild.ID].Prefix
@@ -202,7 +201,10 @@ func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 
 	guild, err := guildDetails(m.ChannelID, "", s)
 	if err != nil {
-		errorLog.Println("image save guild details error", err)
+		guild = &discordgo.Guild{
+			Name: "error",
+			ID:   "error",
+		}
 	}
 
 	tempFilepath := "/images/temp/" + imgFileName
@@ -231,9 +233,7 @@ func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	_, err = s.ChannelMessageEdit(m.ChannelID, dlMsg.ID, fmt.Sprintf("%s Thanks for the submission! Your image is being reviewed by our ~~lazy~~ hard-working review team! You'll get a PM from either my master himself or from me once its been confirmed or rejected :) Sit tight!", m.Author.Mention()))
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s Thanks for the submission! Your image is being reviewed by our ~~lazy~~ hard-working review team! You'll get a PM from either my master himself or from me once its been confirmed or rejected :) Sit tight!", m.Author.Mention()))
-		if dlMsg != nil {
-			s.ChannelMessageDelete(m.ChannelID, dlMsg.ID)
-		}
+		deleteMessage(dlMsg, s)
 	}
 
 	reviewMsg, _ := s.ChannelMessageSendEmbed(reviewChan, &discordgo.MessageEmbed{

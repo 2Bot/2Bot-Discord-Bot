@@ -37,7 +37,7 @@ func msgPurge(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 		userToPurge = submatch[1]
 	}
 
-	deleteMessage(m, s)
+	deleteMessage(m.Message, s)
 
 	if userToPurge == "" {
 		err = standardPurge(purgeAmount, s, m)

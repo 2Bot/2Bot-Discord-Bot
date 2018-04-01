@@ -48,7 +48,7 @@ func sendEmojiFromFile(s *discordgo.Session, m *discordgo.MessageCreate, e strin
 
 	s.ChannelFileSend(m.ChannelID, "emoji.png", file)
 
-	deleteMessage(m, s)
+	deleteMessage(m.Message, s)
 }
 
 func msgEmoji(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
@@ -84,5 +84,5 @@ func msgEmoji(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 
 	s.ChannelFileSend(m.ChannelID, file, resp.Body)
 
-	deleteMessage(m, s)
+	deleteMessage(m.Message, s)
 }

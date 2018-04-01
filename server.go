@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/Strum355/go-queue/queue"
 	"sync"
+
+	"github.com/Strum355/go-queue/queue"
 )
 
 func (s *servers) getCount() int {

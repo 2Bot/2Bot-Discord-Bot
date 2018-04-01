@@ -18,7 +18,6 @@ func msgPlaylist(s *discordgo.Session, m *discordgo.MessageCreate, msglist []str
 
 	guild, err := guildDetails(m.ChannelID, "", s)
 	if err != nil {
-		errorLog.Println("Guild details error", err)
 		return
 	}
 

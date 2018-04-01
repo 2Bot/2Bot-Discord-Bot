@@ -53,7 +53,7 @@ func addToQueue(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 
 	guild, err := guildDetails(m.ChannelID, "", s)
 	if err != nil {
-		errorLog.Println(err)
+		s.ChannelMessageSend(m.ChannelID, "There was a problem adding to queue :( please try again")
 		return
 	}
 
@@ -201,7 +201,7 @@ Outer:
 func listQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 	guild, err := guildDetails(m.ChannelID, "", s)
 	if err != nil {
-		errorLog.Println(err)
+		s.ChannelMessageSend(m.ChannelID, "There was an issue loading the list :( please try again")
 		return
 	}
 
@@ -253,8 +253,7 @@ func listQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 func stopQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 	guild, err := guildDetails(m.ChannelID, "", s)
 	if err != nil {
-		s.ChannelMessageSend(m.ChannelID, "Error stopping queue. Please try again.")
-		errorLog.Println("Guild details error", err)
+		s.ChannelMessageSend(m.ChannelID, "There was an error stopping the queue :( Please try again.")
 		return
 	}
 
@@ -267,8 +266,7 @@ func stopQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 func pauseQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 	guild, err := guildDetails(m.ChannelID, "", s)
 	if err != nil {
-		s.ChannelMessageSend(m.ChannelID, "Error pausing video. Please try again.")
-		errorLog.Println("Guild details error", err)
+		s.ChannelMessageSend(m.ChannelID, "There was an error pausing the video :( Please try again.")
 		return
 	}
 
@@ -290,7 +288,7 @@ func pauseQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 func unpauseQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 	guild, err := guildDetails(m.ChannelID, "", s)
 	if err != nil {
-		errorLog.Println("Guild details error", err)
+		s.ChannelMessageSend(m.ChannelID, "There was an error unpausing the song :( please try again")
 		return
 	}
 
@@ -303,7 +301,7 @@ func unpauseQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 func skipSong(s *discordgo.Session, m *discordgo.MessageCreate) {
 	guild, err := guildDetails(m.ChannelID, "", s)
 	if err != nil {
-		errorLog.Println("Guild details error", err)
+		s.ChannelMessageSend(m.ChannelID, "There was an error skipping the song :( please try again")
 		return
 	}
 

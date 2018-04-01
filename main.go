@@ -26,7 +26,6 @@ import (
 	"regexp"
 	"runtime"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
@@ -50,8 +49,8 @@ var (
 	infoLog      *log.Logger
 	lastReboot   string
 	emojiRegex   = regexp.MustCompile("<(a)?:.*?:(.*?)>")
-	userIDRegex  = regexp.MustCompile("<@!?([0-9]{18})>")
-	channelRegex = regexp.MustCompile("<#([0-9]{18})>")
+	userIDRegex  = regexp.MustCompile("<@!?([0-9]+)>")
+	channelRegex = regexp.MustCompile("<#([0-9]+)>")
 	status       = map[discordgo.Status]string{"dnd": "busy", "online": "online", "idle": "idle", "offline": "offline"}
 	footer       = new(discordgo.MessageEmbedFooter)
 )
@@ -69,7 +68,12 @@ func start() {
 
 	infoLog.Println("session created")
 
-	addHandlers()
+	dg.AddHandler(messageCreateEvent)
+	dg.AddHandler(presenceChangeEvent)
+	dg.AddHandler(guildKickedEvent)
+	dg.AddHandler(memberJoinEvent)
+	dg.AddHandler(readyEvent)
+	dg.AddHandler(guildJoinEvent)
 
 	if err := dg.Open(); err != nil {
 		errorLog.Fatalln("Error opening connection,", err)
@@ -78,15 +82,6 @@ func start() {
 	infoLog.Println("connection opened")
 
 	sMap.Count = len(sMap.Server)
-}
-
-func addHandlers() {
-	dg.AddHandler(messageCreate)
-	dg.AddHandler(membPresChange)
-	dg.AddHandler(kicked)
-	dg.AddHandler(membJoin)
-	dg.AddHandler(ready)
-	dg.AddHandler(joined)
 }
 
 func dailyJobs() {
@@ -127,34 +122,6 @@ func setBotGame(s *discordgo.Session) {
 	infoLog.Println("set initial game to", c.Game)
 }
 
-func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if m.Author.Bot {
-		return
-	}
-
-	guildDetails, err := guildDetails(m.ChannelID, "", s)
-	if err != nil {
-		errorLog.Println("Message create guild details err:", err)
-		return
-	}
-
-	var prefix string
-	if val, ok := sMap.Server[guildDetails.ID]; ok {
-		if prefix = val.Prefix; prefix == "" {
-			prefix = c.Prefix
-		}
-	}
-
-	parseCommand(s, m, func() string {
-		if strings.HasPrefix(m.Content, c.Prefix) {
-			return strings.TrimPrefix(m.Content, c.Prefix)
-		}
-		return strings.TrimPrefix(m.ChannelID, prefix)
-	}())
-
-	return
-}
-
 // Set all handlers for queued images, in case the bot crashes with images still in queue
 func setQueuedImageHandlers() {
 	for imgNum := range q.QueuedMsgs {
@@ -165,105 +132,6 @@ func setQueuedImageHandlers() {
 		}
 		go fimageReview(dg, q, imgNumInt)
 	}
-}
-
-func ready(s *discordgo.Session, m *discordgo.Ready) {
-	s.ChannelMessageSendEmbed(logChan, &discordgo.MessageEmbed{
-		Fields: []*discordgo.MessageEmbedField{
-			{Name: "Info:", Value: "Received ready payload"},
-		},
-	})
-	setBotGame(s)
-}
-
-func joined(s *discordgo.Session, m *discordgo.GuildCreate) {
-	if m.Guild.Unavailable {
-		return
-	}
-
-	guildDetails, err := s.State.Guild(m.Guild.ID)
-	if err != nil {
-		errorLog.Println("Join guild err", err)
-		guildDetails, err = s.Guild(m.Guild.ID)
-		if err != nil {
-			errorLog.Println("Join guild request err", err)
-			return
-		}
-	}
-
-	user, err := s.User(guildDetails.OwnerID)
-	if err != nil {
-		errorLog.Println("Joined user struct err", err)
-		user = &discordgo.User{
-			Username:      "error",
-			Discriminator: "error",
-		}
-	}
-
-	embed := &discordgo.MessageEmbed{
-		Image: &discordgo.MessageEmbedImage{
-			URL: discordgo.EndpointGuildIcon(m.Guild.ID, m.Guild.Icon),
-		},
-
-		Footer: footer,
-
-		Fields: []*discordgo.MessageEmbedField{
-			{Name: "Name:", Value: m.Guild.Name, Inline: true},
-			{Name: "User Count:", Value: strconv.Itoa(m.Guild.MemberCount), Inline: true},
-			{Name: "Region:", Value: m.Guild.Region, Inline: true},
-			{Name: "Channel Count:", Value: strconv.Itoa(len(m.Guild.Channels)), Inline: true},
-			{Name: "ID:", Value: m.Guild.ID, Inline: true},
-			{Name: "Owner:", Value: user.Username + "#" + user.Discriminator, Inline: true},
-		},
-	}
-
-	if _, ok := sMap.Server[m.Guild.ID]; !ok {
-		//if newly joined
-		embed.Color = 65280
-		s.ChannelMessageSendEmbed(logChan, embed)
-		infoLog.Println("Joined server", m.Guild.ID, m.Guild.Name)
-
-		sMap.Server[m.Guild.ID] = &server{
-			LogChannel:  m.Guild.ID,
-			Log:         false,
-			Nsfw:        false,
-			JoinMessage: [3]string{"false", "", ""},
-		}
-	} else if val := sMap.Server[m.Guild.ID]; val.Kicked == true {
-		//If previously kicked and then readded
-		embed.Color = 16751104
-		s.ChannelMessageSendEmbed(logChan, embed)
-		infoLog.Println("Rejoined server", m.Guild.ID, m.Guild.Name)
-	}
-
-	sMap.Server[m.Guild.ID].Kicked = false
-	sMap.Mutex.Lock()
-	defer sMap.Mutex.Unlock()
-	sMap.Count++
-	saveServers()
-}
-
-func kicked(s *discordgo.Session, m *discordgo.GuildDelete) {
-	if m.Unavailable {
-		return
-	}
-
-	s.ChannelMessageSendEmbed(logChan, &discordgo.MessageEmbed{
-		Color:  16711680,
-		Footer: footer,
-		Fields: []*discordgo.MessageEmbedField{
-			{Name: "Name:", Value: m.Name, Inline: true},
-			{Name: "ID:", Value: m.Guild.ID, Inline: true},
-		},
-	})
-
-	infoLog.Println("Kicked from", m.Guild.ID, m.Name)
-
-	sMap.Server[m.Guild.ID].Kicked = true
-	sMap.Mutex.Lock()
-	defer sMap.Mutex.Unlock()
-	sMap.Count--
-	saveServers()
 }
 
 func main() {

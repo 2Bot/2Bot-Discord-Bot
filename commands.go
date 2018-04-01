@@ -38,12 +38,14 @@ func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, message stri
 		userPerms, err := permissionDetails(m.Author.ID, m.ChannelID, s)
 		if err != nil {
 			s.ChannelMessageSend(m.ChannelID, "Error verifying permissions :(")
-			errorLog.Println("error getting user permissions", err)
 			return
 		}
-
-		hasPerms := userPerms&fromMap.PermsRequired > 0
-		if (fromMap.RequiresPerms && hasPerms) || !fromMap.RequiresPerms {
+		// a = is noah only
+		// b = is me
+		// c = requires perms
+		// d = has perms
+		// this boolean logic isnt sound yet. will revise before merging with master
+		if (fromMap.NoahOnly && m.Author.ID == noah) || (!fromMap.RequiresPerms || m.Author.ID == noah) || (fromMap.RequiresPerms && userPerms&fromMap.PermsRequired > 0) {
 			fromMap.Exec(s, m, msglist)
 			return
 		}

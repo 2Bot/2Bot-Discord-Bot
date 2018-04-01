@@ -49,7 +49,7 @@ type servers struct {
 
 type server struct {
 	LogChannel string `json:"log_channel"`
-	Prefix     string `json:"server_prefix"`
+	Prefix     string `json:"server_prefix,omitempty"`
 
 	Log    bool `json:"log_active"`
 	Kicked bool `json:"kicked"`
@@ -80,9 +80,9 @@ type voiceInst struct {
 }
 
 type song struct {
-	URL   string `json:"url"`
-	Name  string `json:"name"`
-	Image string `json:"image"`
+	URL   string `json:"url,omitempty"`
+	Name  string `json:"name,omitempty"`
+	Image string `json:"image,omitempty"`
 
 	Duration time.Duration `json:"duration"`
 }

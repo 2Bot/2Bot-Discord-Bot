@@ -92,7 +92,7 @@ func trimSlice(s []string) (ret []string) {
 	return
 }
 
-func deleteMessage(m *discordgo.MessageCreate, s *discordgo.Session) {
+func deleteMessage(m *discordgo.Message, s *discordgo.Session) {
 	if m != nil {
 		s.ChannelMessageDelete(m.ChannelID, m.ID)
 	}
@@ -102,7 +102,10 @@ func channelDetails(channelID string, s *discordgo.Session) (channelDetails *dis
 	channelDetails, err = s.State.Channel(channelID)
 	if err != nil {
 		if err == discordgo.ErrStateNotFound {
-			return s.Channel(channelID)
+			channelDetails, err = s.Channel(channelID)
+			if err != nil {
+				errorLog.Println("error getting channel details", channelID, err)
+			}
 		}
 	}
 	return
@@ -112,7 +115,10 @@ func permissionDetails(authorID, channelID string, s *discordgo.Session) (perms 
 	perms, err = s.State.UserChannelPermissions(authorID, channelID)
 	if err != nil {
 		if err == discordgo.ErrStateNotFound {
-			return s.UserChannelPermissions(authorID, channelID)
+			perms, err = s.UserChannelPermissions(authorID, channelID)
+			if err != nil {
+				errorLog.Println("error getting perm details", err)
+			}
 		}
 	}
 	return
@@ -122,7 +128,10 @@ func memberDetails(guildID, memberID string, s *discordgo.Session) (member *disc
 	member, err = s.State.Member(guildID, memberID)
 	if err != nil {
 		if err == discordgo.ErrStateNotFound {
-			return s.GuildMember(guildID, memberID)
+			member, err = s.GuildMember(guildID, memberID)
+			if err != nil {
+				errorLog.Println("error getting member details", err)
+			}
 		}
 	}
 	return
@@ -142,7 +151,10 @@ func guildDetails(channelID, guildID string, s *discordgo.Session) (guildDetails
 	guildDetails, err = s.State.Guild(guildID)
 	if err != nil {
 		if err == discordgo.ErrStateNotFound {
-			return s.Guild(guildID)
+			guildDetails, err = s.Guild(guildID)
+			if err != nil {
+				errorLog.Println("error getting guild details", guildID, err)
+			}
 		}
 	}
 	return
@@ -154,7 +166,7 @@ func isInServer(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	guild, err := guildDetails(serverID, "", dg)
 	if err != nil {
-		errorLog.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 

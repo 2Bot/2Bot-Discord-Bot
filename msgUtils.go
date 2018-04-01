@@ -63,7 +63,7 @@ func msgCommand(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 }
 
 func msgSetGame(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	if m.Author.ID != noah && len(msglist) < 2 {
+	if len(msglist) < 2 {
 		return
 	}
 
@@ -124,9 +124,16 @@ func (c command) helpCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 func msgInfo(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
-	ct1, _ := getCreationTime(s.State.User.ID)
+	ct1, err := getCreationTime(s.State.User.ID)
+	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, "There was an error getting Bot info :(")
+		return
+	}
+
 	creationTime := ct1.Format(time.UnixDate)[:10]
+
 	runtime.ReadMemStats(&mem)
+
 	var prefix string
 	guild, err := guildDetails(m.ChannelID, "", s)
 	if err == nil {
@@ -159,11 +166,10 @@ func msgInfo(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
 			{Name: "My Server:", Value: "https://discord.gg/9T34Y6u\nJoin here for support amongst other things!", Inline: false},
 		},
 	})
-	return
 }
 
 func msgListUsers(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	if m.Author.ID != noah && len(msglist) < 2 {
+	if len(msglist) < 2 {
 		return
 	}
 
@@ -197,7 +203,6 @@ func msgNSFW(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string)
 	guild, err := guildDetails(m.ChannelID, "", s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was an error toggling NSFW :( Try again please~")
-		errorLog.Println("nsfw guild details error", err)
 		return
 	}
 
@@ -214,7 +219,6 @@ func msgJoinMessage(s *discordgo.Session, m *discordgo.MessageCreate, msglist []
 	guild, err := guildDetails(m.ChannelID, "", s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was an error with discord :( Try again please~")
-		errorLog.Println("join message guild details error", err)
 		return
 	}
 
@@ -263,10 +267,6 @@ func msgJoinMessage(s *discordgo.Session, m *discordgo.MessageCreate, msglist []
 }
 
 func msgReloadConfig(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	if m.Author.ID != noah {
-		return
-	}
-
 	if len(msglist) < 2 {
 		return
 	}
