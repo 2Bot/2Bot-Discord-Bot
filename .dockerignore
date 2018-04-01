@@ -4,3 +4,4 @@ LICENSE
 README
 .gitignore
 .dockerignore
+.drone.yml

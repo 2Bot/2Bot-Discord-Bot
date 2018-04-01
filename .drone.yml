@@ -9,12 +9,13 @@ pipeline:
   discord-notif:
     image: appleboy/drone-discord
     username: 2Bot CI
-    avatar_url: https://cdn.worldvectorlogo.com/logos/drone.svg
-    message: |
-      {{ #success build.status }}
-        build {{ build.number }} succeeded. Good job.
-      {{ else }}
-        build {{ build.number }} failed. Fix me please.
-      {{ /success }}
-    secrets: [ discord_webhook_id, discord_webhook_token ]
+    avatar_url: https://noahsc.xyz/public_images/drone.png
+    secrets: [discord_webhook_id, discord_webhook_token]
+    color: "#42f483"
+    message: >
+      {{#success build.status}}
+        2Bot successfully built and pushed. Build num {{build.number}}.
+      {{else}}
+        2Bot failed to build. Build num {{build.number}}.
+      {{/success}}    
 branches: master
