@@ -21,7 +21,7 @@ func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, message stri
 	if len(msglist) == 0 {
 		return
 	}
-	command := l(func() string {
+	commandName := l(func() string {
 		if strings.HasPrefix(message, " ") {
 			return " " + msglist[0]
 		}
@@ -34,19 +34,17 @@ func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, message stri
 		return
 	}
 
-	if fromMap, ok := activeCommands[command]; ok && command == l(fromMap.Name) {
+	if command, ok := activeCommands[commandName]; ok && commandName == l(command.Name) {
 		userPerms, err := permissionDetails(m.Author.ID, m.ChannelID, s)
 		if err != nil {
 			s.ChannelMessageSend(m.ChannelID, "Error verifying permissions :(")
 			return
 		}
-		// a = is noah only
-		// b = is me
-		// c = requires perms
-		// d = has perms
-		// this boolean logic isnt sound yet. will revise before merging with master
-		if (fromMap.NoahOnly && m.Author.ID == noah) || (!fromMap.RequiresPerms || m.Author.ID == noah) || (fromMap.RequiresPerms && userPerms&fromMap.PermsRequired > 0) {
-			fromMap.Exec(s, m, msglist)
+
+		isNoah := m.Author.ID == noah
+		hasPerms := userPerms&command.PermsRequired > 0
+		if (!command.NoahOnly && !command.RequiresPerms) || (command.RequiresPerms && hasPerms) || isNoah {
+			command.Exec(s, m, msglist)
 			return
 		}
 		s.ChannelMessageSend(m.ChannelID, "You don't have the correct permissions to run this!")
