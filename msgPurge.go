@@ -23,7 +23,7 @@ func msgPurge(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 
 	purgeAmount, err := strconv.Atoi(msglist[1])
 	if err != nil {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("How do i delete %s messages O.o Please only give numbers!", msglist[1]))
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("How do i delete %s messages? Please only give numbers!", msglist[1]))
 		return
 	}
 
@@ -48,11 +48,8 @@ func msgPurge(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 	if err == nil {
 		msg, _ := s.ChannelMessageSend(m.ChannelID, "Successfully deleted :ok_hand:")
 		time.Sleep(time.Second * 5)
-		if msg != nil {
-			s.ChannelMessageDelete(m.ChannelID, msg.ID)
-		}
+		deleteMessage(msg, s)
 	}
-	return
 }
 
 func standardPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCreate) error {
@@ -120,24 +117,26 @@ func userPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCreate
 			}
 
 			for _, msg := range list {
-				if len(purgeList) >= del {
+				if len(purgeList) == del {
 					break
 				}
 
-				if msg.Author.ID == userToPurge {
-					timeSince, err := getMessageAge(msg, s, m)
-					if err != nil {
-						//if the time is malformed for whatever reason, we'll try the next message
-						continue
-					}
-
-					if timeSince.Hours()/24 >= 14 {
-						outOfDate = true
-						break
-					}
-
-					purgeList = append(purgeList, msg.ID)
+				if msg.Author.ID != userToPurge {
+					continue
 				}
+				
+				timeSince, err := getMessageAge(msg, s, m)
+				if err != nil {
+					//if the time is malformed for whatever reason, we'll try the next message
+					continue
+				}
+
+				if timeSince.Hours()/24 >= 14 {
+					outOfDate = true
+					break
+				}
+
+				purgeList = append(purgeList, msg.ID)
 			}
 
 			if outOfDate {
@@ -159,19 +158,17 @@ func userPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCreate
 	return nil
 }
 
-func massDelete(list []string, s *discordgo.Session, m *discordgo.MessageCreate) error {
-	err := s.ChannelMessagesBulkDelete(m.ChannelID, list)
-	if err != nil {
+func massDelete(list []string, s *discordgo.Session, m *discordgo.MessageCreate) (err error) {
+	if err = s.ChannelMessagesBulkDelete(m.ChannelID, list); err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was an issue deleting messages :(")
 		errorLog.Println("error purging", err)
 	}
-	return err
+	return
 }
 
 func getMessageAge(msg *discordgo.Message, s *discordgo.Session, m *discordgo.MessageCreate) (time.Duration, error) {
 	then, err := msg.Timestamp.Parse()
 	if err != nil {
-		s.ChannelMessageSend(m.ChannelID, "There was an issue deleting messages :(")
 		errorLog.Println("time parse error", err)
 		return time.Duration(0), err
 	}

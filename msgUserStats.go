@@ -12,17 +12,15 @@ func init() {
 }
 
 func msgUserStats(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	channelInGuild, err := s.State.Channel(m.ChannelID)
+	channel, err := channelDetails(m.ChannelID, s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was an error getting the data :(")
-		errorLog.Println("channelInGuild err:", m.Content, err)
 		return
 	}
 
-	guild, err := s.State.Guild(channelInGuild.GuildID)
+	guild, err := guildDetails("", channel.GuildID, s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was an error getting the data :(")
-		errorLog.Println("(msgUserStats) guildDetails err:", m.Content, err)
 		return
 	}
 
@@ -44,9 +42,10 @@ func msgUserStats(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 		errorLog.Println("user struct err:", m.Content, err)
 		return
 	}
-	memberStruct, err := s.State.Member(channelInGuild.GuildID, user.ID)
+	
+	memberStruct, err := memberDetails(guild.ID, userID, s)
 	if err != nil {
-		errorLog.Println("memberStruct err:", m.Content, err)
+		s.ChannelMessageSend(m.ChannelID, "There was an error getting the data :(")
 		return
 	}
 
@@ -60,14 +59,14 @@ func msgUserStats(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 		}
 	}
 
+	if len(roleNames) == 0 {
+		roleNames = append(roleNames, "None")
+	}
+
 	if memberStruct.Nick == "" {
 		nick = "None"
 	} else {
 		nick = memberStruct.Nick
-	}
-
-	if len(roleNames) == 0 {
-		roleNames = append(roleNames, "None")
 	}
 
 	s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{

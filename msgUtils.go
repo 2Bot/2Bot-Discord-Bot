@@ -77,7 +77,7 @@ func msgSetGame(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	c.Game = game
 	saveConfig()
 
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(":ok_hand: | Game changed to %s!", game))
+	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Game changed to %s!", game))
 	return
 }
 
@@ -120,6 +120,8 @@ func (c command) helpCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 				Value: c.Help,
 			},
 		},
+
+		Footer: footer,
 	})
 }
 

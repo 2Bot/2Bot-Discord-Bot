@@ -18,15 +18,15 @@ func msgRule34(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 		return
 	}
 
-	guild, err := guildDetails(m.ChannelID, "", s)
+	channel, err := channelDetails(m.ChannelID, s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was a problem getting some details :( Please try again!")
 		return
 	}
 
-	channel, err := s.State.Channel(m.ChannelID)
+	guild, err := guildDetails("", channel.GuildID, s)
 	if err != nil {
-		errorLog.Println("Channel error", err)
+		s.ChannelMessageSend(m.ChannelID, "There was a problem getting some details :( Please try again!")
 		return
 	}
 
