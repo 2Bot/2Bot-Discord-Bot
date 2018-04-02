@@ -15,8 +15,8 @@ func init() {
 
 // Thanks to iopred
 func emojiFile(s string) string {
-	found := ""
-	filename := ""
+	var found, filename string
+
 	for _, r := range s {
 		if filename != "" {
 			filename = fmt.Sprintf("%s-%x", filename, r)
@@ -52,14 +52,14 @@ func sendEmojiFromFile(s *discordgo.Session, m *discordgo.MessageCreate, e strin
 }
 
 func msgEmoji(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	if len(msglist) < 2 {
+	if len(msglist) < 1 {
 		return
 	}
 
-	submatch := emojiRegex.FindStringSubmatch(msglist[1])
+	submatch := emojiRegex.FindStringSubmatch(msglist[0])
 
 	if len(submatch) == 0 {
-		sendEmojiFromFile(s, m, msglist[1])
+		sendEmojiFromFile(s, m, msglist[0])
 		return
 	}
 

@@ -30,7 +30,7 @@ func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, message stri
 
 	submatch := emojiRegex.FindStringSubmatch(msglist[0])
 	if len(submatch) > 0 {
-		activeCommands["bigmoji"].Exec(s, m, append([]string{""}, msglist...))
+		activeCommands["bigmoji"].Exec(s, m, msglist)
 		return
 	}
 
@@ -51,7 +51,7 @@ func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, message stri
 		return
 	}
 
-	activeCommands["bigmoji"].Exec(s, m, append([]string{""}, msglist...))
+	activeCommands["bigmoji"].Exec(s, m, msglist)
 }
 
 func (c command) add() command {
