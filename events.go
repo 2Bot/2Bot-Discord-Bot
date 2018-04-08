@@ -25,6 +25,10 @@ func messageCreateEvent(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 
+	if !strings.HasPrefix(m.Content, c.Prefix) && !strings.HasPrefix(m.Content, prefix) {
+		return
+	}
+
 	parseCommand(s, m, guildDetails, func() string {
 		if strings.HasPrefix(m.Content, c.Prefix) {
 			return strings.TrimPrefix(m.Content, c.Prefix)
