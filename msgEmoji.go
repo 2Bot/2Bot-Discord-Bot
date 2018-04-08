@@ -97,7 +97,6 @@ func msgEmoji(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 	defer emojiReader.Close()
 
 errored:
-	deleteMessage(m.Message, s)
 	if err != nil {
 		if err == errNotEmoji {
 			return
@@ -107,5 +106,6 @@ errored:
 	}
 
 	s.ChannelFileSend(m.ChannelID, filename, emojiReader)
+	deleteMessage(m.Message, s)
 
 }
