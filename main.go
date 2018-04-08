@@ -19,7 +19,6 @@ package main
 
 import (
 	"bytes"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -45,9 +44,8 @@ const (
 
 var (
 	dg           *discordgo.Session
-	errorLog     *log.Logger
-	infoLog      *log.Logger
 	lastReboot   string
+	log          = newLog()
 	emojiRegex   = regexp.MustCompile("<(a)?:.*?:(.*?)>")
 	userIDRegex  = regexp.MustCompile("<@!?([0-9]+)>")
 	channelRegex = regexp.MustCompile("<#([0-9]+)>")
@@ -56,32 +54,7 @@ var (
 )
 
 func init() {
-	footer.Text = "Brought to you by 2Bot :)\nLast Bot reboot: " + time.Now().Format("Mon, 02-Jan-06 15:04:05 MST")
-}
-
-func start() {
-	var err error
-	dg, err = discordgo.New("Bot " + c.Token)
-	if err != nil {
-		errorLog.Fatalln("Error creating Discord session,", err)
-	}
-
-	infoLog.Println("session created")
-
-	dg.AddHandler(messageCreateEvent)
-	dg.AddHandler(presenceChangeEvent)
-	dg.AddHandler(guildKickedEvent)
-	dg.AddHandler(memberJoinEvent)
-	dg.AddHandler(readyEvent)
-	dg.AddHandler(guildJoinEvent)
-
-	if err := dg.Open(); err != nil {
-		errorLog.Fatalln("Error opening connection,", err)
-	}
-
-	infoLog.Println("connection opened")
-
-	sMap.Count = len(sMap.Server)
+	footer.Text = "Created with ❤ by the Strum355\nLast Bot reboot: " + time.Now().Format("Mon, 02-Jan-06 15:04:05 MST")
 }
 
 func dailyJobs() {
@@ -99,27 +72,33 @@ func postServerCount() {
 	jsonStr := []byte(`{"server_count":` + strconv.Itoa(count) + `}`)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
 	if err != nil {
-		errorLog.Println("error making bots.discord.pw request", err)
+		log.Error("error making bots.discord.pw request", err)
 		return
 	}
 
 	req.Header.Set("Authorization", c.DiscordPWKey)
 	req.Header.Set("Content-Type", "application/json")
 
-	if _, err := new(http.Client).Do(req); err != nil {
-		errorLog.Println("bots.discord.pw error", err)
+	resp, err := new(http.Client).Do(req)
+	if err != nil {
+		log.Error("bots.discord.pw error", err)
 		return
 	}
+	defer resp.Body.Close()
 
-	infoLog.Println("POSTed " + strconv.Itoa(count) + " to bots.discord.pw")
+	if resp.StatusCode != http.StatusOK {
+		log.Error("received " + strconv.Itoa(resp.StatusCode) + "from bots.discord.pw")
+	}
+
+	log.Info("POSTed " + strconv.Itoa(count) + " to bots.discord.pw")
 }
 
 func setBotGame(s *discordgo.Session) {
 	if err := s.UpdateStatus(0, c.Game); err != nil {
-		errorLog.Println("Update status err:", err)
+		log.Error("Update status err:", err)
 		return
 	}
-	infoLog.Println("set initial game to", c.Game)
+	log.Info("set initial game to", c.Game)
 }
 
 // Set all handlers for queued images, in case the bot crashes with images still in queue
@@ -127,7 +106,7 @@ func setQueuedImageHandlers() {
 	for imgNum := range q.QueuedMsgs {
 		imgNumInt, err := strconv.Atoi(imgNum)
 		if err != nil {
-			errorLog.Println("Error converting string to num for queue:", err)
+			log.Error("Error converting string to num for queue:", err)
 			continue
 		}
 		go fimageReview(dg, q, imgNumInt)
@@ -137,27 +116,51 @@ func setQueuedImageHandlers() {
 func main() {
 	runtime.GOMAXPROCS(c.MaxProc)
 
-	infoLog = log.New(os.Stdout, "INFO:  ", log.Ldate|log.Ltime)
-	errorLog = log.New(os.Stdout, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
+	log.Info("/*********BOT RESTARTING*********\\")
 
-	infoLog.Println("/*********BOT RESTARTING*********\\")
-
+	names := []string{"config", "users", "servers", "queue"}
 	for i, f := range []func() error{loadConfig, loadUsers, loadServers, loadQueue} {
 		if err := f(); err != nil {
 			switch i {
 			case 0:
-				errorLog.Fatalln(err)
+				log.Error("error loading config", err)
+				os.Exit(404)
 			default:
-				errorLog.Println(err)
+				log.Error("error loading", names[i], err)
 			}
+			continue
 		}
+		log.Trace("loaded", names[i])
 	}
 	defer cleanup()
 
-	infoLog.Println("files loaded")
+	log.Info("files loaded")
 
-	start()
+	var err error
+	dg, err = discordgo.New("Bot " + c.Token)
+	if err != nil {
+		log.Error("Error creating Discord session,", err)
+		return
+	}
 	defer dg.Close()
+
+	log.Trace("session created")
+
+	dg.AddHandler(messageCreateEvent)
+	dg.AddHandler(presenceChangeEvent)
+	dg.AddHandler(guildKickedEvent)
+	dg.AddHandler(memberJoinEvent)
+	dg.AddHandler(readyEvent)
+	dg.AddHandler(guildJoinEvent)
+
+	if err := dg.Open(); err != nil {
+		log.Error("Error opening connection,", err)
+		return
+	}
+
+	log.Trace("connection opened")
+
+	sMap.Count = len(sMap.Server)
 
 	go setQueuedImageHandlers()
 
@@ -170,9 +173,9 @@ func main() {
 	router.Get("/image/{id:[0-9]{18}}/recall/{img:[0-9a-z]{64}}", httpImageRecall)
 	router.Get("/inServer/{id:[0-9]{18}}", isInServer)
 
-	go func() { errorLog.Println(http.ListenAndServe("0.0.0.0:8080", router)) }()
+	go func() { log.Error("error starting http server", http.ListenAndServe("0.0.0.0:8080", router)) }()
 
-	infoLog.Println("Bot is now running. Press CTRL-C to exit.")
+	log.Info("Bot is now running. Press CTRL-C to exit.")
 
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, syscall.SIGSEGV, syscall.SIGHUP)

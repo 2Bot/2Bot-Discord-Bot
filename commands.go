@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -11,30 +12,22 @@ var (
 	disabledCommands = make(map[string]command)
 )
 
-//Small wrapper function to reduce clutter
-func l(s string) string {
-	return strings.ToLower(s)
-}
-
-func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, message string) {
+func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, guildDetails *discordgo.Guild, message string) {
 	msglist := strings.Fields(message)
 	if len(msglist) == 0 {
 		return
 	}
-	commandName := l(func() string {
+
+	log.Trace(fmt.Sprintf("%s %s#%s, %s %s: %s", m.Author.ID, m.Author.Username, m.Author.Discriminator, guildDetails.ID, guildDetails.Name, message))
+
+	commandName := strings.ToLower(func() string {
 		if strings.HasPrefix(message, " ") {
 			return " " + msglist[0]
 		}
 		return msglist[0]
 	}())
 
-	submatch := emojiRegex.FindStringSubmatch(msglist[0])
-	if len(submatch) > 0 {
-		activeCommands["bigmoji"].Exec(s, m, msglist)
-		return
-	}
-
-	if command, ok := activeCommands[commandName]; ok && commandName == l(command.Name) {
+	if command, ok := activeCommands[commandName]; ok && commandName == strings.ToLower(command.Name) {
 		userPerms, err := permissionDetails(m.Author.ID, m.ChannelID, s)
 		if err != nil {
 			s.ChannelMessageSend(m.ChannelID, "Error verifying permissions :(")
@@ -55,7 +48,7 @@ func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, message stri
 }
 
 func (c command) add() command {
-	activeCommands[l(c.Name)] = c
+	activeCommands[strings.ToLower(c.Name)] = c
 	return c
 }
 

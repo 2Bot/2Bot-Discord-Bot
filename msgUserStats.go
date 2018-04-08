@@ -36,13 +36,12 @@ func msgUserStats(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 		userID = m.Author.ID
 	}
 
-	user, err := s.User(userID)
+	user, err := userDetails(userID, s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was an error getting the data :(")
-		errorLog.Println("user struct err:", m.Content, err)
 		return
 	}
-	
+
 	memberStruct, err := memberDetails(guild.ID, userID, s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was an error getting the data :(")

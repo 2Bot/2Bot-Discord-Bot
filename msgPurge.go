@@ -52,12 +52,19 @@ func msgPurge(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 	}
 }
 
+func getMessages(amount int, id string, s *discordgo.Session) (list []*discordgo.Message, err error) {
+	list, err = s.ChannelMessages(id, amount, "", "", "")
+	if err != nil {
+		log.Error("error getting messages to delete", err)
+	}
+	return
+}
+
 func standardPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCreate) error {
 	var outOfDate bool
 	for purgeAmount > 0 {
-		list, err := s.ChannelMessages(m.ChannelID, purgeAmount%100, "", "", "")
+		list, err := getMessages(purgeAmount%100, m.ChannelID, s)
 		if err != nil {
-			errorLog.Println("Purge populate message list err:", err)
 			s.ChannelMessageSend(m.ChannelID, "There was an issue deleting messages :(")
 			return err
 		}
@@ -104,10 +111,9 @@ func userPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCreate
 		var purgeList []string
 
 		for len(purgeList) < del {
-			list, err := s.ChannelMessages(m.ChannelID, 100, "", "", "")
+			list, err := getMessages(100, m.ChannelID, s)
 			if err != nil {
 				s.ChannelMessageSend(m.ChannelID, "There was an issue deleting messages :(")
-				errorLog.Println("Purge populate message list err:", err)
 				return err
 			}
 
@@ -124,7 +130,7 @@ func userPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCreate
 				if msg.Author.ID != userToPurge {
 					continue
 				}
-				
+
 				timeSince, err := getMessageAge(msg, s, m)
 				if err != nil {
 					//if the time is malformed for whatever reason, we'll try the next message
@@ -161,7 +167,7 @@ func userPurge(purgeAmount int, s *discordgo.Session, m *discordgo.MessageCreate
 func massDelete(list []string, s *discordgo.Session, m *discordgo.MessageCreate) (err error) {
 	if err = s.ChannelMessagesBulkDelete(m.ChannelID, list); err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was an issue deleting messages :(")
-		errorLog.Println("error purging", err)
+		log.Error("error purging", err)
 	}
 	return
 }
@@ -169,7 +175,7 @@ func massDelete(list []string, s *discordgo.Session, m *discordgo.MessageCreate)
 func getMessageAge(msg *discordgo.Message, s *discordgo.Session, m *discordgo.MessageCreate) (time.Duration, error) {
 	then, err := msg.Timestamp.Parse()
 	if err != nil {
-		errorLog.Println("time parse error", err)
+		log.Error("error parsing time", err)
 		return time.Duration(0), err
 	}
 	return time.Since(then), nil

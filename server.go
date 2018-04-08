@@ -7,10 +7,15 @@ import (
 )
 
 func (s *servers) getCount() int {
-	//not gonna mutex this because am i really gonna cry over
-	//an inaccurate result for a single request?
 	return s.Count
 }
+
+/*
+func (s *servers) validate() {
+	for _, guild := range s.Server {
+		details := guildDetails(guild.ID)
+	}
+} */
 
 func (s *server) newVoiceInstance() {
 	s.VoiceInst = &voiceInst{

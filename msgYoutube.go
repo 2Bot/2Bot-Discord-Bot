@@ -60,7 +60,7 @@ func addToQueue(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	srvr, ok := sMap.Server[guild.ID]
 	if !ok {
 		s.ChannelMessageSend(m.ChannelID, "An error occured that really shouldn't have happened...")
-		errorLog.Println(guild.ID, "not in server map?")
+		log.Error("not in server map?", guild.ID)
 		return
 	}
 
@@ -89,7 +89,7 @@ func addToQueue(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 				vc, err := s.ChannelVoiceJoin(guild.ID, vs.ChannelID, false, true)
 				if err != nil {
 					s.ChannelMessageSend(m.ChannelID, "Error joining voice channel")
-					errorLog.Println("Error joining voice channel", err)
+					log.Error("error joining voice channel", err)
 					return
 				}
 
@@ -120,7 +120,7 @@ func getVideoInfo(url string, s *discordgo.Session, m *discordgo.MessageCreate) 
 	vid, err := ytdl.GetVideoInfo(url)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "Error getting video info")
-		errorLog.Println("Error getting video info", err)
+		log.Error("error getting video info", err)
 		return nil, err
 	}
 	return vid, nil
@@ -150,7 +150,7 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate, srvr *server, vc *di
 			defer writer.Close()
 			if err := vid.Download(formats[0], writer); err != nil && err != io.ErrClosedPipe {
 				s.ChannelMessageSend(m.ChannelID, xmark+" Error downloading the music")
-				errorLog.Println("Youtube download error", err)
+				log.Error("error downloading YouTube video", err)
 				srvr.VoiceInst.Done <- err
 				return
 			}
@@ -162,7 +162,8 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate, srvr *server, vc *di
 		s.ChannelMessageSend(m.ChannelID, xmark+" Error starting the stream")
 		srvr.youtubeCleanup()
 		srvr.VoiceInst.Unlock()
-		errorLog.Println("Encode mem error", err)
+		// will only return non nill error if options arent valid
+		log.Error("error validating options", err)
 		return
 	}
 	defer encSesh.Cleanup()
@@ -190,7 +191,7 @@ Outer:
 		case !done && err != io.EOF:
 			srvr.youtubeCleanup()
 			s.ChannelMessageSend(m.ChannelID, "There was an error streaming music :(")
-			errorLog.Println("Music stream error", err)
+			log.Error("error streaming music", err)
 			return
 		}
 	}
@@ -208,7 +209,7 @@ func listQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 	srvr, ok := sMap.Server[guild.ID]
 	if !ok {
 		s.ChannelMessageSend(m.ChannelID, "An error occured that really shouldn't have happened...")
-		errorLog.Println(guild.ID, "not in server map?")
+		log.Error("not in server map?", guild.ID)
 		return
 	}
 

@@ -71,7 +71,7 @@ func msgPlaylist(s *discordgo.Session, m *discordgo.MessageCreate, msglist []str
 
 			vid, err := ytdl.GetVideoInfo(msglist[2])
 			if err != nil {
-				errorLog.Println("YTLD error", err)
+				log.Error("error getting YouTube video info", err)
 				s.ChannelMessageSend(m.ChannelID, "There was an error adding the song to the playlist :( Check the command and try again")
 				return
 			}
@@ -79,7 +79,7 @@ func msgPlaylist(s *discordgo.Session, m *discordgo.MessageCreate, msglist []str
 			format := vid.Formats.Extremes(ytdl.FormatAudioBitrateKey, true)[0]
 			_, err = vid.GetDownloadURL(format)
 			if err != nil {
-				errorLog.Println("DL URL error", err)
+				log.Error("error getting download URL", err)
 				s.ChannelMessageSend(m.ChannelID, "There was an error adding the song to the playlist :( Check the command and try again")
 				return
 			}

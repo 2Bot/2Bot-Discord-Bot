@@ -104,7 +104,7 @@ func channelDetails(channelID string, s *discordgo.Session) (channelDetails *dis
 		if err == discordgo.ErrStateNotFound {
 			channelDetails, err = s.Channel(channelID)
 			if err != nil {
-				errorLog.Println("error getting channel details", channelID, err)
+				log.Error("error getting channel details", channelID, err)
 			}
 		}
 	}
@@ -117,9 +117,17 @@ func permissionDetails(authorID, channelID string, s *discordgo.Session) (perms 
 		if err == discordgo.ErrStateNotFound {
 			perms, err = s.UserChannelPermissions(authorID, channelID)
 			if err != nil {
-				errorLog.Println("error getting perm details", err)
+				log.Error("error getting perm details", err)
 			}
 		}
+	}
+	return
+}
+
+func userDetails(memberID string, s *discordgo.Session) (user *discordgo.User, err error) {
+	user, err = s.User(memberID)
+	if err != nil {
+		log.Error("error getting user details", err)
 	}
 	return
 }
@@ -130,7 +138,7 @@ func memberDetails(guildID, memberID string, s *discordgo.Session) (member *disc
 		if err == discordgo.ErrStateNotFound {
 			member, err = s.GuildMember(guildID, memberID)
 			if err != nil {
-				errorLog.Println("error getting member details", err)
+				log.Error("error getting member details", err)
 			}
 		}
 	}
@@ -153,7 +161,7 @@ func guildDetails(channelID, guildID string, s *discordgo.Session) (guildDetails
 		if err == discordgo.ErrStateNotFound {
 			guildDetails, err = s.Guild(guildID)
 			if err != nil {
-				errorLog.Println("error getting guild details", guildID, err)
+				log.Error("error getting guild details", guildID, err)
 			}
 		}
 	}

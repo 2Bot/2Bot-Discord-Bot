@@ -70,7 +70,7 @@ func msgSetGame(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	game := strings.Join(msglist[1:], " ")
 
 	if err := s.UpdateStatus(0, game); err != nil {
-		errorLog.Println("Game change error", err)
+		log.Error("error changing game", err)
 		return
 	}
 
@@ -83,7 +83,7 @@ func msgSetGame(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 
 func msgHelp(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	if len(msglist) == 2 {
-		if val, ok := activeCommands[l(msglist[1])]; ok {
+		if val, ok := activeCommands[strings.ToLower(msglist[1])]; ok {
 			val.helpCommand(s, m)
 			return
 		}
@@ -248,9 +248,9 @@ func msgJoinMessage(s *discordgo.Session, m *discordgo.MessageCreate, msglist []
 				s.ChannelMessageSend(m.ChannelID, "Not enough info given! :/\nMake sure the command only has two `|` in it.")
 				return
 			}
-			channelStruct, err := s.State.Channel(split[2])
+
+			channelStruct, err := channelDetails(split[2], s)
 			if err != nil {
-				errorLog.Println("Join message channel struct or bad channel ID?", split[2], err)
 				s.ChannelMessageSend(m.ChannelID, "Please give me a proper channel ID :(")
 				return
 			}
@@ -278,7 +278,7 @@ func msgReloadConfig(s *discordgo.Session, m *discordgo.MessageCreate, msglist [
 	case "c":
 		c = new(config)
 		if err := loadConfig(); err != nil {
-			errorLog.Println("Error reloading config", err)
+			log.Error("error reloading config", err)
 			s.ChannelMessageSend(m.ChannelID, "Error reloading config")
 			return
 		}
@@ -286,7 +286,7 @@ func msgReloadConfig(s *discordgo.Session, m *discordgo.MessageCreate, msglist [
 	case "u":
 		u = new(users)
 		if err := loadUsers(); err != nil {
-			errorLog.Println("Error reloading config", err)
+			log.Error("error reloading config", err)
 			s.ChannelMessageSend(m.ChannelID, "Error reloading config")
 			return
 		}

@@ -44,21 +44,23 @@ func msgRule34(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 		query += "+" + word
 	}
 
-	page, err := http.Get(fmt.Sprintf("https://rule34.xxx/index.php?page=dapi&s=post&q=index&tags=%s", query))
+	url := fmt.Sprintf("https://rule34.xxx/index.php?page=dapi&s=post&q=index&tags=%s", query)
+	page, err := http.Get(url)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "error getting data from Rule34 :(")
-		errorLog.Println("R34 response err:", err)
+		log.Error("error from r34", err)
 		return
 	}
 	defer page.Body.Close()
 
-	if page.StatusCode != 200 {
+	if page.StatusCode != http.StatusOK {
 		s.ChannelMessageSend(m.ChannelID, "Rule34 didn't respond :(")
+		log.Error("non 200 status code", url)
 		return
 	}
 
 	if err = xml.NewDecoder(page.Body).Decode(&r34); err != nil {
-		errorLog.Println("R34 xml unmarshal err:", err)
+		log.Error("error unmarshalling xml", err)
 		return
 	}
 
@@ -67,7 +69,7 @@ func msgRule34(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 		return
 	}
 
-	url := r34.Posts[randRange(0, len(r34.Posts)-1)].URL
+	url = r34.Posts[randRange(0, len(r34.Posts)-1)].URL
 
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s searched for `%s` \n%s", m.Author.Username, strings.Replace(query, "+", " ", -1), url))
 }

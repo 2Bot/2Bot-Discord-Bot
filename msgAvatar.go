@@ -10,23 +10,23 @@ func init() {
 
 func msgAvatar(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	if len(msglist) > 1 {
-		submatch := userIDRegex.FindStringSubmatch(msglist[1])
-		if len(submatch) != 0 {
-			getAvatar(submatch[1], m, s)
-			return
-		}
-
-		s.ChannelMessageSend(m.ChannelID, "User not found :(")
+		getAvatar(m.Author.ID, m, s)
 		return
 	}
-	getAvatar(m.Author.ID, m, s)
+
+	submatch := userIDRegex.FindStringSubmatch(msglist[1])
+	if len(submatch) != 0 {
+		getAvatar(submatch[1], m, s)
+		return
+	}
+
+	s.ChannelMessageSend(m.ChannelID, "User not found :(")
 }
 
 func getAvatar(userID string, m *discordgo.MessageCreate, s *discordgo.Session) {
-	user, err := s.User(userID)
+	user, err := userDetails(userID, s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was an error finding the user :( Please try again")
-		errorLog.Println("Avatar user struct: ", err)
 		return
 	}
 

@@ -32,7 +32,7 @@ func msgEncode(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 	case "bcrypt":
 		var err error
 		if output, err = bcrypt.GenerateFromPassword([]byte(text), 14); err != nil {
-			errorLog.Println("Bcrypt err:", err)
+			log.Error("bcrypt err", err)
 			return
 		}
 	case "md5":

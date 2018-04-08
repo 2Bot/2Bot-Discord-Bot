@@ -1,11 +1,17 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 
 	"github.com/bwmarrin/discordgo"
+)
+
+var (
+	errNotEmoji = errors.New("not an emoji")
 )
 
 func init() {
@@ -33,22 +39,13 @@ func emojiFile(s string) string {
 	return found
 }
 
-func sendEmojiFromFile(s *discordgo.Session, m *discordgo.MessageCreate, e string) {
+func sendEmojiFromFile(s *discordgo.Session, m *discordgo.MessageCreate, e string) (file io.ReadCloser, err error) {
 	emoji := emojiFile(e)
 	if emoji == "" {
-		return
+		return nil, errNotEmoji
 	}
 
-	file, err := os.Open(fmt.Sprintf("emoji/%s.png", emoji))
-	if err != nil {
-		errorLog.Println("BM in-built emoji err:", err)
-		return
-	}
-	defer file.Close()
-
-	s.ChannelFileSend(m.ChannelID, "emoji.png", file)
-
-	deleteMessage(m.Message, s)
+	return os.Open(fmt.Sprintf("emoji/%s.png", emoji))
 }
 
 func msgEmoji(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
@@ -56,33 +53,59 @@ func msgEmoji(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 		return
 	}
 
-	submatch := emojiRegex.FindStringSubmatch(msglist[0])
+	var emoji string
+	var emojiReader io.ReadCloser
+	var err error
+
+	filename := "emoji"
+
+	if msglist[0] == "bigmoji" {
+		emoji = msglist[1]
+	} else {
+		emoji = msglist[0]
+	}
+
+	submatch := emojiRegex.FindStringSubmatch(emoji)
 
 	if len(submatch) == 0 {
-		sendEmojiFromFile(s, m, msglist[0])
-		return
+		filename += ".png"
+		emojiReader, err = sendEmojiFromFile(s, m, emoji)
+		if err != nil {
+			log.Error("error getting emoji from file", err)
+			goto errored
+		}
+	} else {
+		var url string
+
+		switch submatch[1] {
+		case "":
+			url = fmt.Sprintf("https://cdn.discordapp.com/emojis/%s.png", submatch[2])
+			filename += ".png"
+		case "a":
+			url = fmt.Sprintf("https://cdn.discordapp.com/emojis/%s.gif", submatch[2])
+			filename += ".gif"
+		}
+
+		resp, err := http.Get(url)
+		if err != nil {
+			log.Error("error getting emoji from URL", err)
+			goto errored
+		}
+
+		emojiReader = resp.Body
 	}
+	defer emojiReader.Close()
 
-	var url string
-	file := "emoji"
-
-	switch submatch[1] {
-	case "":
-		url = fmt.Sprintf("https://cdn.discordapp.com/emojis/%s.png", submatch[2])
-		file += ".png"
-	case "a":
-		url = fmt.Sprintf("https://cdn.discordapp.com/emojis/%s.gif", submatch[2])
-		file += ".gif"
-	}
-
-	resp, err := http.Get(url)
-	if err != nil {
-		errorLog.Println("BM custom emoji err:", err)
-		return
-	}
-	defer resp.Body.Close()
-
-	s.ChannelFileSend(m.ChannelID, file, resp.Body)
-
+errored:
 	deleteMessage(m.Message, s)
+	if err != nil {
+		if err == errNotEmoji {
+			return
+		}
+		s.ChannelMessageSend(m.ChannelID, "There was an error getting the emoji :(")
+		return
+	}
+
+	s.ChannelFileSend(m.ChannelID, filename, emojiReader)
+
 }
