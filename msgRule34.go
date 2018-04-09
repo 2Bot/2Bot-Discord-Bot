@@ -10,7 +10,9 @@ import (
 )
 
 func init() {
-	newCommand("r34", 0, false, false, msgRule34).setHelp("Args: [search]\n\nReturns a random image from rule34 for the given search term.\n\nExample:\n`!owo r34 lewds`").add()
+	c := newCommand("r34", 0, false, false, msgRule34).add()
+	c.setHelp("Args: [search]\n\nReturns a random image from rule34 for the given search term.\n\nExample:\n`!owo r34 lewds`")
+	c.alias("rule34")
 }
 
 func msgRule34(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {

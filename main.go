@@ -54,7 +54,7 @@ var (
 )
 
 func init() {
-	footer.Text = "Created with ❤ by the Strum355\nLast Bot reboot: " + time.Now().Format("Mon, 02-Jan-06 15:04:05 MST")
+	footer.Text = "Created with ❤ by Strum355\nLast Bot reboot: " + time.Now().Format("Mon, 02-Jan-06 15:04:05 MST")
 }
 
 func dailyJobs() {
@@ -86,8 +86,8 @@ func postServerCount() {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		log.Error("received " + strconv.Itoa(resp.StatusCode) + "from bots.discord.pw")
+	if resp.StatusCode != http.StatusNoContent {
+		log.Error("received " + strconv.Itoa(resp.StatusCode) + " from bots.discord.pw")
 	}
 
 	log.Info("POSTed " + strconv.Itoa(count) + " to bots.discord.pw")

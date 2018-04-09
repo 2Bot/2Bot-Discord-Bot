@@ -12,13 +12,21 @@ var (
 	disabledCommands = make(map[string]command)
 )
 
+/*
+	go-chi style command adding
+		- aliases
+		- nicer help text 
+		- uh...MORE
+	also more here!
+*/
+
 func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, guildDetails *discordgo.Guild, message string) {
 	msglist := strings.Fields(message)
 	if len(msglist) == 0 {
 		return
 	}
 
-	log.Trace(fmt.Sprintf("%s %s#%s, %s %s: %s", m.Author.ID, m.Author.Username, m.Author.Discriminator, guildDetails.ID, guildDetails.Name, message))
+	log.Trace(fmt.Sprintf("%s %s#%s, %s %s: %s", m.Author.ID, m.Author.Username, m.Author.Discriminator, guildDetails.ID, guildDetails.Name, m.Content))
 
 	commandName := strings.ToLower(func() string {
 		if strings.HasPrefix(message, " ") {
@@ -60,6 +68,11 @@ func newCommand(name string, permissions int, noah, needsPerms bool, f func(*dis
 		NoahOnly:      noah,
 		Exec:          f,
 	}
+}
+
+func (c command) alias(a string) command {
+	activeCommands[strings.ToLower(a)] = c
+	return c
 }
 
 func (c command) setHelp(help string) command {

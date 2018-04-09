@@ -15,8 +15,9 @@ var (
 )
 
 func init() {
-	newCommand("bigMoji", 0, false, false, msgEmoji).setHelp("Args: [emoji]\n\nSends a large image of the given emoji.\n" +
+	c := newCommand("bigMoji", 0, false, false, msgEmoji).setHelp("Args: [emoji]\n\nSends a large image of the given emoji.\n" +
 		"Command 'bigMoji' can be excluded for shorthand.\n\nExample:\n`!owo :smile:`\nor\n`!owo bigMoji :smile:`").add()
+	c.alias("bigemote")
 }
 
 // Thanks to iopred
@@ -71,7 +72,9 @@ func msgEmoji(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 		filename += ".png"
 		emojiReader, err = sendEmojiFromFile(s, m, emoji)
 		if err != nil {
-			log.Error("error getting emoji from file", err)
+			if err != errNotEmoji {
+				log.Error("error getting emoji from file", err)
+			}
 			goto errored
 		}
 	} else {
@@ -107,5 +110,4 @@ errored:
 
 	s.ChannelFileSend(m.ChannelID, filename, emojiReader)
 	deleteMessage(m.Message, s)
-
 }

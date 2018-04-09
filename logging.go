@@ -14,9 +14,9 @@ type logging struct {
 
 func newLog() logging {
 	return logging{
-		l.New(os.Stdout, "INFO  -  ", l.Ldate|l.Ltime),
-		l.New(os.Stdout, "ERROR -  ", l.Ldate|l.Ltime),
-		l.New(os.Stdout, "TRACE -  ", l.Ldate|l.Ltime),
+		l.New(os.Stdout, "INFO  - ", l.Ldate|l.Ltime),
+		l.New(os.Stdout, "ERROR - ", l.Ldate|l.Ltime),
+		l.New(os.Stdout, "TRACE - ", l.Ldate|l.Ltime),
 	}
 }
 
