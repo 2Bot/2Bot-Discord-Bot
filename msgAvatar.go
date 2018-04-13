@@ -9,14 +9,13 @@ func init() {
 }
 
 func msgAvatar(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	if len(msglist) > 1 {
+	if len(msglist) == 1 {
 		getAvatar(m.Author.ID, m, s)
 		return
 	}
 
-	submatch := userIDRegex.FindStringSubmatch(msglist[1])
-	if len(submatch) != 0 {
-		getAvatar(submatch[1], m, s)
+	if len(m.Mentions) != 0 {
+		getAvatar(m.Mentions[0].ID, m, s)
 		return
 	}
 
@@ -24,19 +23,25 @@ func msgAvatar(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 }
 
 func getAvatar(userID string, m *discordgo.MessageCreate, s *discordgo.Session) {
-	user, err := userDetails(userID, s)
+	guild, err := guildDetails(m.ChannelID, "", s)
+	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, "There was an error finding the user :( Please try again")
+		return
+	}
+
+	user, err := memberDetails(guild.ID, userID, s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was an error finding the user :( Please try again")
 		return
 	}
 
 	s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
-		Description: user.Username + "'s Avatar",
+		Description: user.User.Username + "'s Avatar",
 
 		Color: 0x000000,
 
 		Image: &discordgo.MessageEmbedImage{
-			URL: user.AvatarURL("2048"),
+			URL: user.User.AvatarURL("2048"),
 		},
 	})
 }

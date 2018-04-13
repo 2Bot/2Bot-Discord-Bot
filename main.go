@@ -142,22 +142,22 @@ func main() {
 		log.Error("Error creating Discord session,", err)
 		return
 	}
-	defer dg.Close()
-
+	
 	log.Trace("session created")
-
+	
 	dg.AddHandler(messageCreateEvent)
 	dg.AddHandler(presenceChangeEvent)
 	dg.AddHandler(guildKickedEvent)
 	dg.AddHandler(memberJoinEvent)
 	dg.AddHandler(readyEvent)
 	dg.AddHandler(guildJoinEvent)
-
+	
 	if err := dg.Open(); err != nil {
 		log.Error("Error opening connection,", err)
 		return
 	}
-
+	defer dg.Close()
+	
 	log.Trace("connection opened")
 
 	sMap.Count = len(sMap.Server)
