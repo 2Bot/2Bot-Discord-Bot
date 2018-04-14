@@ -208,7 +208,7 @@ func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 		}
 	}
 
-	tempFilepath := "/images/temp/" + imgFileName
+	tempFilepath := "images/temp/" + imgFileName
 
 	//create temp file in temp path
 	tempFile, err := os.Create(tempFilepath)
@@ -294,7 +294,7 @@ func fimageReview(s *discordgo.Session, queue *imageQueue, currentImageNumber in
 	fileExtension := strings.ToLower(path.Ext(imgInQueue.ImageURL))
 	hash := blake2b.Sum256([]byte(prefixedImgName))
 	imgFileName := hex.EncodeToString(hash[:]) + fileExtension
-	tempFilepath := "/images/temp/" + imgFileName
+	tempFilepath := "images/temp/" + imgFileName
 	currUser := u.User[imgInQueue.AuthorID]
 
 	//Wait here for a relevant reaction to the confirmation message
@@ -395,7 +395,7 @@ func fimageReview(s *discordgo.Session, queue *imageQueue, currentImageNumber in
 		s.ChannelMessageSend(reviewChan, fmt.Sprintf("Couldn't inform %s#%s ID: %s about confirmation\n%s", imgInQueue.AuthorName, imgInQueue.AuthorDiscrim, imgInQueue.AuthorID, err))
 	}
 
-	filepath := "/images/" + imgFileName
+	filepath := "images/" + imgFileName
 
 	if err := os.Rename(tempFilepath, filepath); err != nil {
 		s.ChannelMessageSend(reviewChan, "Error moving file from temp dir")
@@ -433,7 +433,7 @@ func fimageDelete(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 		return
 	}
 
-	err := os.Remove("/images/" + filename)
+	err := os.Remove("images/" + filename)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "Image couldnt be deleted :( Please pester my creator for me")
 		log.Error("error deleting image", err)
