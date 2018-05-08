@@ -3,8 +3,8 @@ package main
 import (
 	"strconv"
 
+	"github.com/Strum355/ytdl"
 	"github.com/bwmarrin/discordgo"
-	"github.com/rylio/ytdl"
 )
 
 func init() {

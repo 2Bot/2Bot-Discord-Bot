@@ -19,6 +19,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -116,6 +117,8 @@ func setQueuedImageHandlers() {
 func main() {
 	runtime.GOMAXPROCS(c.MaxProc)
 
+	fmt.Println(os.Getwd())
+
 	log.Info("/*********BOT RESTARTING*********\\")
 
 	names := []string{"config", "users", "servers", "queue"}
@@ -123,10 +126,8 @@ func main() {
 		if err := f(); err != nil {
 			switch i {
 			case 0:
-				log.Error("error loading config", err)
 				os.Exit(404)
 			default:
-				log.Error("error loading", names[i], err)
 			}
 			continue
 		}
@@ -142,22 +143,22 @@ func main() {
 		log.Error("Error creating Discord session,", err)
 		return
 	}
-	
+
 	log.Trace("session created")
-	
+
 	dg.AddHandler(messageCreateEvent)
 	dg.AddHandler(presenceChangeEvent)
 	dg.AddHandler(guildKickedEvent)
 	dg.AddHandler(memberJoinEvent)
 	dg.AddHandler(readyEvent)
 	dg.AddHandler(guildJoinEvent)
-	
+
 	if err := dg.Open(); err != nil {
 		log.Error("Error opening connection,", err)
 		return
 	}
 	defer dg.Close()
-	
+
 	log.Trace("connection opened")
 
 	sMap.Count = len(sMap.Server)

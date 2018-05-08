@@ -15,7 +15,7 @@ var (
 /*
 	go-chi style command adding
 		- aliases
-		- nicer help text 
+		- nicer help text
 		- uh...MORE
 	also more here!
 */
