@@ -60,6 +60,9 @@ func msgEmoji(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 	filename := "emoji"
 
 	if msglist[0] == "bigmoji" {
+		if len(msglist) < 2 {
+			return
+		}
 		emoji = msglist[1]
 	} else {
 		emoji = msglist[0]
