@@ -37,13 +37,13 @@ func msgEncode(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 		}
 	case "md5":
 		hash := md5.Sum([]byte(text))
+		output = make([]byte, hex.EncodedLen(len(hash)))
 		hex.Encode(output, hash[:])
 	case "sha256":
 		hash := sha256.Sum256([]byte(text))
+		output = make([]byte, hex.EncodedLen(len(hash)))
 		hex.Encode(output, hash[:])
-	}
-
-	if len(output) == 0 {
+	default:
 		s.ChannelMessageSend(m.ChannelID, "Base not supported")
 		return
 	}

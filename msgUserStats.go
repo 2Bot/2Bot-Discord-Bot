@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -68,6 +69,15 @@ func msgUserStats(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 		nick = memberStruct.Nick
 	}
 
+	var joinString string
+	joinDate, err := time.Parse("2006-02-01T15:04:05.999999-07:00", memberStruct.JoinedAt)
+	if err != nil {
+		log.Error("error parsing time", err)
+		joinString = "???"
+	} else {
+		joinString = joinDate.Format("02 Jan 06 15:04")
+	}
+
 	s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
 		Color:       s.State.UserColor(userID, m.ChannelID),
 		Description: fmt.Sprintf("%s is a loyal member of %s", user.Username, guild.Name),
@@ -80,7 +90,7 @@ func msgUserStats(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 		Fields: []*discordgo.MessageEmbedField{
 			{Name: "Username:", Value: user.Username, Inline: true},
 			{Name: "Nickname:", Value: nick, Inline: true},
-			{Name: "Joined Server:", Value: memberStruct.JoinedAt[:10], Inline: false},
+			{Name: "Joined Server:", Value: joinString, Inline: false},
 			{Name: "Roles:", Value: strings.Join(roleNames, ", "), Inline: true},
 			{Name: "ID Number:", Value: user.ID, Inline: true},
 		},
