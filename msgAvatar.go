@@ -23,26 +23,27 @@ func msgAvatar(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 }
 
 func getAvatar(userID string, m *discordgo.MessageCreate, s *discordgo.Session) {
-	guild, err := guildDetails(m.ChannelID, "", s)
+/* 	guild, err := guildDetails(m.ChannelID, "", s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was an error finding the user :( Please try again")
 		return
-	}
+	} */
 
 	// slow warmup or fast but limited to guild :( shame
-	user, err := memberDetails(guild.ID, userID, s)
+	// or maybe not??? will monitor
+	user, err := userDetails(userID, s)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was an error finding the user :( Please try again")
 		return
 	}
 
 	s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
-		Description: user.User.Username + "'s Avatar",
+		Description: user.Username + "'s Avatar",
 
 		Color: 0x000000,
 
 		Image: &discordgo.MessageEmbedImage{
-			URL: user.User.AvatarURL("2048"),
+			URL: user.AvatarURL("2048"),
 		},
 	})
 }
