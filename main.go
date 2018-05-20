@@ -19,7 +19,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -116,8 +115,6 @@ func setQueuedImageHandlers() {
 
 func main() {
 	runtime.GOMAXPROCS(c.MaxProc)
-
-	fmt.Println(os.Getwd())
 
 	log.Info("/*********BOT RESTARTING*********\\")
 

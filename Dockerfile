@@ -9,7 +9,7 @@ ENV GOPATH=/go
 COPY . .
 
 RUN apk update && \
-    apk add --no-cache opus git && \
+    apk add --no-cache git && \
     git remote set-url origin https://github.com/Strum355/2Bot-Discord-Bot
 
 RUN go get -d -v ./... && \ 
@@ -27,12 +27,11 @@ RUN mkdir -p /go/2Bot/images/ && \
     mkdir -p /go/2Bot/ffmpeg
 
 RUN apk --no-cache add ca-certificates && \
-    update-ca-certificates
+    update-ca-certificates && \
+    apk update && \
+    apk add --no-cache opus git ffmpeg
 
 WORKDIR /go/2Bot
-
-ADD https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-64bit-static.tar.xz .
-RUN tar -xf ffmpeg-release-64bit-static.tar.xz --strip 1 -C ./ffmpeg
 
 VOLUME ["/go/2Bot/images", "/go/2Bot/json"]
 
