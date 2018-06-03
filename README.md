@@ -6,10 +6,9 @@
 [![Build Status](https://ci.netsoc.co/api/badges/UCCNetworkingSociety/Netsoc-Discord-Bot/status.svg?branch=master)](https://ci.netsoc.co/Strum355/2Bot-Discord-Bot/)
 [![Waffle.io - Columns and their card count](https://badge.waffle.io/Strum355/2Bot-Discord-Bot.svg?columns=all)](https://waffle.io/Strum355/2Bot-Discord-Bot)
 
-<img src="https://noahsc.xyz/2Bot/2Bot.png" width="200px" style="border-radius:7em">
+<img src="https://cdn.discordapp.com/avatars/301819949683572738/9dbf59e95edd3c65e629d1f02bcf306a.png" width="200px">
 
 ## Preface
----
 
 First to get a few things out of the way:  
 
@@ -21,7 +20,6 @@ First to get a few things out of the way:
 A command to automatically submit issues coming soon.
 
 ## Roadmap
----
 
 See [issues](https://github.com/Strum355/2Bot-Discord-Bot/issues).
 
