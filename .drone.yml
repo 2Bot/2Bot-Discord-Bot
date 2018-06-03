@@ -2,7 +2,9 @@ pipeline:
   lint:
     image: golang:alpine
     commands:
-      - bash -c "diff -u <(echo -n) <(gofmt -d ./)"
+      - echo -n > 1.txt
+      - gofmt -d ./ > 2.txt
+      - diff -u 1.txt 2.txt
     when:
       event: [ push, pull_request ]
 
