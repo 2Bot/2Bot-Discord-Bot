@@ -32,7 +32,7 @@ func getAvatar(userID string, m *discordgo.MessageCreate, s *discordgo.Session) 
 	// slow warmup or fast but limited to guild :( shame
 	// or maybe not??? will monitor
 	user, err := userDetails(userID, s)
-	if err != nil 
+	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, "There was an error finding the user :( Please try again")
 		return
 	}

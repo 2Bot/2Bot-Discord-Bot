@@ -6,11 +6,9 @@
 
 ![2Bot Icon](https://noahsc.xyz/2Bot/2Bot-half.png)
 
-2Bot-Discord-Bot
-================
+## My home-grown Discord Bot
 
-My home-grown Discord Bot
--------------------------
+---
 
 [Click here to invite it to your server!](https://discordapp.com/api/oauth2/authorize?client_id=301819949683572738&scope=bot&permissions=11264)
 
@@ -20,4 +18,4 @@ If you ever run into problems with the bot, or have any questions, add me on Dis
 
 [Read the wiki](https://github.com/Strum355/2Bot-Discord-Bot/wiki) to learn more about 2Bot!
 
-## [Download the complementary SelfBot, 2Bot2Go, here!](https://github.com/Strum355/2Bot2Go)
+### [Download the complementary SelfBot, 2Bot2Go, here!](https://github.com/Strum355/2Bot2Go)
