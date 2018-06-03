@@ -2,7 +2,7 @@ pipeline:
   lint:
     image: golang
     commands:
-      - bash -c "if [[ $(gofmt -l *.go) ]]; then gofmt -l *.go; exit 1; fi"
+      - bash -c "if [[ \$(gofmt -l *.go) ]]; then gofmt -l *.go; exit 1; fi"
     when:
       event: [ push, pull_request ]
 
