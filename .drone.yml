@@ -1,6 +1,6 @@
 pipeline:
   lint:
-    image: golang:alpine
+    image: golang
     commands:
       - if [[ $(gofmt -l *.go) ]]; then gofmt -l *.go; exit 1; fi
     when:
