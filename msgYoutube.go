@@ -135,7 +135,6 @@ func play(s *discordgo.Session, m *discordgo.MessageCreate, srvr *server, vc *di
 	}
 
 	srvr.VoiceInst.Lock()
-
 	vid, err := getVideoInfo(srvr.nextSong().URL, s, m)
 	if err != nil {
 		srvr.VoiceInst.Unlock()
@@ -194,6 +193,10 @@ Outer:
 			s.ChannelMessageSend(m.ChannelID, "There was an error streaming music :(")
 			log.Error("error streaming music", err)
 			return
+		case done && err == io.EOF:
+			// Remove the currently playing song from the queue and then start the next one
+			srvr.finishedSong()
+			break Outer
 		}
 	}
 
