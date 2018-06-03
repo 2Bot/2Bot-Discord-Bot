@@ -22,7 +22,7 @@ const (
 func init() {
 	newCommand("yt", 0, false, false, msgYoutube).setHelp("Args: [play,stop] [url]\n\nWork In Progress!!! Play music from Youtube straight to your Discord Server!\n\n" +
 		"Example 1: `!owo yt play https://www.youtube.com/watch?v=MvLdxtICOIY`\n" +
-		"Example 2: `!owo yt stop`\n\n"+
+		"Example 2: `!owo yt stop`\n\n" +
 		"SubCommands:\nplay\nstop\nlist, queue, songs\npause\nresume, unpause\nskip, next").add()
 }
 
