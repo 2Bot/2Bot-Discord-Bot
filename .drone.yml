@@ -14,6 +14,7 @@ pipeline:
     registry: docker.netsoc.co
     secrets: [ docker_username, docker_password ]
     when:
+      branch: master
       status: [ success ]
 
   discord-notif:
@@ -28,5 +29,5 @@ pipeline:
       {{else}}
         2Bot failed to build. Build num {{build.number}}.
       {{/success}}    
-
-branches: master
+    when:
+      branch: master
