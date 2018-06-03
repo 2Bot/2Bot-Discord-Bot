@@ -85,7 +85,7 @@ func postServerCount() {
 		return
 	}
 	defer resp.Body.Close()
-	
+
 	log.Info("POSTed " + strconv.Itoa(count) + " to bots.discord.pw")
 
 	if resp.StatusCode != http.StatusNoContent {
