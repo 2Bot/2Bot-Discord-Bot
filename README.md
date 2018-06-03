@@ -1,6 +1,8 @@
 # Strum355/2Bot-Discord-Bot (powered by Docker)
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/Strum355/2Bot-Discord-Bot)](https://goreportcard.com/report/github.com/Strum355/2Bot-Discord-Bot) [![Website](https://img.shields.io/badge/discord-2Bot%20Server-blue.svg)](https://discord.gg/9T34Y6u) [![Build Status](https://travis-ci.org/Strum355/2Bot-Discord-Bot.svg?branch=master)](https://travis-ci.org/Strum355/2Bot-Discord-Bot)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Strum355/2Bot-Discord-Bot)](https://goreportcard.com/report/github.com/Strum355/2Bot-Discord-Bot)
+[![Website](https://img.shields.io/badge/discord-2Bot%20Server-blue.svg)](https://discord.gg/9T34Y6u)
+[![Build Status](https://ci.netsoc.co/api/badges/UCCNetworkingSociety/Netsoc-Discord-Bot/status.svg?branch=master)](https://ci.netsoc.co/Strum355/2Bot-Discord-Bot/)
 
 ![2Bot Icon](https://noahsc.xyz/2Bot/2Bot-half.png)
 
