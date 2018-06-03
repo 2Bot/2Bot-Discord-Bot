@@ -2,7 +2,7 @@ pipeline:
   lint:
     image: golang:alpine
     commands:
-      - ! gofmt -d path/to/file.go 2>&1 | read
+      - \! gofmt -d path/to/file.go 2>&1 | read
     when:
       event: [ push, pull_request ]
 
