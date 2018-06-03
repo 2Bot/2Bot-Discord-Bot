@@ -59,7 +59,7 @@ func addToQueue(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 
 	srvr, ok := sMap.Server[guild.ID]
 	if !ok {
-		s.ChannelMessageSend(m.ChannelID, "An error occured that really shouldn't have happened...")
+		s.ChannelMessageSend(m.ChannelID, "An error occurred that really shouldn't have happened...")
 		log.Error("not in server map?", guild.ID)
 		return
 	}
@@ -208,7 +208,7 @@ func listQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	srvr, ok := sMap.Server[guild.ID]
 	if !ok {
-		s.ChannelMessageSend(m.ChannelID, "An error occured that really shouldn't have happened...")
+		s.ChannelMessageSend(m.ChannelID, "An error occurred that really shouldn't have happened...")
 		log.Error("not in server map?", guild.ID)
 		return
 	}
