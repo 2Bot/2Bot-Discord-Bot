@@ -22,7 +22,8 @@ const (
 func init() {
 	newCommand("yt", 0, false, false, msgYoutube).setHelp("Args: [play,stop] [url]\n\nWork In Progress!!! Play music from Youtube straight to your Discord Server!\n\n" +
 		"Example 1: `!owo yt play https://www.youtube.com/watch?v=MvLdxtICOIY`\n" +
-		"Example 2: `!owo yt stop`\n\nSubCommands:\nplay\nstop\nlist, queue, songs\npause\nresume, unpause\nskip, next").add()
+		"Example 2: `!owo yt stop`\n\n"+
+		"SubCommands:\nplay\nstop\nlist, queue, songs\npause\nresume, unpause\nskip, next").add()
 }
 
 func msgYoutube(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
@@ -276,7 +277,7 @@ func pauseQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 	srvr.VoiceInst.Lock()
 	defer srvr.VoiceInst.Unlock()
 
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("⏸ Paused. To unpause, use the command `%sunpause`", func() string {
+	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("⏸ Paused. To unpause, use the command `%syt unpause`", func() string {
 		if srvr.Prefix == "" {
 			return c.Prefix
 		}
