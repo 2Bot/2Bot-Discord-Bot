@@ -1,8 +1,8 @@
 pipeline:
   lint:
-    image: golang
+    image: golang:alpine
     commands:
-      - diff -u <(echo -n) <(gofmt -d ./)
+      - bash -c "diff -u <(echo -n) <(gofmt -d ./)"
     when:
       event: [ push, pull_request ]
 
