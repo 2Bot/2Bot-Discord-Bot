@@ -11,6 +11,11 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+type ibStruct struct {
+	Path   string `json:"path"`
+	Server string `json:"server"`
+}
+
 func init() {
 	newCommand("ibsearch", 0, false, false, msgIbsearch).setHelp("Args: [search] | rating=[e,s,q] | format=[gif,png,jpg]\n\n" +
 		"Returns a random image from ibsearch for the given search term with the given filters applied.\n\n" +

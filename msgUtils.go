@@ -74,7 +74,7 @@ func msgSetGame(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 		return
 	}
 
-	c.Game = game
+	conf.Game = game
 	saveConfig()
 
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Game changed to %s!", game))
@@ -96,7 +96,7 @@ func msgHelp(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string)
 		}
 	}
 
-	prefix := c.Prefix
+	prefix := conf.Prefix
 	if guild, err := guildDetails(m.ChannelID, "", s); err != nil {
 		prefix = sMap.Server[guild.ID].Prefix
 	}
@@ -159,7 +159,7 @@ func msgInfo(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
 			{Name: "Bot Name:", Value: codeBlock(s.State.User.Username), Inline: true},
 			{Name: "Creator:", Value: codeBlock("Strum355#0554"), Inline: true},
 			{Name: "Creation Date:", Value: codeBlock(creationTime), Inline: true},
-			{Name: "Global Prefix:", Value: codeBlock(c.Prefix), Inline: true},
+			{Name: "Global Prefix:", Value: codeBlock(conf.Prefix), Inline: true},
 			{Name: "Local Prefix", Value: codeBlock(prefix), Inline: true},
 			{Name: "Programming Language:", Value: codeBlock("Go"), Inline: true},
 			{Name: "Library:", Value: codeBlock("Discordgo"), Inline: true},
@@ -276,7 +276,7 @@ func msgReloadConfig(s *discordgo.Session, m *discordgo.MessageCreate, msglist [
 	var reloaded string
 	switch msglist[1] {
 	case "c":
-		c = new(config)
+		conf = new(config)
 		if err := loadConfig(); err != nil {
 			log.Error("error reloading config", err)
 			s.ChannelMessageSend(m.ChannelID, "Error reloading config")

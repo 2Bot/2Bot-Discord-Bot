@@ -83,7 +83,7 @@ func msgGlobalPrefix(s *discordgo.Session, m *discordgo.MessageCreate, msglist [
 	}
 
 	if prefix, ok := prefixWorker(s, m, msglist); ok {
-		c.Prefix = prefix
+		conf.Prefix = prefix
 		saveConfig()
 	}
 }

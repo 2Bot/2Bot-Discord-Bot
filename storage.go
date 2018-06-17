@@ -6,9 +6,7 @@ import (
 )
 
 var (
-	c    = new(config)
 	u    = new(users)
-	q    = new(imageQueue)
 	sMap = new(servers)
 )
 
@@ -50,11 +48,11 @@ func cleanup() {
 }
 
 func loadConfig() error {
-	return loadJSON("config.json", c)
+	return loadJSON("config.json", conf)
 }
 
 func saveConfig() error {
-	return saveJSON("config.json", c)
+	return saveJSON("config.json", conf)
 }
 
 func loadServers() error {
@@ -76,10 +74,9 @@ func saveUsers() error {
 }
 
 func loadQueue() error {
-	q.QueuedMsgs = make(map[string]*queuedImage)
-	return loadJSON("queue.json", q)
+	return loadJSON("queue.json", imageQueue)
 }
 
 func saveQueue() error {
-	return saveJSON("queue.json", q)
+	return saveJSON("queue.json", imageQueue)
 }

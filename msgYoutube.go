@@ -3,8 +3,10 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/Strum355/go-queue/queue"
 	"io"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Necroforger/dgwidgets"
@@ -18,6 +20,30 @@ const (
 	shortURL = "https://youtu.be/"
 	embedURL = "https://www.youtube.com/embed/"
 )
+
+type voiceInst struct {
+	ChannelID string
+
+	Queue *queue.Queue
+
+	Playing bool
+
+	Done chan error
+
+	*sync.RWMutex
+
+	StreamingSession *dca.StreamingSession
+
+	VoiceCon *discordgo.VoiceConnection
+}
+
+type song struct {
+	URL   string `json:"url,omitempty"`
+	Name  string `json:"name,omitempty"`
+	Image string `json:"image,omitempty"`
+
+	Duration time.Duration `json:"duration"`
+}
 
 func init() {
 	newCommand("yt", 0, false, false, msgYoutube).setHelp("Args: [play,stop] [url]\n\nWork In Progress!!! Play music from Youtube straight to your Discord Server!\n\n" +
@@ -282,7 +308,7 @@ func pauseQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("⏸ Paused. To unpause, use the command `%syt unpause`", func() string {
 		if srvr.Prefix == "" {
-			return c.Prefix
+			return conf.Prefix
 		}
 		return srvr.Prefix
 	}()))

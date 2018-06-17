@@ -18,20 +18,18 @@ func messageCreateEvent(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	var prefix string
-	if val, ok := sMap.Server[guildDetails.ID]; ok {
-		if prefix = val.Prefix; prefix == "" {
-			prefix = c.Prefix
-		}
+	prefix, err := activePrefix(m.ChannelID, s)
+	if err != nil {
+		return
 	}
 
-	if !strings.HasPrefix(m.Content, c.Prefix) && !strings.HasPrefix(m.Content, prefix) {
+	if !strings.HasPrefix(m.Content, conf.Prefix) && !strings.HasPrefix(m.Content, prefix) {
 		return
 	}
 
 	parseCommand(s, m, guildDetails, func() string {
-		if strings.HasPrefix(m.Content, c.Prefix) {
-			return strings.TrimPrefix(m.Content, c.Prefix)
+		if strings.HasPrefix(m.Content, conf.Prefix) {
+			return strings.TrimPrefix(m.Content, conf.Prefix)
 		}
 		return strings.TrimPrefix(m.Content, prefix)
 	}())

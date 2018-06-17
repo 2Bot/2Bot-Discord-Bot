@@ -20,6 +20,8 @@ import (
 	"golang.org/x/crypto/blake2b"
 )
 
+var imageQueue = make(map[string]*queuedImage)
+
 func init() {
 	newCommand("image", 0, false, false, msgImageRecall).setHelp("Args: [save,recall,delete,list,status] [name]\n\nSave images and recall them at anytime! Everyone gets 8MB of image storage. Any name counts so long theres no `/` in it." +
 		"Only you can 'recall' your saved images. There's a review process to make sure nothing illegal is being uploaded but we're fairly relaxed for the most part\n\n" +
@@ -32,16 +34,13 @@ func init() {
 
 func msgImageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	if len(msglist) < 2 {
-		prefix := c.Prefix
-		guild, err := guildDetails(m.ChannelID, "", s)
+		prefix, err := activePrefix(m.ChannelID, s)
 		if err != nil {
-			s.ChannelMessageSend(m.ChannelID, "There was an issue recalling your image :( Try again please~")
 			return
-		} else if sMap.Server[guild.ID].Prefix != "" {
-			prefix = sMap.Server[guild.ID].Prefix
 		}
 
-		s.ChannelMessageSend(m.ChannelID, "Available sub-commands for `image`:\n`save`, `delete`, `recall`, `list`, `status`\n"+
+		s.ChannelMessageSend(m.ChannelID, 
+			"Available sub-commands for `image`:\n`save`, `delete`, `recall`, `list`, `status`\n"+
 			"Type `"+prefix+"help image` to see more info about this command")
 		return
 	}
@@ -128,10 +127,10 @@ func fimageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 }
 
 func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	c.CurrImg++
+	conf.CurrImg++
 	saveConfig()
 
-	currentImageNumber := c.CurrImg
+	currentImageNumber := conf.CurrImg
 
 	if len(m.Attachments) == 0 {
 		s.ChannelMessageSend(m.ChannelID, "No image sent. Please send me an image to save for you!")
@@ -269,7 +268,7 @@ func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	currUser.TempImages = append(currUser.TempImages, imgName)
 	currUser.QueueSize += fileSize
 
-	q.QueuedMsgs[strconv.Itoa(currentImageNumber)] = &queuedImage{
+	imageQueue[strconv.Itoa(currentImageNumber)] = &queuedImage{
 		ReviewMsgID:   reviewMsg.ID,
 		AuthorID:      m.Author.ID,
 		AuthorDiscrim: m.Author.Discriminator,
@@ -282,11 +281,11 @@ func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	saveQueue()
 	saveUsers()
 
-	fimageReview(s, q, currentImageNumber)
+	fimageReview(s, currentImageNumber)
 }
 
-func fimageReview(s *discordgo.Session, queue *imageQueue, currentImageNumber int) {
-	imgInQueue := queue.QueuedMsgs[strconv.Itoa(currentImageNumber)]
+func fimageReview(s *discordgo.Session, currentImageNumber int) {
+	imgInQueue := imageQueue[strconv.Itoa(currentImageNumber)]
 
 	fileSize := imgInQueue.FileSize
 	prefixedImgName := imgInQueue.AuthorID + "_" + imgInQueue.ImageName
@@ -354,7 +353,7 @@ func fimageReview(s *discordgo.Session, queue *imageQueue, currentImageNumber in
 
 					currUser.TempImages = remove(currUser.TempImages, findIndex(currUser.TempImages, imgInQueue.ImageName))
 					currUser.QueueSize -= fileSize
-					delete(q.QueuedMsgs, strconv.Itoa(currentImageNumber))
+					delete(imageQueue, strconv.Itoa(currentImageNumber))
 
 					saveUsers()
 					saveQueue()
@@ -407,7 +406,7 @@ func fimageReview(s *discordgo.Session, queue *imageQueue, currentImageNumber in
 		}
 	}
 
-	delete(q.QueuedMsgs, strconv.Itoa(currentImageNumber))
+	delete(imageQueue, strconv.Itoa(currentImageNumber))
 	currUser.TempImages = remove(currUser.TempImages, findIndex(currUser.TempImages, imgInQueue.ImageName))
 	currUser.CurrDiskUsed += fileSize
 	currUser.QueueSize -= fileSize

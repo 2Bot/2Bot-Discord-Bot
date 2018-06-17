@@ -9,6 +9,14 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+type rule34 struct {
+	PostCount int `xml:"count,attr"`
+
+	Posts []struct {
+		URL string `xml:"file_url,attr"`
+	} `xml:"post"`
+}
+
 func init() {
 	newCommand("r34", 0, false, false, msgRule34).setHelp("Args: [search]\n\nReturns a random image from rule34 for the given search term.\n\nExample:\n`!owo r34 lewds`").add()
 }

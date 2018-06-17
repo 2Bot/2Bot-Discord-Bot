@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	newCommand("playlist", 0, false, false, msgPlaylist) //TODO
+	newCommand("playlist", 0, false, false, msgPlaylist).add() //TODO
 }
 
 func msgPlaylist(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
@@ -24,10 +24,6 @@ func msgPlaylist(s *discordgo.Session, m *discordgo.MessageCreate, msglist []str
 	server := sMap.Server[guild.ID]
 	if server.Playlists == nil {
 		server.Playlists = make(map[string][]song)
-	}
-
-	if sMap.Server[guild.ID].Playlists == nil {
-		sMap.Server[guild.ID].Playlists = make(map[string][]song)
 	}
 
 	switch msglist[0] {
