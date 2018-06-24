@@ -68,6 +68,8 @@ func msgYoutube(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 		unpauseQueue(s, m)
 	case "skip", "next":
 		skipSong(s, m)
+	default:
+		s.ChannelMessageSend(m.ChannelID, activeCommands["youtube"].Help)
 	}
 }
 
@@ -103,42 +105,48 @@ func addToQueue(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 		return
 	}
 
-	for _, vs := range guild.VoiceStates {
-		if vs.UserID == m.Author.ID {
-			if vs.ChannelID == srvr.VoiceInst.ChannelID || !srvr.VoiceInst.Playing {
-				vid, err := getVideoInfo(url, s, m)
-				if err != nil {
-					return
-				}
+	vid, err := getVideoInfo(url, s, m)
+	if err != nil {
+		return
+	}
 
-				vc, err := s.ChannelVoiceJoin(guild.ID, vs.ChannelID, false, true)
-				if err != nil {
-					s.ChannelMessageSend(m.ChannelID, "Error joining voice channel")
-					log.Error("error joining voice channel", err)
-					return
-				}
+	vc, err := createVoiceConnection(s, m, guild, srvr)
+	if err != nil {
+		return
+	}
 
-				srvr.addSong(song{
-					URL:      url,
-					Name:     vid.Title,
-					Duration: vid.Duration,
-					Image:    vid.GetThumbnailURL(ytdl.ThumbnailQualityMedium).String(),
-				})
+	srvr.addSong(song{
+		URL:      url,
+		Name:     vid.Title,
+		Duration: vid.Duration,
+		Image:    vid.GetThumbnailURL(ytdl.ThumbnailQualityMedium).String(),
+	})
 
-				s.ChannelMessageSend(m.ChannelID, "Added "+vid.Title+" to the queue!")
+	s.ChannelMessageSend(m.ChannelID, "Added "+vid.Title+" to the queue!")
 
-				if !srvr.VoiceInst.Playing {
-					srvr.VoiceInst.VoiceCon = vc
-					srvr.VoiceInst.Playing = true
-					srvr.VoiceInst.ChannelID = vc.ChannelID
-					go play(s, m, srvr, vc)
-				}
-				return
-			}
-		}
+	if !srvr.VoiceInst.Playing {
+		srvr.VoiceInst.VoiceCon = vc
+		srvr.VoiceInst.Playing = true
+		srvr.VoiceInst.ChannelID = vc.ChannelID
+		go play(s, m, srvr, vc)
 	}
 
 	s.ChannelMessageSend(m.ChannelID, "Need to be in a voice channel!")
+}
+
+func createVoiceConnection(s *discordgo.Session, m *discordgo.MessageCreate, guild *discordgo.Guild, srvr *server) (*discordgo.VoiceConnection, error) {
+	for _, vs := range guild.VoiceStates {
+		if vs.UserID == m.Author.ID && (vs.ChannelID == srvr.VoiceInst.ChannelID || !srvr.VoiceInst.Playing) {
+			vc, err := s.ChannelVoiceJoin(guild.ID, vs.ChannelID, false, true)
+			if err != nil {
+				s.ChannelMessageSend(m.ChannelID, "Error joining voice channel")
+				log.Error("error joining voice channel", err)
+				return nil, err
+			}
+			return vc, nil
+		}
+	}
+	return nil, errors.New("not in voice channel")
 }
 
 func getVideoInfo(url string, s *discordgo.Session, m *discordgo.MessageCreate) (*ytdl.VideoInfo, error) {
@@ -287,8 +295,6 @@ func stopQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	srvr := sMap.Server[guild.ID]
-	srvr.VoiceInst.Lock()
-	defer srvr.VoiceInst.Unlock()
 	srvr.VoiceInst.Done <- errors.New("stop")
 }
 

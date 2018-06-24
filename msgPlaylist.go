@@ -54,12 +54,13 @@ func createPlaylist(s *discordgo.Session, m *discordgo.MessageCreate, msglist []
 }
 
 func deletePlaylist(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string, server *server) {
-	if _, ok := server.Playlists[msglist[1]]; !ok {
-		s.ChannelMessageSend(m.ChannelID, "Playlist `"+msglist[1]+"` doesn't exist!")
+	playlist := strings.Join(msglist[2:], " ")
+	if _, ok := server.Playlists[playlist]; !ok {
+		s.ChannelMessageSend(m.ChannelID, "Playlist `"+playlist+"` doesn't exist!")
 		return
 	}
-	delete(server.Playlists, msglist[1])
-	s.ChannelMessageSend(m.ChannelID, "Playlist `"+msglist[1]+"` was deleted")
+	delete(server.Playlists, playlist)
+	s.ChannelMessageSend(m.ChannelID, "Playlist `"+playlist+"` was deleted")
 }
 
 func addToPlaylist(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string, server *server) {
@@ -67,19 +68,26 @@ func addToPlaylist(s *discordgo.Session, m *discordgo.MessageCreate, msglist []s
 		return
 	}
 
-	if _, ok := server.Playlists[msglist[1]]; !ok {
-		s.ChannelMessageSend(m.ChannelID, "Playlist `"+msglist[1]+"` doesn't exist!")
+	playlist := strings.Join(msglist[4:], " ")
+	url := msglist[3]
+	if !strings.HasPrefix(url, stdURL) && !strings.HasPrefix(url, shortURL) && !strings.HasPrefix(url, embedURL) {
+		s.ChannelMessageSend(m.ChannelID, "Please make sure the URL is a valid YouTube URL. If I got this wrong, please let my creator know~")
 		return
 	}
 
-	for _, song := range server.Playlists[msglist[1]] {
-		if song.URL == msglist[2] {
+	if _, ok := server.Playlists[playlist]; !ok {
+		s.ChannelMessageSend(m.ChannelID, "Playlist `"+playlist+"` doesn't exist!")
+		return
+	}
+
+	for _, song := range server.Playlists[playlist] {
+		if song.URL == url {
 			s.ChannelMessageSend(m.ChannelID, "That song is already in the playlist!")
 			return
 		}
 	}
 
-	vid, err := ytdl.GetVideoInfo(msglist[2])
+	vid, err := ytdl.GetVideoInfo(url)
 	if err != nil {
 		log.Error("error getting YouTube video info", err)
 		s.ChannelMessageSend(m.ChannelID, "There was an error adding the song to the playlist :( Check the command and try again")
@@ -87,20 +95,19 @@ func addToPlaylist(s *discordgo.Session, m *discordgo.MessageCreate, msglist []s
 	}
 
 	format := vid.Formats.Extremes(ytdl.FormatAudioBitrateKey, true)[0]
-	_, err = vid.GetDownloadURL(format)
-	if err != nil {
+	if _, err = vid.GetDownloadURL(format); err != nil {
 		log.Error("error getting download URL", err)
 		s.ChannelMessageSend(m.ChannelID, "There was an error adding the song to the playlist :( Check the command and try again")
 		return
 	}
 
-	server.Playlists[msglist[1]] = append(server.Playlists[msglist[1]], song{
-		URL:      msglist[2],
+	server.Playlists[playlist] = append(server.Playlists[playlist], song{
+		URL:      url,
 		Name:     vid.Title,
 		Duration: vid.Duration,
 	})
 
-	s.ChannelMessageSend(m.ChannelID, vid.Title+" added to playlist `"+msglist[1]+"`")
+	s.ChannelMessageSend(m.ChannelID, vid.Title+" added to playlist `"+playlist+"`")
 }
 
 func removeFromPlaylist(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string, server *server) {
