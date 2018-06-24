@@ -23,7 +23,7 @@ import (
 var imageQueue = make(map[string]*queuedImage)
 
 func init() {
-	newCommand("image", 0, false, false, msgImageRecall).setHelp("Args: [save,recall,delete,list,status] [name]\n\nSave images and recall them at anytime! Everyone gets 8MB of image storage. Any name counts so long theres no `/` in it." +
+	newCommand("image", 0, false, msgImageRecall).setHelp("Args: [save,recall,delete,list,status] [name]\n\nSave images and recall them at anytime! Everyone gets 8MB of image storage. Any name counts so long theres no `/` in it." +
 		"Only you can 'recall' your saved images. There's a review process to make sure nothing illegal is being uploaded but we're fairly relaxed for the most part\n\n" +
 		"Example:\n`!owo image save 2B Happy`\n2Bot downloads the image and sends it off for reviewing\n\n" +
 		"`!owo image recall 2B Happy`\nIf your image was confirmed, 2Bot will send the image named `2B Happy`\n\n" +
@@ -39,9 +39,9 @@ func msgImageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []
 			return
 		}
 
-		s.ChannelMessageSend(m.ChannelID, 
+		s.ChannelMessageSend(m.ChannelID,
 			"Available sub-commands for `image`:\n`save`, `delete`, `recall`, `list`, `status`\n"+
-			"Type `"+prefix+"help image` to see more info about this command")
+				"Type `"+prefix+"help image` to see more info about this command")
 		return
 	}
 

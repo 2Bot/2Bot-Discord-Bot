@@ -11,7 +11,7 @@ import (
 func init() {
 	newCommand("purge",
 		discordgo.PermissionAdministrator|discordgo.PermissionManageMessages|discordgo.PermissionManageServer,
-		false, true, msgPurge).setHelp("Args: [number] [@user]\n\nPurges 'number' amount of messages. Optionally, purge only the messages from a given user!\nAdmin only\n\nExample:\n`!owo purge 300`\n" +
+		true, msgPurge).setHelp("Args: [number] [@user]\n\nPurges 'number' amount of messages. Optionally, purge only the messages from a given user!\nAdmin only\n\nExample:\n`!owo purge 300`\n" +
 		"Example 2:\n`!owo purge 300 @Strum355#1180`").add()
 }
 

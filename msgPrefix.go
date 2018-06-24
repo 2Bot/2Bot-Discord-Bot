@@ -8,10 +8,10 @@ import (
 )
 
 func init() {
-	newCommand("setGlobalPrefix", 0, true, false, msgGlobalPrefix).add()
+	newCommand("setGlobalPrefix", 0, false, msgGlobalPrefix).noahOnly().add()
 	newCommand("setPrefix",
 		discordgo.PermissionAdministrator|discordgo.PermissionManageServer,
-		false, true, msgPrefix).setHelp("Args: [prefix]\n\nSets the servers prefix to 'prefix'\nAdmin only.\n\nExample:\n`!owo setPrefix .`\nNew Example command:\n`.help`").add()
+		true, msgPrefix).setHelp("Args: [prefix]\n\nSets the servers prefix to 'prefix'\nAdmin only.\n\nExample:\n`!owo setPrefix .`\nNew Example command:\n`.help`").add()
 }
 
 func prefixWorker(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) (prefix string, ok bool) {

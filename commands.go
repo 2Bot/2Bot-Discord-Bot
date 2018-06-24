@@ -60,12 +60,11 @@ func (c command) add() command {
 	return c
 }
 
-func newCommand(name string, permissions int, noah, needsPerms bool, f func(*discordgo.Session, *discordgo.MessageCreate, []string)) command {
+func newCommand(name string, permissions int, needsPerms bool, f func(*discordgo.Session, *discordgo.MessageCreate, []string)) command {
 	return command{
 		Name:          name,
 		PermsRequired: permissions,
 		RequiresPerms: needsPerms,
-		NoahOnly:      noah,
 		Exec:          f,
 	}
 }
@@ -77,5 +76,10 @@ func (c command) alias(a string) command {
 
 func (c command) setHelp(help string) command {
 	c.Help = help
+	return c
+}
+
+func (c command) noahOnly() command {
+	c.NoahOnly = true
 	return c
 }

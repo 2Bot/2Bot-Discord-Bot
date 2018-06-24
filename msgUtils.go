@@ -13,22 +13,22 @@ import (
 var mem runtime.MemStats
 
 func init() {
-	newCommand("setGame", 0, true, false, msgSetGame).add()
-	newCommand("listUsers", 0, true, false, msgListUsers).add()
-	newCommand("reloadConfig", 0, true, false, msgReloadConfig)
-	newCommand("command", 0, true, false, msgCommand).add()
-	newCommand("help", 0, false, false, msgHelp).setHelp("ok").add()
-	newCommand("info", 0, false, false, msgInfo).setHelp("Args: none\n\nSome info about 2Bot.\n\nExample:\n`!owo info`").add()
-	newCommand("invite", 0, false, false, msgInvite).setHelp("Args: none\n\nSends an invite link for 2Bot!\n\nExample:\n`!owo invite`").add()
-	newCommand("git", 0, false, false, msgGit).setHelp("Args: none\n\nLinks 2Bots github page.\n\nExample:\n`!owo git`").add()
+	newCommand("setGame", 0, false, msgSetGame).noahOnly().add()
+	newCommand("listUsers", 0, false, msgListUsers).noahOnly().add()
+	newCommand("reloadConfig", 0, false, msgReloadConfig).noahOnly()
+	newCommand("command", 0, false, msgCommand).noahOnly().add()
+	newCommand("help", 0, false, msgHelp).setHelp("ok").add()
+	newCommand("info", 0, false, msgInfo).setHelp("Args: none\n\nSome info about 2Bot.\n\nExample:\n`!owo info`").add()
+	newCommand("invite", 0, false, msgInvite).setHelp("Args: none\n\nSends an invite link for 2Bot!\n\nExample:\n`!owo invite`").add()
+	newCommand("git", 0, false, msgGit).setHelp("Args: none\n\nLinks 2Bots github page.\n\nExample:\n`!owo git`").add()
 
 	newCommand("setNSFW",
 		discordgo.PermissionAdministrator|discordgo.PermissionManageServer,
-		false, true, msgNSFW).setHelp("Args: none\n\nToggles NSFW commands in NSFW channels.\nAdmin only.\n\nExample:\n`!owo setNSFW`").add()
+		true, msgNSFW).setHelp("Args: none\n\nToggles NSFW commands in NSFW channels.\nAdmin only.\n\nExample:\n`!owo setNSFW`").add()
 
 	newCommand("joinMessage",
 		discordgo.PermissionAdministrator|discordgo.PermissionManageServer,
-		false, true, msgJoinMessage).setHelp("Args: [true,false] | [message] | [channelID]\n\nEnables or disables join messages.\nthe message and channel that the bot welcomes new people in.\n" +
+		true, msgJoinMessage).setHelp("Args: [true,false] | [message] | [channelID]\n\nEnables or disables join messages.\nthe message and channel that the bot welcomes new people in.\n" +
 		"To mention the user in the message, put `%s` where you want the user to be mentioned in the message.\nLeave message \n\nExample to set message:\n" +
 		"`!owo joinMessage true | Hey there %s! | 312294858582654978`\n>On member join\n`Hey there [@new member]`\n\n" +
 		"Example to disable:\n`!owo joinMessage false`").add()

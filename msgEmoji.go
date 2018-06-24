@@ -16,7 +16,7 @@ var (
 )
 
 func init() {
-	newCommand("bigMoji", 0, false, false, msgEmoji).setHelp("Args: [emoji]\n\nSends a large image of the given emoji.\n" +
+	newCommand("bigMoji", 0, false, msgEmoji).setHelp("Args: [emoji]\n\nSends a large image of the given emoji.\n" +
 		"Command 'bigMoji' can be excluded for shorthand.\n\nExample:\n`!owo :smile:`\nor\n`!owo bigMoji :smile:`").add()
 }
 
