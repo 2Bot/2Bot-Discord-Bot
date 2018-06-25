@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -23,6 +24,9 @@ func msgPurge(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 
 	purgeAmount, err := strconv.Atoi(msglist[1])
 	if err != nil {
+		if strings.HasPrefix(msglist[1], "@") {
+			msglist[1] = "@" + zerowidth + strings.TrimPrefix(msglist[1], "@")
+		}
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("How do i delete %s messages? Please only give numbers!", msglist[1]))
 		return
 	}

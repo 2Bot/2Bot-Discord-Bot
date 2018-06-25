@@ -29,13 +29,10 @@ func msgLogChannel(s *discordgo.Session, m *discordgo.MessageCreate, msglist []s
 	var channelID string
 	channelIDMatch := channelRegex.FindStringSubmatch(msglist[1])
 	if len(channelIDMatch) != 2 {
-		if len(msglist[1]) == 18 {
-			channelID = msglist[1]
-		} else {
-			s.ChannelMessageSend(m.ChannelID, "Not a valid channel!")
-			return
-		}
+		s.ChannelMessageSend(m.ChannelID, "Not a valid channel!")
+		return
 	}
+	channelID = channelIDMatch[1]
 
 	var chanList []string
 	for _, channel := range guild.Channels {

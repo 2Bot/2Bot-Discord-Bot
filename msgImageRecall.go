@@ -55,7 +55,7 @@ func msgImageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []
 	case "list":
 		fimageList(s, m, nil)
 	case "status":
-		fimageInfo(s, m, nil, false)
+		fimageInfo(s, m, nil)
 	}
 }
 
@@ -459,8 +459,8 @@ func fimageList(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 		out = append(out, key)
 		files = append(files, value)
 	}
-	s.ChannelMessageSend(m.ChannelID, "Your saved images are: `"+strings.Join(out, ", ")+
-		"`\nAssemblin' a preview your images! **Don't click the reactions until all 5 are there!** Blame Discords rate-limit...")
+
+	msg, err := s.ChannelMessageSend(m.ChannelID, "Assemblin' a preview your images!")
 
 	p := dgwidgets.NewPaginator(s, m.ChannelID)
 
@@ -485,6 +485,11 @@ func fimageList(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	p.ColourWhenDone = 0xff0000
 	p.DeleteReactionsWhenDone = true
 	p.Widget.Timeout = time.Minute * 2
+
+	if err != nil {
+		s.ChannelMessageEdit(m.ChannelID, msg.ID, "Your saved images are: `"+strings.Join(out, ", "))
+	}
+
 	if err := p.Spawn(); err != nil {
 		log.Error("error creating image list", err)
 		s.ChannelMessageSend(m.ChannelID, "Couldn't make the list :( Go pester Strum355#1180 about this")
@@ -496,7 +501,7 @@ func fimageList(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	}
 }
 
-func fimageInfo(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string, called bool) {
+func fimageInfo(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	if val, ok := u.User[m.Author.ID]; ok {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("```autohotkey\nTotal Images:%21d```"+
 			"```autohotkey\nTotal Space Used:%20.2f/%.2fMB (%.2f/%.2fKB)```"+
@@ -519,13 +524,6 @@ func fimageInfo(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 		return
 	}
 
-	//If function has been called recursively but
-	//u.User[m.Author.ID] doesnt exist yet,
-	//something went wrong, so abort
-	if called {
-		return
-	}
-
 	u.User[m.Author.ID] = &user{
 		Images:     map[string]string{},
 		TempImages: []string{},
@@ -535,5 +533,5 @@ func fimageInfo(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 
 	saveUsers()
 
-	fimageInfo(s, m, msglist, true)
+	fimageInfo(s, m, msglist)
 }
