@@ -32,7 +32,6 @@ func init() {
 		"To mention the user in the message, put `%s` where you want the user to be mentioned in the message.\nLeave message \n\nExample to set message:\n" +
 		"`!owo joinMessage true | Hey there %s! | 312294858582654978`\n>On member join\n`Hey there [@new member]`\n\n" +
 		"Example to disable:\n`!owo joinMessage false`").add()
-
 }
 
 /*
