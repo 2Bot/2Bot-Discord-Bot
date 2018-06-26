@@ -1,9 +1,5 @@
 package main
 
-import (
-	"github.com/bwmarrin/discordgo"
-)
-
 type config struct {
 	Game   string `json:"game"`
 	Prefix string `json:"prefix"`
@@ -30,21 +26,7 @@ type queuedImage struct {
 	FileSize int `json:"file_size"`
 }
 
-type command struct {
-	Name string
-	Help string
-
-	NoahOnly      bool
-	RequiresPerms bool
-
-	PermsRequired int
-
-	Exec func(*discordgo.Session, *discordgo.MessageCreate, []string)
-}
-
-type users struct {
-	User map[string]*user
-}
+type users map[string]*user
 
 type user struct {
 	Images map[string]string `json:"images"`

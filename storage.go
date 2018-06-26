@@ -6,8 +6,8 @@ import (
 )
 
 var (
-	u    = new(users)
-	sMap = new(servers)
+	u    = make(users)
+	sMap = servers{serverMap: make(map[string]*server)}
 )
 
 func saveJSON(path string, data interface{}) error {
@@ -56,7 +56,7 @@ func saveConfig() error {
 }
 
 func loadServers() error {
-	sMap.Server = make(map[string]*server)
+	sMap = servers{serverMap: make(map[string]*server)}
 	return loadJSON("servers.json", sMap)
 }
 
@@ -65,7 +65,7 @@ func saveServers() error {
 }
 
 func loadUsers() error {
-	u.User = make(map[string]*user)
+	u = make(map[string]*user)
 	return loadJSON("users.json", u)
 }
 

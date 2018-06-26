@@ -12,6 +12,18 @@ var (
 	disabledCommands = make(map[string]command)
 )
 
+type command struct {
+	Name string
+	Help string
+
+	NoahOnly      bool
+	RequiresPerms bool
+
+	PermsRequired int
+
+	Exec func(*discordgo.Session, *discordgo.MessageCreate, []string)
+}
+
 /*
 	go-chi style command adding
 		- aliases

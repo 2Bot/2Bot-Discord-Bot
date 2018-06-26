@@ -47,7 +47,7 @@ func msgLogChannel(s *discordgo.Session, m *discordgo.MessageCreate, msglist []s
 		return
 	}
 
-	if guild, ok := sMap.Server[guild.ID]; ok && !guild.Kicked {
+	if guild, ok := sMap.server(guild.ID); ok && !guild.Kicked {
 		guild.LogChannel = channelID
 		saveServers()
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Log channel changed to <#%s>", channelID))
@@ -62,7 +62,7 @@ func msgLogging(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 		return
 	}
 
-	if guild, ok := sMap.Server[guild.ID]; ok && !guild.Kicked {
+	if guild, ok := sMap.server(guild.ID); ok && !guild.Kicked {
 		guild.Log = !guild.Log
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Logging %t", guild.Log))
 		saveServers()

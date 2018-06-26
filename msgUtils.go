@@ -98,7 +98,9 @@ func msgHelp(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string)
 
 	prefix := conf.Prefix
 	if guild, err := guildDetails(m.ChannelID, "", s); err != nil {
-		prefix = sMap.Server[guild.ID].Prefix
+		if val, ok := sMap.server(guild.ID); ok {
+			prefix = val.Prefix
+		}
 	}
 
 	s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
@@ -139,7 +141,7 @@ func msgInfo(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
 	var prefix string
 	guild, err := guildDetails(m.ChannelID, "", s)
 	if err == nil {
-		if val, ok := sMap.Server[guild.ID]; ok {
+		if val, ok := sMap.server(guild.ID); ok {
 			prefix = val.Prefix
 		}
 	}
@@ -175,7 +177,7 @@ func msgListUsers(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 		return
 	}
 
-	if guild, ok := sMap.Server[msglist[1]]; !ok || guild.Kicked {
+	if guild, ok := sMap.server(msglist[1]); !ok || guild.Kicked {
 		s.ChannelMessageSend(m.ChannelID, "2Bot isn't in that server")
 		return
 	}
@@ -210,7 +212,7 @@ func msgNSFW(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string)
 
 	onOrOff := map[bool]string{true: "enabled", false: "disabled"}
 
-	if guild, ok := sMap.Server[guild.ID]; ok {
+	if guild, ok := sMap.server(guild.ID); ok {
 		guild.Nsfw = !guild.Nsfw
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("NSFW %s", onOrOff[guild.Nsfw]))
 		saveServers()
@@ -231,7 +233,7 @@ func msgJoinMessage(s *discordgo.Session, m *discordgo.MessageCreate, msglist []
 	}
 
 	if len(split) > 0 {
-		if guild, ok := sMap.Server[guild.ID]; ok {
+		if guild, ok := sMap.server(guild.ID); ok {
 			if split[0] != "false" && split[0] != "true" {
 				s.ChannelMessageSend(m.ChannelID, "Please say either `true` or `false` for enabling or disabling join messages~")
 				return
@@ -284,7 +286,7 @@ func msgReloadConfig(s *discordgo.Session, m *discordgo.MessageCreate, msglist [
 		}
 		reloaded = "config"
 	case "u":
-		u = new(users)
+		u = make(users)
 		if err := loadUsers(); err != nil {
 			log.Error("error reloading config", err)
 			s.ChannelMessageSend(m.ChannelID, "Error reloading config")

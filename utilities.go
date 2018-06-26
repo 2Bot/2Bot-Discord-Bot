@@ -138,8 +138,8 @@ func activePrefix(channelID string, s *discordgo.Session) (prefix string, err er
 	if err != nil {
 		s.ChannelMessageSend(channelID, "There was an issue executing the command :( Try again please~")
 		return
-	} else if sMap.Server[guild.ID].Prefix != "" {
-		prefix = sMap.Server[guild.ID].Prefix
+	} else if val, ok := sMap.server(guild.ID); ok && val.Prefix != "" {
+		prefix = val.Prefix
 	}
 	return prefix, nil
 }

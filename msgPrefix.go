@@ -59,7 +59,7 @@ func msgPrefix(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 		return
 	}
 
-	guild, ok := sMap.Server[guildDetails.ID]
+	guild, ok := sMap.server(guildDetails.ID)
 	if !ok || guild.Kicked {
 		return
 	}

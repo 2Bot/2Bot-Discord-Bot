@@ -37,7 +37,7 @@ func msgIbsearch(s *discordgo.Session, m *discordgo.MessageCreate, msglist []str
 		return
 	}
 
-	if !sMap.Server[guild.ID].Nsfw && !strings.Contains(channel.Name, "nsfw") && !channel.NSFW {
+	if val, ok := sMap.server(guild.ID); ok && !val.Nsfw && !strings.Contains(channel.Name, "nsfw") && !channel.NSFW {
 		s.ChannelMessageSend(m.ChannelID, "NSFW is disabled on this server~")
 		return
 	}

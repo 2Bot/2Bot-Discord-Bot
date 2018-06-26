@@ -68,7 +68,7 @@ func httpImageRecall(w http.ResponseWriter, r *http.Request) {
 
 	log.Info(fmt.Sprintf("image request from %s for %s", id, img))
 
-	if val, ok := u.User[id]; ok {
+	if val, ok := u[id]; ok {
 		for _, val := range val.Images {
 			if strings.HasPrefix(val, img) {
 				w.WriteHeader(http.StatusOK)
@@ -88,7 +88,7 @@ func httpImageRecall(w http.ResponseWriter, r *http.Request) {
 
 func fimageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	var filename string
-	if val, ok := u.User[m.Author.ID]; ok {
+	if val, ok := u[m.Author.ID]; ok {
 		if val, ok := val.Images[strings.Join(msglist, " ")]; ok {
 			filename = val
 		} else {
@@ -154,15 +154,15 @@ func fimageSave(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	hash := blake2b.Sum256([]byte(prefixedImgName))
 	imgFileName := hex.EncodeToString(hash[:]) + fileExtension
 
-	currUser, ok := u.User[m.Author.ID]
+	currUser, ok := u[m.Author.ID]
 	if !ok {
-		u.User[m.Author.ID] = &user{
+		u[m.Author.ID] = &user{
 			Images:     map[string]string{},
 			TempImages: []string{},
 			DiskQuota:  8000000,
 			QueueSize:  0,
 		}
-		currUser = u.User[m.Author.ID]
+		currUser = u[m.Author.ID]
 	}
 
 	_, ok = currUser.Images[imgName]
@@ -294,7 +294,7 @@ func fimageReview(s *discordgo.Session, currentImageNumber int) {
 	hash := blake2b.Sum256([]byte(prefixedImgName))
 	imgFileName := hex.EncodeToString(hash[:]) + fileExtension
 	tempFilepath := "images/temp/" + imgFileName
-	currUser := u.User[imgInQueue.AuthorID]
+	currUser := u[imgInQueue.AuthorID]
 
 	//Wait here for a relevant reaction to the confirmation message
 	for {
@@ -420,7 +420,7 @@ func fimageReview(s *discordgo.Session, currentImageNumber int) {
 
 func fimageDelete(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	var filename string
-	if val, ok := u.User[m.Author.ID]; ok {
+	if val, ok := u[m.Author.ID]; ok {
 		if val, ok := val.Images[strings.Join(msglist, " ")]; ok {
 			filename = val
 		} else {
@@ -439,7 +439,7 @@ func fimageDelete(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 		return
 	}
 
-	delete(u.User[m.Author.ID].Images, strings.Join(msglist, " "))
+	delete(u[m.Author.ID].Images, strings.Join(msglist, " "))
 
 	saveUsers()
 
@@ -447,8 +447,8 @@ func fimageDelete(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 }
 
 func fimageList(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
-	val, ok := u.User[m.Author.ID]
-	if (ok && len(u.User[m.Author.ID].Images) == 0) || !ok {
+	val, ok := u[m.Author.ID]
+	if (ok && len(u[m.Author.ID].Images) == 0) || !ok {
 		s.ChannelMessageSend(m.ChannelID, "You've no saved images! Get storin'!")
 		return
 	}
@@ -497,7 +497,7 @@ func fimageList(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 }
 
 func fimageInfo(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string, called bool) {
-	if val, ok := u.User[m.Author.ID]; ok {
+	if val, ok := u[m.Author.ID]; ok {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("```autohotkey\nTotal Images:%21d```"+
 			"```autohotkey\nTotal Space Used:%20.2f/%.2fMB (%.2f/%.2fKB)```"+
 			"```autohotkey\nQueued Images:%20d```"+
@@ -520,13 +520,13 @@ func fimageInfo(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	}
 
 	//If function has been called recursively but
-	//u.User[m.Author.ID] doesnt exist yet,
+	//u[m.Author.ID] doesnt exist yet,
 	//something went wrong, so abort
 	if called {
 		return
 	}
 
-	u.User[m.Author.ID] = &user{
+	u[m.Author.ID] = &user{
 		Images:     map[string]string{},
 		TempImages: []string{},
 		DiskQuota:  8000000,

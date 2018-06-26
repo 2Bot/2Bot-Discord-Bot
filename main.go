@@ -160,7 +160,7 @@ func main() {
 
 	log.Trace("connection opened")
 
-	sMap.Count = len(sMap.Server)
+	sMap.Count = len(sMap.serverMap)
 
 	go setQueuedImageHandlers()
 

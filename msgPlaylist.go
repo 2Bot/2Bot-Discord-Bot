@@ -22,7 +22,11 @@ func msgPlaylist(s *discordgo.Session, m *discordgo.MessageCreate, msglist []str
 		return
 	}
 
-	server := sMap.Server[guild.ID]
+	server, ok := sMap.server(guild.ID)
+	if !ok {
+		return
+	}
+
 	if server.Playlists == nil {
 		server.Playlists = make(map[string][]song)
 	}

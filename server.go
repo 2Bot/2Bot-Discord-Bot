@@ -12,7 +12,16 @@ type servers struct {
 
 	Mutex sync.RWMutex `json:"-"`
 
-	Server map[string]*server
+	serverMap map[string]*server
+}
+
+func (s *servers) server(id string) (val *server, ok bool) {
+	val, ok = s.serverMap[id]
+	return
+}
+
+func (s *servers) setServer(id string, serv server) {
+	s.serverMap[id] = &serv
 }
 
 type server struct {

@@ -3,11 +3,12 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/Strum355/go-queue/queue"
 	"io"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/Strum355/go-queue/queue"
 
 	"github.com/Necroforger/dgwidgets"
 	"github.com/Strum355/ytdl"
@@ -84,7 +85,7 @@ func addToQueue(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 		return
 	}
 
-	srvr, ok := sMap.Server[guild.ID]
+	srvr, ok := sMap.server(guild.ID)
 	if !ok {
 		s.ChannelMessageSend(m.ChannelID, "An error occurred that really shouldn't have happened...")
 		log.Error("not in server map?", guild.ID)
@@ -242,7 +243,7 @@ func listQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	srvr, ok := sMap.Server[guild.ID]
+	srvr, ok := sMap.server(guild.ID)
 	if !ok {
 		s.ChannelMessageSend(m.ChannelID, "An error occurred that really shouldn't have happened...")
 		log.Error("not in server map?", guild.ID)
@@ -294,8 +295,9 @@ func stopQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	srvr := sMap.Server[guild.ID]
-	srvr.VoiceInst.Done <- errors.New("stop")
+	if srvr, ok := sMap.server(guild.ID); ok {
+		srvr.VoiceInst.Done <- errors.New("stop")
+	}
 }
 
 func pauseQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -305,7 +307,10 @@ func pauseQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	srvr := sMap.Server[guild.ID]
+	srvr, ok := sMap.server(guild.ID)
+	if !ok {
+		return
+	}
 
 	srvr.VoiceInst.Lock()
 	defer srvr.VoiceInst.Unlock()
@@ -327,10 +332,11 @@ func unpauseQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	srvr := sMap.Server[guild.ID]
-	srvr.VoiceInst.Lock()
-	defer srvr.VoiceInst.Unlock()
-	srvr.VoiceInst.StreamingSession.SetPaused(false)
+	if srvr, ok := sMap.server(guild.ID); ok {
+		srvr.VoiceInst.Lock()
+		defer srvr.VoiceInst.Unlock()
+		srvr.VoiceInst.StreamingSession.SetPaused(false)
+	}
 }
 
 func skipSong(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -340,10 +346,11 @@ func skipSong(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	srvr := sMap.Server[guild.ID]
-	srvr.VoiceInst.Lock()
-	defer srvr.VoiceInst.Unlock()
-	srvr.VoiceInst.Done <- errors.New("skip")
+	if srvr, ok := sMap.server(guild.ID); ok {
+		srvr.VoiceInst.Lock()
+		defer srvr.VoiceInst.Unlock()
+		srvr.VoiceInst.Done <- errors.New("skip")
+	}
 }
 
 func (s *server) youtubeCleanup() {
