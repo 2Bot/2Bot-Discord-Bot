@@ -420,7 +420,8 @@ func fimageReview(s *discordgo.Session, currentImageNumber int) {
 
 func fimageDelete(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
 	var filename string
-	if val, ok := u[m.Author.ID]; ok {
+	val, ok := u[m.Author.ID]
+	if ok {
 		if val, ok := val.Images[strings.Join(msglist, " ")]; ok {
 			filename = val
 		} else {
@@ -432,14 +433,29 @@ func fimageDelete(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 		return
 	}
 
-	err := os.Remove("images/" + filename)
+	f, err := os.Open("images/" + filename)
 	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, "Image couldnt be deleted :( Please pester my creator for me")
+		log.Error("error opening image for file size", err)
+		return
+	}
+
+	stats, err := f.Stat()
+	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, "Image couldnt be deleted :( Please pester my creator for me")
+		log.Error("error getting file stats", err)
+		return
+	}
+
+	if err := os.Remove("images/" + filename); err != nil {
 		s.ChannelMessageSend(m.ChannelID, "Image couldnt be deleted :( Please pester my creator for me")
 		log.Error("error deleting image", err)
 		return
 	}
 
-	delete(u[m.Author.ID].Images, strings.Join(msglist, " "))
+	val.CurrDiskUsed -= int(stats.Size())
+
+	delete(val.Images, strings.Join(msglist, " "))
 
 	saveUsers()
 
