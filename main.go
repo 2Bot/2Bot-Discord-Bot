@@ -36,7 +36,6 @@ const (
 	happyEmoji string = "https://cdn.discordapp.com/emojis/332968429210435585.png"
 	thinkEmoji string = "https://cdn.discordapp.com/emojis/333694872802426880.png"
 	reviewChan string = "334092230845267988"
-	noah       string = "149612775587446784"
 	logChan    string = "312352242504040448"
 	serverID   string = "312292616089894924"
 	xmark      string = "<:xmark:314349398824058880>"

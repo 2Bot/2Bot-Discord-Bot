@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	newCommand("setGlobalPrefix", 0, false, msgGlobalPrefix).noahOnly().add()
+	newCommand("setGlobalPrefix", 0, false, msgGlobalPrefix).ownerOnly().add()
 	newCommand("setPrefix",
 		discordgo.PermissionAdministrator|discordgo.PermissionManageServer,
 		true, msgPrefix).setHelp("Args: [prefix]\n\nSets the servers prefix to 'prefix'\nAdmin only.\n\nExample:\n`!owo setPrefix .`\nNew Example command:\n`.help`").add()

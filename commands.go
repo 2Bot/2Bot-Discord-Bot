@@ -16,7 +16,7 @@ type command struct {
 	Name string
 	Help string
 
-	NoahOnly      bool
+	OwnerOnly     bool
 	RequiresPerms bool
 
 	PermsRequired int
@@ -54,9 +54,9 @@ func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, guildDetails
 			return
 		}
 
-		isNoah := m.Author.ID == noah
+		isOwner := m.Author.ID == conf.OwnerID
 		hasPerms := userPerms&command.PermsRequired > 0
-		if (!command.NoahOnly && !command.RequiresPerms) || (command.RequiresPerms && hasPerms) || isNoah {
+		if (!command.OwnerOnly && !command.RequiresPerms) || (command.RequiresPerms && hasPerms) || isOwner {
 			command.Exec(s, m, msglist)
 			return
 		}
@@ -91,7 +91,7 @@ func (c command) setHelp(help string) command {
 	return c
 }
 
-func (c command) noahOnly() command {
-	c.NoahOnly = true
+func (c command) ownerOnly() command {
+	c.OwnerOnly = true
 	return c
 }

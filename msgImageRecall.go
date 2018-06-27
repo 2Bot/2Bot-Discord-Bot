@@ -73,7 +73,7 @@ func httpImageRecall(w http.ResponseWriter, r *http.Request) {
 			if strings.HasPrefix(val, img) {
 				w.WriteHeader(http.StatusOK)
 				log.Trace(fmt.Sprintf("user %s has image %s", id, img))
-				fmt.Fprint(w, "https://noahsc.xyz/2Bot/images/"+val)
+				fmt.Fprint(w, conf.URL+val)
 				return
 			}
 		}
@@ -100,7 +100,7 @@ func fimageRecall(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 		return
 	}
 
-	imgURL := "http://noahsc.xyz/2Bot/images/" + url.PathEscape(filename)
+	imgURL := conf.URL + url.PathEscape(filename)
 
 	resp, err := http.Head(imgURL)
 	if err != nil {
@@ -482,7 +482,7 @@ func fimageList(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 
 	success := true
 	for i, img := range files {
-		imgURL, err := url.Parse("http://noahsc.xyz/2Bot/images/" + url.PathEscape(img))
+		imgURL, err := url.Parse(conf.URL + url.PathEscape(img))
 		if err != nil {
 			log.Error("error parsing img url", err)
 			success = false
@@ -502,7 +502,7 @@ func fimageList(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 	p.DeleteReactionsWhenDone = true
 	p.Widget.Timeout = time.Minute * 2
 
-	if err != nil {
+	if err != nil && msg != nil {
 		s.ChannelMessageEdit(m.ChannelID, msg.ID, "Your saved images are: `"+strings.Join(out, ", "))
 	}
 

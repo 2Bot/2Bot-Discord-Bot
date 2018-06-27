@@ -13,10 +13,10 @@ import (
 var mem runtime.MemStats
 
 func init() {
-	newCommand("setGame", 0, false, msgSetGame).noahOnly().add()
-	newCommand("listUsers", 0, false, msgListUsers).noahOnly().add()
-	newCommand("reloadConfig", 0, false, msgReloadConfig).noahOnly()
-	newCommand("command", 0, false, msgCommand).noahOnly().add()
+	newCommand("setGame", 0, false, msgSetGame).ownerOnly().add()
+	newCommand("listUsers", 0, false, msgListUsers).ownerOnly().add()
+	newCommand("reloadConfig", 0, false, msgReloadConfig).ownerOnly()
+	newCommand("command", 0, false, msgCommand).ownerOnly().add()
 	newCommand("help", 0, false, msgHelp).setHelp("ok").add()
 	newCommand("info", 0, false, msgInfo).setHelp("Args: none\n\nSome info about 2Bot.\n\nExample:\n`!owo info`").add()
 	newCommand("invite", 0, false, msgInvite).setHelp("Args: none\n\nSends an invite link for 2Bot!\n\nExample:\n`!owo invite`").add()
@@ -91,7 +91,7 @@ func msgHelp(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string)
 
 	var commands []string
 	for _, val := range activeCommands {
-		if !val.NoahOnly {
+		if m.Author.ID == conf.OwnerID || !val.OwnerOnly {
 			commands = append(commands, "`"+val.Name+"`")
 		}
 	}
