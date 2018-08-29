@@ -6,8 +6,11 @@ WORKDIR /go/src/github.com/2Bot/2Bot-Discord-Bot
 ENV GOBIN=/go/2Bot
 ENV GOPATH=/go
 
-RUN go get github.com/2Bot/2Bot-Discord-Bot && \
-    go get -d -v ./... && \ 
+COPY . .
+
+RUN apk update && apk add --no-cache git
+
+RUN go get -d -v ./... && \ 
     go install -v ./...
 
 FROM alpine

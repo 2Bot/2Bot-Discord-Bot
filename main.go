@@ -18,6 +18,7 @@
 package main
 
 import (
+	"github.com/2Bot/2Bot-Discord-Bot/config"
 	"bytes"
 	"net/http"
 	"os"
@@ -33,19 +34,20 @@ import (
 )
 
 const (
-	happyEmoji string = "https://cdn.discordapp.com/emojis/332968429210435585.png"
-	thinkEmoji string = "https://cdn.discordapp.com/emojis/333694872802426880.png"
-	reviewChan string = "334092230845267988"
-	logChan    string = "312352242504040448"
-	serverID   string = "312292616089894924"
-	xmark      string = "<:xmark:314349398824058880>"
-	zerowidth  string = "​"
+	happyEmoji   = "https://cdn.discordapp.com/emojis/332968429210435585.png"
+	thinkEmoji   = "https://cdn.discordapp.com/emojis/333694872802426880.png"
+	discordpwurl = "https://bots.discord.pw/api/bots/301819949683572738/stats"
+	reviewChan   = "334092230845267988"
+	logChan      = "312352242504040448"
+	serverID     = "312292616089894924"
+	xmark        = "<:xmark:314349398824058880>"
+	zerowidth    = "​"
 )
 
 var (
-	conf         = new(config)
 	dg           *discordgo.Session
 	lastReboot   string
+	conf = config.Conf
 	log          = newLog()
 	emojiRegex   = regexp.MustCompile("<(a)?:.*?:(.*?)>")
 	userIDRegex  = regexp.MustCompile("<@!?([0-9]+)>")
@@ -66,12 +68,10 @@ func dailyJobs() {
 }
 
 func postServerCount() {
-	url := "https://bots.discord.pw/api/bots/301819949683572738/stats"
-
 	count := len(dg.State.Guilds)
 
 	jsonStr := []byte(`{"server_count":` + strconv.Itoa(count) + `}`)
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
+	req, err := http.NewRequest("POST", discordpwurl, bytes.NewBuffer(jsonStr))
 	if err != nil {
 		log.Error("error making bots.discord.pw request", err)
 		return
@@ -92,7 +92,6 @@ func postServerCount() {
 	if resp.StatusCode != http.StatusNoContent {
 		log.Error("received " + strconv.Itoa(resp.StatusCode) + " from bots.discord.pw")
 	}
-
 }
 
 func setBotGame(s *discordgo.Session) {

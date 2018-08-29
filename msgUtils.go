@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/2Bot/2Bot-Discord-Bot/config"
+
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -278,7 +280,7 @@ func msgReloadConfig(s *discordgo.Session, m *discordgo.MessageCreate, msglist [
 	var reloaded string
 	switch msglist[1] {
 	case "c":
-		conf = new(config)
+		conf = config.New()
 		if err := loadConfig(); err != nil {
 			log.Error("error reloading config", err)
 			s.ChannelMessageSend(m.ChannelID, "Error reloading config")

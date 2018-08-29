@@ -10,9 +10,16 @@ type servers struct {
 	Count      int `json:"-"`
 	VoiceInsts int `json:"-"`
 
-	Mutex sync.RWMutex `json:"-"`
+	*sync.RWMutex `json:"-"`
 
 	serverMap map[string]*server
+}
+
+func newServers() servers {
+	return servers{
+		serverMap: make(map[string]*server),
+		RWMutex:   new(sync.RWMutex),
+	}
 }
 
 func (s *servers) server(id string) (val *server, ok bool) {

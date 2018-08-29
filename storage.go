@@ -1,13 +1,17 @@
 package main
 
 import (
+	"github.com/2Bot/2Bot-Discord-Bot/metrics"
 	"encoding/json"
+	"io/ioutil"
 	"os"
+
+	"github.com/2Bot/2Bot-Discord-Bot/config"
 )
 
 var (
 	u    = make(users)
-	sMap = servers{serverMap: make(map[string]*server)}
+	sMap = newServers()
 )
 
 func saveJSON(path string, data interface{}) error {
@@ -16,11 +20,25 @@ func saveJSON(path string, data interface{}) error {
 		log.Error("error saving", path, err)
 		return err
 	}
+	defer f.Close()
 
-	if err = json.NewEncoder(f).Encode(data); err != nil {
+	var b []byte
+	if _, ok := data.(*config.Config); ok {
+		b, err = json.MarshalIndent(&data, "", "  ")
+	} else {
+		b, err = json.Marshal(&data)
+	}
+
+	if err != nil {
 		log.Error("error saving", path, err)
 		return err
 	}
+
+	if _, err = f.Write(b); err != nil {
+		log.Error("error saving", path, err)
+		return err
+	}
+
 	return nil
 }
 
@@ -30,11 +48,19 @@ func loadJSON(path string, v interface{}) error {
 		log.Error("error loading", path, err)
 		return err
 	}
+	defer f.Close()
 
-	if err := json.NewDecoder(f).Decode(v); err != nil {
+	b, err := ioutil.ReadAll(f)
+	if err != nil {
 		log.Error("error loading", path, err)
 		return err
 	}
+
+	if err = json.Unmarshal(b, &v); err != nil {
+		log.Error("error loading", path, err)
+		return err
+	}
+
 	return nil
 }
 
@@ -44,6 +70,9 @@ func cleanup() {
 			log.Error("error cleaning up files", err)
 		}
 	}
+
+	metrics.InfluxClient.Close()
+
 	log.Info("Done cleanup. Exiting.")
 }
 
@@ -56,27 +85,27 @@ func saveConfig() error {
 }
 
 func loadServers() error {
-	sMap = servers{serverMap: make(map[string]*server)}
-	return loadJSON("servers.json", sMap)
+	sMap = newServers()
+	return loadJSON("servers.json", &sMap.serverMap)
 }
 
 func saveServers() error {
-	return saveJSON("servers.json", sMap)
+	return saveJSON("servers.json", &sMap.serverMap)
 }
 
 func loadUsers() error {
 	u = make(map[string]*user)
-	return loadJSON("users.json", u)
+	return loadJSON("users.json", &u)
 }
 
 func saveUsers() error {
-	return saveJSON("users.json", u)
+	return saveJSON("users.json", &u)
 }
 
 func loadQueue() error {
-	return loadJSON("queue.json", imageQueue)
+	return loadJSON("queue.json", &imageQueue)
 }
 
 func saveQueue() error {
-	return saveJSON("queue.json", imageQueue)
+	return saveJSON("queue.json", &imageQueue)
 }
