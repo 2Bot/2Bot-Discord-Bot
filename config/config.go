@@ -22,17 +22,14 @@ type Config struct {
 	Blacklist []string `json:"blacklist"`
 }
 
-var Conf *Config
-
-func init() {
-	Conf = New()
-}
+var Conf = New()
 
 // New creates a default config with some values set, including game, prefix and indev
 func New() *Config {
 	return &Config{
 		Game:   "!owo help",
 		Prefix: "!owo ",
-		InDev:  false,
+		InDev:  true,
+		OwnerID: "149612775587446784",
 	}
 }

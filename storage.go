@@ -71,7 +71,13 @@ func cleanup() {
 		}
 	}
 
-	metrics.InfluxClient.Close()
+	metrics.NewMetric("2Bot", "status", map[string]string{}, map[string]interface{}{
+		"online": 0,
+	})
+
+	if metrics.InfluxClient != nil {
+		metrics.InfluxClient.Close()
+	}
 
 	log.Info("Done cleanup. Exiting.")
 }

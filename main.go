@@ -18,6 +18,7 @@
 package main
 
 import (
+	"github.com/2Bot/2Bot-Discord-Bot/metrics"
 	"github.com/2Bot/2Bot-Discord-Bot/config"
 	"bytes"
 	"net/http"
@@ -68,6 +69,10 @@ func dailyJobs() {
 }
 
 func postServerCount() {
+	if conf.DiscordPWKey == "" {
+		return
+	}
+
 	count := len(dg.State.Guilds)
 
 	jsonStr := []byte(`{"server_count":` + strconv.Itoa(count) + `}`)
@@ -135,6 +140,8 @@ func main() {
 
 	log.Info("files loaded")
 
+	metrics.New()
+
 	var err error
 	dg, err = discordgo.New("Bot " + conf.Token)
 	if err != nil {
@@ -174,7 +181,11 @@ func main() {
 
 	go func() { log.Error("error starting http server", http.ListenAndServe("0.0.0.0:8080", router)) }()
 
-	log.Info("Bot is now running. Press CTRL-C to exit.")
+	metrics.NewMetric("2Bot", "status", map[string]string{}, map[string]interface{}{
+		"online": 1,
+	})
+
+	log.Info("Bot is now running. Press CTRL-C to exit")
 
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, syscall.SIGSEGV, syscall.SIGHUP)

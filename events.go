@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/2Bot/2Bot-Discord-Bot/metrics"
 	"fmt"
 	"strconv"
 	"strings"
@@ -83,6 +84,10 @@ func guildJoinEvent(s *discordgo.Session, m *discordgo.GuildCreate) {
 
 	if _, ok := sMap.server(m.Guild.ID); !ok {
 		//if newly joined
+		metrics.NewMetric("2Bot", "guild", map[string]string{}, map[string]interface{}{
+			"count": len(s.State.Guilds),
+		})
+
 		embed.Color = 0x00ff00
 		s.ChannelMessageSendEmbed(logChan, embed)
 		log.Info("joined server", m.Guild.ID, m.Guild.Name)
@@ -114,6 +119,10 @@ func guildKickedEvent(s *discordgo.Session, m *discordgo.GuildDelete) {
 		log.Trace("unavailable guild", m.Guild.ID, guild.Name)
 		return
 	}
+
+	metrics.NewMetric("2Bot", "guild", map[string]string{}, map[string]interface{}{
+		"count": len(s.State.Guilds),
+	})
 
 	s.ChannelMessageSendEmbed(logChan, &discordgo.MessageEmbed{
 		Color:  0xff0000,

@@ -10,7 +10,7 @@ import (
 
 var InfluxClient client.Client
 
-func init() {
+func New() {
 	var err error
 	InfluxClient, err = client.NewHTTPClient(client.HTTPConfig{
 		Addr:     config.Conf.Influx.URL,
