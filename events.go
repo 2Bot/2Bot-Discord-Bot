@@ -84,7 +84,7 @@ func guildJoinEvent(s *discordgo.Session, m *discordgo.GuildCreate) {
 
 	if _, ok := sMap.server(m.Guild.ID); !ok {
 		//if newly joined
-		metrics.NewMetric("2Bot", "guild", map[string]string{}, map[string]interface{}{
+		metrics.NewMetric("guild", map[string]string{}, map[string]interface{}{
 			"count": len(s.State.Guilds),
 		})
 
@@ -120,7 +120,7 @@ func guildKickedEvent(s *discordgo.Session, m *discordgo.GuildDelete) {
 		return
 	}
 
-	metrics.NewMetric("2Bot", "guild", map[string]string{}, map[string]interface{}{
+	metrics.NewMetric("guild", map[string]string{}, map[string]interface{}{
 		"count": len(s.State.Guilds),
 	})
 

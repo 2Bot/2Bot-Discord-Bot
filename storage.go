@@ -71,7 +71,7 @@ func cleanup() {
 		}
 	}
 
-	metrics.NewMetric("2Bot", "status", map[string]string{}, map[string]interface{}{
+	metrics.NewMetric("status", map[string]string{}, map[string]interface{}{
 		"online": 0,
 	})
 

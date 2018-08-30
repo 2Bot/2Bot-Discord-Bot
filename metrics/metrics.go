@@ -10,7 +10,7 @@ import (
 
 var InfluxClient client.Client
 
-func New() {
+func New() error {
 	var err error
 	InfluxClient, err = client.NewHTTPClient(client.HTTPConfig{
 		Addr:     config.Conf.Influx.URL,
@@ -19,13 +19,28 @@ func New() {
 	})
 	if err != nil {
 		fmt.Println(err)
-		return
+		return err
 	}
+
+	q := client.Query{
+		Command:  "CREATE DATABASE \"2Bot\";",
+		Database: "2Bot",
+	}
+	if response, err := InfluxClient.Query(q); err == nil {
+		if response.Error() != nil {
+			fmt.Println(response.Error())
+			return err
+		}
+	} else {
+		fmt.Println(err)
+		return err
+	}
+	return nil
 }
 
-func NewMetric(database, name string, tags map[string]string, fields map[string]interface{}) error {
+func NewMetric(name string, tags map[string]string, fields map[string]interface{}) error {
 	bp, err := client.NewBatchPoints(client.BatchPointsConfig{
-		Database: database,
+		Database: "2Bot",
 		Precision: "s",
 	})
 	if err != nil {
@@ -39,5 +54,9 @@ func NewMetric(database, name string, tags map[string]string, fields map[string]
 
 	bp.AddPoint(point)
 
-	return InfluxClient.Write(bp)
+	err = InfluxClient.Write(bp)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return err
 }

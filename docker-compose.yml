@@ -16,5 +16,8 @@ services:
     image: grafana/grafana
     restart: always
     container_name: grafana
+    user: "root"
     ports: 
       - "8888:3000"
+    volumes: 
+      - "$PWD/grafana:/var/lib/grafana"

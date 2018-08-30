@@ -181,7 +181,7 @@ func main() {
 
 	go func() { log.Error("error starting http server", http.ListenAndServe("0.0.0.0:8080", router)) }()
 
-	metrics.NewMetric("2Bot", "status", map[string]string{}, map[string]interface{}{
+	metrics.NewMetric("status", map[string]string{}, map[string]interface{}{
 		"online": 1,
 	})
 
