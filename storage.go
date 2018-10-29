@@ -7,11 +7,11 @@ import (
 
 var (
 	u    = make(users)
-	sMap = servers{serverMap: make(map[string]*server)}
+	sMap = servers{ServerMap: make(map[string]*server)}
 )
 
 func saveJSON(path string, data interface{}) error {
-	f, err := os.OpenFile("json/"+path, os.O_WRONLY|os.O_CREATE, 0600)
+	f, err := os.OpenFile("json/"+path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		log.Error("error saving", path, err)
 		return err
@@ -56,7 +56,7 @@ func saveConfig() error {
 }
 
 func loadServers() error {
-	sMap = servers{serverMap: make(map[string]*server)}
+	sMap = servers{ServerMap: make(map[string]*server)}
 	return loadJSON("servers.json", sMap)
 }
 
