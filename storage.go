@@ -57,11 +57,11 @@ func saveConfig() error {
 
 func loadServers() error {
 	sMap = servers{serverMap: make(map[string]*server)}
-	return loadJSON("servers.json", sMap)
+	return loadJSON("servers.json", &sMap)
 }
 
 func saveServers() error {
-	return saveJSON("servers.json", sMap)
+	return saveJSON("servers.json", &sMap)
 }
 
 func loadUsers() error {
