@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -11,7 +12,7 @@ import (
 func init() {
 	newCommand("purge",
 		discordgo.PermissionAdministrator|discordgo.PermissionManageMessages|discordgo.PermissionManageServer,
-		false, true, msgPurge).setHelp("Args: [number] [@user]\n\nPurges 'number' amount of messages. Optionally, purge only the messages from a given user!\nAdmin only\n\nExample:\n`!owo purge 300`\n" +
+		true, msgPurge).setHelp("Args: [number] [@user]\n\nPurges 'number' amount of messages. Optionally, purge only the messages from a given user!\nAdmin only\n\nExample:\n`!owo purge 300`\n" +
 		"Example 2:\n`!owo purge 300 @Strum355#1180`").add()
 }
 
@@ -23,6 +24,9 @@ func msgPurge(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string
 
 	purgeAmount, err := strconv.Atoi(msglist[1])
 	if err != nil {
+		if strings.HasPrefix(msglist[1], "@") {
+			msglist[1] = "@" + zerowidth + strings.TrimPrefix(msglist[1], "@")
+		}
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("How do i delete %s messages? Please only give numbers!", msglist[1]))
 		return
 	}

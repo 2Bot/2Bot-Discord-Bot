@@ -8,9 +8,7 @@ ENV GOPATH=/go
 
 COPY . .
 
-RUN apk update && \
-    apk add --no-cache git && \
-    git remote set-url origin https://github.com/Strum355/2Bot-Discord-Bot
+RUN apk update && apk add --no-cache git
 
 RUN go get -d -v ./... && \ 
     go install -v ./...
@@ -29,7 +27,7 @@ RUN mkdir -p /go/2Bot/images/ && \
 RUN apk --no-cache add ca-certificates && \
     update-ca-certificates && \
     apk update && \
-    apk add --no-cache opus git ffmpeg
+    apk add --no-cache opus ffmpeg
 
 WORKDIR /go/2Bot
 

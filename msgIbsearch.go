@@ -11,8 +11,13 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+type ibStruct struct {
+	Path   string `json:"path"`
+	Server string `json:"server"`
+}
+
 func init() {
-	newCommand("ibsearch", 0, false, false, msgIbsearch).setHelp("Args: [search] | rating=[e,s,q] | format=[gif,png,jpg]\n\n" +
+	newCommand("ibsearch", 0, false, msgIbsearch).setHelp("Args: [search] | rating=[e,s,q] | format=[gif,png,jpg]\n\n" +
 		"Returns a random image from ibsearch for the given search term with the given filters applied.\n\n" +
 		"Example:\n`!owo ibsearch lewds | rating=e | format=gif`")
 }
@@ -32,7 +37,7 @@ func msgIbsearch(s *discordgo.Session, m *discordgo.MessageCreate, msglist []str
 		return
 	}
 
-	if !sMap.Server[guild.ID].Nsfw && !strings.Contains(channel.Name, "nsfw") && !channel.NSFW {
+	if val, ok := sMap.server(guild.ID); ok && !val.Nsfw && !strings.Contains(channel.Name, "nsfw") && !channel.NSFW {
 		s.ChannelMessageSend(m.ChannelID, "NSFW is disabled on this server~")
 		return
 	}

@@ -8,10 +8,10 @@ import (
 )
 
 func init() {
-	newCommand("setGlobalPrefix", 0, true, false, msgGlobalPrefix).add()
+	newCommand("setGlobalPrefix", 0, false, msgGlobalPrefix).ownerOnly().add()
 	newCommand("setPrefix",
 		discordgo.PermissionAdministrator|discordgo.PermissionManageServer,
-		false, true, msgPrefix).setHelp("Args: [prefix]\n\nSets the servers prefix to 'prefix'\nAdmin only.\n\nExample:\n`!owo setPrefix .`\nNew Example command:\n`.help`").add()
+		true, msgPrefix).setHelp("Args: [prefix]\n\nSets the servers prefix to 'prefix'\nAdmin only.\n\nExample:\n`!owo setPrefix .`\nNew Example command:\n`.help`").add()
 }
 
 func prefixWorker(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) (prefix string, ok bool) {
@@ -59,7 +59,7 @@ func msgPrefix(s *discordgo.Session, m *discordgo.MessageCreate, msglist []strin
 		return
 	}
 
-	guild, ok := sMap.Server[guildDetails.ID]
+	guild, ok := sMap.server(guildDetails.ID)
 	if !ok || guild.Kicked {
 		return
 	}
@@ -83,7 +83,7 @@ func msgGlobalPrefix(s *discordgo.Session, m *discordgo.MessageCreate, msglist [
 	}
 
 	if prefix, ok := prefixWorker(s, m, msglist); ok {
-		c.Prefix = prefix
+		conf.Prefix = prefix
 		saveConfig()
 	}
 }

@@ -5,7 +5,7 @@ import (
 )
 
 func init() {
-	newCommand("avatar", 0, false, false, msgAvatar).setHelp("Args: [@user]\n\nReturns the given users avatar.\nIf no user ID is given, your own avatar is sent.\n\nExample:\n`!owo avatar @Strum355#2298`").add()
+	newCommand("avatar", 0, false, msgAvatar).setHelp("Args: [@user]\n\nReturns the given users avatar.\nIf no user ID is given, your own avatar is sent.\n\nExample:\n`!owo avatar @Strum355#2298`").add()
 }
 
 func msgAvatar(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {

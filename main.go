@@ -36,13 +36,14 @@ const (
 	happyEmoji string = "https://cdn.discordapp.com/emojis/332968429210435585.png"
 	thinkEmoji string = "https://cdn.discordapp.com/emojis/333694872802426880.png"
 	reviewChan string = "334092230845267988"
-	noah       string = "149612775587446784"
 	logChan    string = "312352242504040448"
 	serverID   string = "312292616089894924"
 	xmark      string = "<:xmark:314349398824058880>"
+	zerowidth  string = "​"
 )
 
 var (
+	conf         = new(config)
 	dg           *discordgo.Session
 	lastReboot   string
 	log          = newLog()
@@ -76,7 +77,7 @@ func postServerCount() {
 		return
 	}
 
-	req.Header.Set("Authorization", c.DiscordPWKey)
+	req.Header.Set("Authorization", conf.DiscordPWKey)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := new(http.Client).Do(req)
@@ -95,27 +96,27 @@ func postServerCount() {
 }
 
 func setBotGame(s *discordgo.Session) {
-	if err := s.UpdateStatus(0, c.Game); err != nil {
+	if err := s.UpdateStatus(0, conf.Game); err != nil {
 		log.Error("Update status err:", err)
 		return
 	}
-	log.Info("set initial game to", c.Game)
+	log.Info("set initial game to", conf.Game)
 }
 
 // Set all handlers for queued images, in case the bot crashes with images still in queue
 func setQueuedImageHandlers() {
-	for imgNum := range q.QueuedMsgs {
+	for imgNum := range imageQueue {
 		imgNumInt, err := strconv.Atoi(imgNum)
 		if err != nil {
 			log.Error("Error converting string to num for queue:", err)
 			continue
 		}
-		go fimageReview(dg, q, imgNumInt)
+		go fimageReview(dg, imgNumInt)
 	}
 }
 
 func main() {
-	runtime.GOMAXPROCS(c.MaxProc)
+	runtime.GOMAXPROCS(conf.MaxProc)
 
 	log.Info("/*********BOT RESTARTING*********\\")
 
@@ -136,7 +137,7 @@ func main() {
 	log.Info("files loaded")
 
 	var err error
-	dg, err = discordgo.New("Bot " + c.Token)
+	dg, err = discordgo.New("Bot " + conf.Token)
 	if err != nil {
 		log.Error("Error creating Discord session,", err)
 		return
@@ -159,11 +160,11 @@ func main() {
 
 	log.Trace("connection opened")
 
-	sMap.Count = len(sMap.Server)
+	sMap.Count = len(sMap.serverMap)
 
 	go setQueuedImageHandlers()
 
-	if !c.InDev {
+	if !conf.InDev {
 		go dailyJobs()
 	}
 

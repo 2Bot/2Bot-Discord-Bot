@@ -132,6 +132,18 @@ func userDetails(memberID string, s *discordgo.Session) (user *discordgo.User, e
 	return
 }
 
+func activePrefix(channelID string, s *discordgo.Session) (prefix string, err error) {
+	prefix = conf.Prefix
+	guild, err := guildDetails(channelID, "", s)
+	if err != nil {
+		s.ChannelMessageSend(channelID, "There was an issue executing the command :( Try again please~")
+		return
+	} else if val, ok := sMap.server(guild.ID); ok && val.Prefix != "" {
+		prefix = val.Prefix
+	}
+	return prefix, nil
+}
+
 func memberDetails(guildID, memberID string, s *discordgo.Session) (member *discordgo.Member, err error) {
 	member, err = s.State.Member(guildID, memberID)
 	if err != nil {

@@ -13,22 +13,22 @@ import (
 var mem runtime.MemStats
 
 func init() {
-	newCommand("setGame", 0, true, false, msgSetGame).add()
-	newCommand("listUsers", 0, true, false, msgListUsers).add()
-	newCommand("reloadConfig", 0, true, false, msgReloadConfig)
-	newCommand("command", 0, true, false, msgCommand).add()
-	newCommand("help", 0, false, false, msgHelp).setHelp("ok").add()
-	newCommand("info", 0, false, false, msgInfo).setHelp("Args: none\n\nSome info about 2Bot.\n\nExample:\n`!owo info`").add()
-	newCommand("invite", 0, false, false, msgInvite).setHelp("Args: none\n\nSends an invite link for 2Bot!\n\nExample:\n`!owo invite`").add()
-	newCommand("git", 0, false, false, msgGit).setHelp("Args: none\n\nLinks 2Bots github page.\n\nExample:\n`!owo git`").add()
+	newCommand("setGame", 0, false, msgSetGame).ownerOnly().add()
+	newCommand("listUsers", 0, false, msgListUsers).ownerOnly().add()
+	newCommand("reloadConfig", 0, false, msgReloadConfig).ownerOnly()
+	newCommand("command", 0, false, msgCommand).ownerOnly().add()
+	newCommand("help", 0, false, msgHelp).setHelp("ok").add()
+	newCommand("info", 0, false, msgInfo).setHelp("Args: none\n\nSome info about 2Bot.\n\nExample:\n`!owo info`").add()
+	newCommand("invite", 0, false, msgInvite).setHelp("Args: none\n\nSends an invite link for 2Bot!\n\nExample:\n`!owo invite`").add()
+	newCommand("git", 0, false, msgGit).setHelp("Args: none\n\nLinks 2Bots github page.\n\nExample:\n`!owo git`").add()
 
 	newCommand("setNSFW",
 		discordgo.PermissionAdministrator|discordgo.PermissionManageServer,
-		false, true, msgNSFW).setHelp("Args: none\n\nToggles NSFW commands in NSFW channels.\nAdmin only.\n\nExample:\n`!owo setNSFW`").add()
+		true, msgNSFW).setHelp("Args: none\n\nToggles NSFW commands in NSFW channels.\nAdmin only.\n\nExample:\n`!owo setNSFW`").add()
 
 	newCommand("joinMessage",
 		discordgo.PermissionAdministrator|discordgo.PermissionManageServer,
-		false, true, msgJoinMessage).setHelp("Args: [true,false] | [message] | [channelID]\n\nEnables or disables join messages.\nthe message and channel that the bot welcomes new people in.\n" +
+		true, msgJoinMessage).setHelp("Args: [true,false] | [message] | [channelID]\n\nEnables or disables join messages.\nthe message and channel that the bot welcomes new people in.\n" +
 		"To mention the user in the message, put `%s` where you want the user to be mentioned in the message.\nLeave message \n\nExample to set message:\n" +
 		"`!owo joinMessage true | Hey there %s! | 312294858582654978`\n>On member join\n`Hey there [@new member]`\n\n" +
 		"Example to disable:\n`!owo joinMessage false`").add()
@@ -74,7 +74,7 @@ func msgSetGame(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 		return
 	}
 
-	c.Game = game
+	conf.Game = game
 	saveConfig()
 
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Game changed to %s!", game))
@@ -91,14 +91,16 @@ func msgHelp(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string)
 
 	var commands []string
 	for _, val := range activeCommands {
-		if !val.NoahOnly {
+		if m.Author.ID == conf.OwnerID || !val.OwnerOnly {
 			commands = append(commands, "`"+val.Name+"`")
 		}
 	}
 
-	prefix := c.Prefix
+	prefix := conf.Prefix
 	if guild, err := guildDetails(m.ChannelID, "", s); err != nil {
-		prefix = sMap.Server[guild.ID].Prefix
+		if val, ok := sMap.server(guild.ID); ok {
+			prefix = val.Prefix
+		}
 	}
 
 	s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
@@ -139,7 +141,7 @@ func msgInfo(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
 	var prefix string
 	guild, err := guildDetails(m.ChannelID, "", s)
 	if err == nil {
-		if val, ok := sMap.Server[guild.ID]; ok {
+		if val, ok := sMap.server(guild.ID); ok {
 			prefix = val.Prefix
 		}
 	}
@@ -159,7 +161,7 @@ func msgInfo(s *discordgo.Session, m *discordgo.MessageCreate, _ []string) {
 			{Name: "Bot Name:", Value: codeBlock(s.State.User.Username), Inline: true},
 			{Name: "Creator:", Value: codeBlock("Strum355#0554"), Inline: true},
 			{Name: "Creation Date:", Value: codeBlock(creationTime), Inline: true},
-			{Name: "Global Prefix:", Value: codeBlock(c.Prefix), Inline: true},
+			{Name: "Global Prefix:", Value: codeBlock(conf.Prefix), Inline: true},
 			{Name: "Local Prefix", Value: codeBlock(prefix), Inline: true},
 			{Name: "Programming Language:", Value: codeBlock("Go"), Inline: true},
 			{Name: "Library:", Value: codeBlock("Discordgo"), Inline: true},
@@ -175,7 +177,7 @@ func msgListUsers(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 		return
 	}
 
-	if guild, ok := sMap.Server[msglist[1]]; !ok || guild.Kicked {
+	if guild, ok := sMap.server(msglist[1]); !ok || guild.Kicked {
 		s.ChannelMessageSend(m.ChannelID, "2Bot isn't in that server")
 		return
 	}
@@ -210,7 +212,7 @@ func msgNSFW(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string)
 
 	onOrOff := map[bool]string{true: "enabled", false: "disabled"}
 
-	if guild, ok := sMap.Server[guild.ID]; ok {
+	if guild, ok := sMap.server(guild.ID); ok {
 		guild.Nsfw = !guild.Nsfw
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("NSFW %s", onOrOff[guild.Nsfw]))
 		saveServers()
@@ -231,7 +233,7 @@ func msgJoinMessage(s *discordgo.Session, m *discordgo.MessageCreate, msglist []
 	}
 
 	if len(split) > 0 {
-		if guild, ok := sMap.Server[guild.ID]; ok {
+		if guild, ok := sMap.server(guild.ID); ok {
 			if split[0] != "false" && split[0] != "true" {
 				s.ChannelMessageSend(m.ChannelID, "Please say either `true` or `false` for enabling or disabling join messages~")
 				return
@@ -276,7 +278,7 @@ func msgReloadConfig(s *discordgo.Session, m *discordgo.MessageCreate, msglist [
 	var reloaded string
 	switch msglist[1] {
 	case "c":
-		c = new(config)
+		conf = new(config)
 		if err := loadConfig(); err != nil {
 			log.Error("error reloading config", err)
 			s.ChannelMessageSend(m.ChannelID, "Error reloading config")
@@ -284,7 +286,7 @@ func msgReloadConfig(s *discordgo.Session, m *discordgo.MessageCreate, msglist [
 		}
 		reloaded = "config"
 	case "u":
-		u = new(users)
+		u = make(users)
 		if err := loadUsers(); err != nil {
 			log.Error("error reloading config", err)
 			s.ChannelMessageSend(m.ChannelID, "Error reloading config")

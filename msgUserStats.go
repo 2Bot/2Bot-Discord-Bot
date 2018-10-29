@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	newCommand("whois", 0, false, false, msgUserStats).setHelp("Args: [@user]\n\nSome info about the given user.\n\nExample:\n`!owo whois @Strum355#2298`").add()
+	newCommand("whois", 0, false, msgUserStats).setHelp("Args: [@user]\n\nSome info about the given user.\n\nExample:\n`!owo whois @Strum355#2298`").add()
 }
 
 func msgUserStats(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {

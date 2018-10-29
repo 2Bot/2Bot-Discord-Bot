@@ -18,20 +18,18 @@ func messageCreateEvent(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	var prefix string
-	if val, ok := sMap.Server[guildDetails.ID]; ok {
-		if prefix = val.Prefix; prefix == "" {
-			prefix = c.Prefix
-		}
+	prefix, err := activePrefix(m.ChannelID, s)
+	if err != nil {
+		return
 	}
 
-	if !strings.HasPrefix(m.Content, c.Prefix) && !strings.HasPrefix(m.Content, prefix) {
+	if !strings.HasPrefix(m.Content, conf.Prefix) && !strings.HasPrefix(m.Content, prefix) {
 		return
 	}
 
 	parseCommand(s, m, guildDetails, func() string {
-		if strings.HasPrefix(m.Content, c.Prefix) {
-			return strings.TrimPrefix(m.Content, c.Prefix)
+		if strings.HasPrefix(m.Content, conf.Prefix) {
+			return strings.TrimPrefix(m.Content, conf.Prefix)
 		}
 		return strings.TrimPrefix(m.Content, prefix)
 	}())
@@ -84,24 +82,24 @@ func guildJoinEvent(s *discordgo.Session, m *discordgo.GuildCreate) {
 		},
 	}
 
-	if _, ok := sMap.Server[m.Guild.ID]; !ok {
+	if _, ok := sMap.server(m.Guild.ID); !ok {
 		//if newly joined
 		embed.Color = 0x00ff00
 		s.ChannelMessageSendEmbed(logChan, embed)
 		log.Info("joined server", m.Guild.ID, m.Guild.Name)
 
-		sMap.Server[m.Guild.ID] = &server{
+		sMap.setServer(m.Guild.ID, server{
 			LogChannel:  m.Guild.ID,
 			Log:         false,
 			Nsfw:        false,
 			JoinMessage: [3]string{"false", "", ""},
-		}
-	} else if val := sMap.Server[m.Guild.ID]; val.Kicked {
+		})
+	} else if val, _ := sMap.server(m.Guild.ID); val.Kicked {
 		//If previously kicked and then readded
 		embed.Color = 0xff9a00
 		s.ChannelMessageSendEmbed(logChan, embed)
 		log.Info("rejoined server", m.Guild.ID, m.Guild.Name)
-		sMap.Server[m.Guild.ID].Kicked = false
+		val.Kicked = false
 	}
 
 	saveServers()
@@ -129,7 +127,7 @@ func guildKickedEvent(s *discordgo.Session, m *discordgo.GuildDelete) {
 
 	log.Info("kicked from", m.Guild.ID, m.Name)
 
-	if guild, ok := sMap.Server[m.Guild.ID]; ok {
+	if guild, ok := sMap.server(m.Guild.ID); ok {
 		guild.Kicked = true
 	}
 
@@ -137,7 +135,7 @@ func guildKickedEvent(s *discordgo.Session, m *discordgo.GuildDelete) {
 }
 
 func presenceChangeEvent(s *discordgo.Session, m *discordgo.PresenceUpdate) {
-	guild, ok := sMap.Server[m.GuildID]
+	guild, ok := sMap.server(m.GuildID)
 	if !ok || guild.Kicked || !guild.Log {
 		return
 	}
@@ -151,7 +149,7 @@ func presenceChangeEvent(s *discordgo.Session, m *discordgo.PresenceUpdate) {
 }
 
 func memberJoinEvent(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
-	guild, ok := sMap.Server[m.GuildID]
+	guild, ok := sMap.server(m.GuildID)
 	if !ok || guild.Kicked || len(guild.JoinMessage) != 3 {
 		return
 	}

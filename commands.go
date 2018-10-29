@@ -12,6 +12,18 @@ var (
 	disabledCommands = make(map[string]command)
 )
 
+type command struct {
+	Name string
+	Help string
+
+	OwnerOnly     bool
+	RequiresPerms bool
+
+	PermsRequired int
+
+	Exec func(*discordgo.Session, *discordgo.MessageCreate, []string)
+}
+
 /*
 	go-chi style command adding
 		- aliases
@@ -42,9 +54,9 @@ func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, guildDetails
 			return
 		}
 
-		isNoah := m.Author.ID == noah
+		isOwner := m.Author.ID == conf.OwnerID
 		hasPerms := userPerms&command.PermsRequired > 0
-		if (!command.NoahOnly && !command.RequiresPerms) || (command.RequiresPerms && hasPerms) || isNoah {
+		if (!command.OwnerOnly && !command.RequiresPerms) || (command.RequiresPerms && hasPerms) || isOwner {
 			command.Exec(s, m, msglist)
 			return
 		}
@@ -60,12 +72,11 @@ func (c command) add() command {
 	return c
 }
 
-func newCommand(name string, permissions int, noah, needsPerms bool, f func(*discordgo.Session, *discordgo.MessageCreate, []string)) command {
+func newCommand(name string, permissions int, needsPerms bool, f func(*discordgo.Session, *discordgo.MessageCreate, []string)) command {
 	return command{
 		Name:          name,
 		PermsRequired: permissions,
 		RequiresPerms: needsPerms,
-		NoahOnly:      noah,
 		Exec:          f,
 	}
 }
@@ -77,5 +88,10 @@ func (c command) alias(a string) command {
 
 func (c command) setHelp(help string) command {
 	c.Help = help
+	return c
+}
+
+func (c command) ownerOnly() command {
+	c.OwnerOnly = true
 	return c
 }

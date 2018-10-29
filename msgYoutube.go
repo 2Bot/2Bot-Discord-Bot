@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/Strum355/go-queue/queue"
 
 	"github.com/Necroforger/dgwidgets"
 	"github.com/Strum355/ytdl"
@@ -19,10 +22,33 @@ const (
 	embedURL = "https://www.youtube.com/embed/"
 )
 
+type voiceInst struct {
+	ChannelID string
+
+	Playing bool
+
+	Done chan error
+
+	*sync.RWMutex
+
+	Queue            *queue.Queue
+	VoiceCon         *discordgo.VoiceConnection
+	StreamingSession *dca.StreamingSession
+}
+
+type song struct {
+	URL   string `json:"url,omitempty"`
+	Name  string `json:"name,omitempty"`
+	Image string `json:"image,omitempty"`
+
+	Duration time.Duration `json:"duration"`
+}
+
 func init() {
-	newCommand("yt", 0, false, false, msgYoutube).setHelp("Args: [play,stop] [url]\n\nWork In Progress!!! Play music from Youtube straight to your Discord Server!\n\n" +
+	newCommand("yt", 0, false, msgYoutube).setHelp("Args: [play,stop] [url]\n\nWork In Progress!!! Play music from Youtube straight to your Discord Server!\n\n" +
 		"Example 1: `!owo yt play https://www.youtube.com/watch?v=MvLdxtICOIY`\n" +
-		"Example 2: `!owo yt stop`\n\nSubCommands:\nplay\nstop\nlist, queue, songs\npause\nresume, unpause\nskip, next").add()
+		"Example 2: `!owo yt stop`\n\n" +
+		"SubCommands:\nplay\nstop\nlist, queue, songs\npause\nresume, unpause\nskip, next").add()
 }
 
 func msgYoutube(s *discordgo.Session, m *discordgo.MessageCreate, msglist []string) {
@@ -43,6 +69,8 @@ func msgYoutube(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 		unpauseQueue(s, m)
 	case "skip", "next":
 		skipSong(s, m)
+	default:
+		s.ChannelMessageSend(m.ChannelID, activeCommands["youtube"].Help)
 	}
 }
 
@@ -57,9 +85,9 @@ func addToQueue(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 		return
 	}
 
-	srvr, ok := sMap.Server[guild.ID]
+	srvr, ok := sMap.server(guild.ID)
 	if !ok {
-		s.ChannelMessageSend(m.ChannelID, "An error occured that really shouldn't have happened...")
+		s.ChannelMessageSend(m.ChannelID, "An error occurred that really shouldn't have happened...")
 		log.Error("not in server map?", guild.ID)
 		return
 	}
@@ -78,42 +106,48 @@ func addToQueue(s *discordgo.Session, m *discordgo.MessageCreate, msglist []stri
 		return
 	}
 
-	for _, vs := range guild.VoiceStates {
-		if vs.UserID == m.Author.ID {
-			if vs.ChannelID == srvr.VoiceInst.ChannelID || !srvr.VoiceInst.Playing {
-				vid, err := getVideoInfo(url, s, m)
-				if err != nil {
-					return
-				}
+	vid, err := getVideoInfo(url, s, m)
+	if err != nil {
+		return
+	}
 
-				vc, err := s.ChannelVoiceJoin(guild.ID, vs.ChannelID, false, true)
-				if err != nil {
-					s.ChannelMessageSend(m.ChannelID, "Error joining voice channel")
-					log.Error("error joining voice channel", err)
-					return
-				}
+	vc, err := createVoiceConnection(s, m, guild, srvr)
+	if err != nil {
+		return
+	}
 
-				srvr.addSong(song{
-					URL:      url,
-					Name:     vid.Title,
-					Duration: vid.Duration,
-					Image:    vid.GetThumbnailURL(ytdl.ThumbnailQualityMedium).String(),
-				})
+	srvr.addSong(song{
+		URL:      url,
+		Name:     vid.Title,
+		Duration: vid.Duration,
+		Image:    vid.GetThumbnailURL(ytdl.ThumbnailQualityMedium).String(),
+	})
 
-				s.ChannelMessageSend(m.ChannelID, "Added "+vid.Title+" to the queue!")
+	s.ChannelMessageSend(m.ChannelID, "Added "+vid.Title+" to the queue!")
 
-				if !srvr.VoiceInst.Playing {
-					srvr.VoiceInst.VoiceCon = vc
-					srvr.VoiceInst.Playing = true
-					srvr.VoiceInst.ChannelID = vc.ChannelID
-					go play(s, m, srvr, vc)
-				}
-				return
-			}
-		}
+	if !srvr.VoiceInst.Playing {
+		srvr.VoiceInst.VoiceCon = vc
+		srvr.VoiceInst.Playing = true
+		srvr.VoiceInst.ChannelID = vc.ChannelID
+		go play(s, m, srvr, vc)
 	}
 
 	s.ChannelMessageSend(m.ChannelID, "Need to be in a voice channel!")
+}
+
+func createVoiceConnection(s *discordgo.Session, m *discordgo.MessageCreate, guild *discordgo.Guild, srvr *server) (*discordgo.VoiceConnection, error) {
+	for _, vs := range guild.VoiceStates {
+		if vs.UserID == m.Author.ID && (vs.ChannelID == srvr.VoiceInst.ChannelID || !srvr.VoiceInst.Playing) {
+			vc, err := s.ChannelVoiceJoin(guild.ID, vs.ChannelID, false, true)
+			if err != nil {
+				s.ChannelMessageSend(m.ChannelID, "Error joining voice channel")
+				log.Error("error joining voice channel", err)
+				return nil, err
+			}
+			return vc, nil
+		}
+	}
+	return nil, errors.New("not in voice channel")
 }
 
 func getVideoInfo(url string, s *discordgo.Session, m *discordgo.MessageCreate) (*ytdl.VideoInfo, error) {
@@ -209,9 +243,9 @@ func listQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	srvr, ok := sMap.Server[guild.ID]
+	srvr, ok := sMap.server(guild.ID)
 	if !ok {
-		s.ChannelMessageSend(m.ChannelID, "An error occured that really shouldn't have happened...")
+		s.ChannelMessageSend(m.ChannelID, "An error occurred that really shouldn't have happened...")
 		log.Error("not in server map?", guild.ID)
 		return
 	}
@@ -261,10 +295,9 @@ func stopQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	srvr := sMap.Server[guild.ID]
-	srvr.VoiceInst.Lock()
-	defer srvr.VoiceInst.Unlock()
-	srvr.VoiceInst.Done <- errors.New("stop")
+	if srvr, ok := sMap.server(guild.ID); ok {
+		srvr.VoiceInst.Done <- errors.New("stop")
+	}
 }
 
 func pauseQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -274,14 +307,17 @@ func pauseQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	srvr := sMap.Server[guild.ID]
+	srvr, ok := sMap.server(guild.ID)
+	if !ok {
+		return
+	}
 
 	srvr.VoiceInst.Lock()
 	defer srvr.VoiceInst.Unlock()
 
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("⏸ Paused. To unpause, use the command `%sunpause`", func() string {
+	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("⏸ Paused. To unpause, use the command `%syt unpause`", func() string {
 		if srvr.Prefix == "" {
-			return c.Prefix
+			return conf.Prefix
 		}
 		return srvr.Prefix
 	}()))
@@ -296,10 +332,11 @@ func unpauseQueue(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	srvr := sMap.Server[guild.ID]
-	srvr.VoiceInst.Lock()
-	defer srvr.VoiceInst.Unlock()
-	srvr.VoiceInst.StreamingSession.SetPaused(false)
+	if srvr, ok := sMap.server(guild.ID); ok {
+		srvr.VoiceInst.Lock()
+		defer srvr.VoiceInst.Unlock()
+		srvr.VoiceInst.StreamingSession.SetPaused(false)
+	}
 }
 
 func skipSong(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -309,10 +346,11 @@ func skipSong(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	srvr := sMap.Server[guild.ID]
-	srvr.VoiceInst.Lock()
-	defer srvr.VoiceInst.Unlock()
-	srvr.VoiceInst.Done <- errors.New("skip")
+	if srvr, ok := sMap.server(guild.ID); ok {
+		srvr.VoiceInst.Lock()
+		defer srvr.VoiceInst.Unlock()
+		srvr.VoiceInst.Done <- errors.New("skip")
+	}
 }
 
 func (s *server) youtubeCleanup() {
