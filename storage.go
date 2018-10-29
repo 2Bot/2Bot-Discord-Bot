@@ -7,7 +7,7 @@ import (
 
 var (
 	u    = make(users)
-	sMap = servers{serverMap: make(map[string]*server)}
+	sMap = servers{ServerMap: make(map[string]*server)}
 )
 
 func saveJSON(path string, data interface{}) error {
