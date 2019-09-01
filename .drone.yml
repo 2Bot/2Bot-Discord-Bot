@@ -1,69 +1,76 @@
+---
 kind: pipeline
 type: docker
 name: default
 
-stages:
+platform:
+  os: linux
+  arch: amd64
+
+steps:
 - name: lint
   image: golang
   commands:
-    - bash -c "if [[ \$(gofmt -l *.go) ]]; then gofmt -l *.go; exit 1; fi"
+  - bash -c "if [[ \$(gofmt -l *.go) ]]; then gofmt -l *.go; exit 1; fi"
   when:
-    event: 
-      - push
-      - pull_request
+    event:
+    - push
+    - pull_request
 
 - name: docker-image
   image: plugins/docker
   settings:
-    tags: latest
     dockerfile: Dockerfile
     repo: strum355/2bot
+    tags: latest
     username:
       from_secret: docker_username
     password:
       from_secret: docker_password
   when:
-    branch: 
-      - master
-    status: 
-      - success
+    branch:
+    - master
+    status:
+    - success
 
 - name: discord-notif
   image: appleboy/drone-discord
-  environment:
-    WEBHOOK_ID:
-      from_secret: discord_webhook_id
-    WEBHOOK_TOKEN:
-      from_secret: discord_webhook_token    
   settings:
-    username: 2Bot CI
     avatar_url: https://raw.githubusercontent.com/drone/brand/3051b0d85318a2a20b62927ba19fc07e24c0d751/logos/png/white/drone-logo-png-white-256.png
     color: "#e04414"
     message: 2Bot successfully built and pushed. Build num {{build.number}}. {{build.link}}
-  when:
-    event: 
-      - push
-    branch: 
-      - master 
-    status:
-      - success
-
-- name: discord-notif
-  image: appleboy/drone-discord
+    username: 2Bot CI
   environment:
     WEBHOOK_ID:
       from_secret: discord_webhook_id
     WEBHOOK_TOKEN:
-      from_secret: discord_webhook_token    
+      from_secret: discord_webhook_token
+  when:
+    branch:
+    - master
+    event:
+    - push
+    status:
+    - success
+
+- name: discord-notif
+  image: appleboy/drone-discord
   settings:
-    username: 2Bot CI
     avatar_url: https://raw.githubusercontent.com/drone/brand/3051b0d85318a2a20b62927ba19fc07e24c0d751/logos/png/white/drone-logo-png-white-256.png
     color: "#e04414"
     message: 2Bot failed to build. Build num {{build.number}}. {{build.link}}
+    username: 2Bot CI
+  environment:
+    WEBHOOK_ID:
+      from_secret: discord_webhook_id
+    WEBHOOK_TOKEN:
+      from_secret: discord_webhook_token
   when:
-    event: 
-      - push
-    branch: 
-      - master 
+    branch:
+    - master
+    event:
+    - push
     status:
-      - failure   
+    - failure
+
+...
