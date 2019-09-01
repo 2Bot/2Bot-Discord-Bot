@@ -1,2 +1,5 @@
 emoji
 *.json
+images
+json
+docker-compose.override.yml

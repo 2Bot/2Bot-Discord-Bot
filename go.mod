@@ -14,5 +14,6 @@ require (
 	github.com/jonas747/dca v0.0.0-20190317094138-10e959e9d3e8
 	github.com/jonas747/ogg v0.0.0-20161220051205-b4f6f4cf3757 // indirect
 	github.com/rylio/ytdl v0.5.1
+	github.com/spf13/viper v1.4.0
 	golang.org/x/crypto v0.0.0-20190829043050-9756ffdc2472
 )

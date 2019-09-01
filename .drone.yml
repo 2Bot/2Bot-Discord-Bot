@@ -37,7 +37,7 @@ steps:
   image: appleboy/drone-discord
   settings:
     avatar_url: https://raw.githubusercontent.com/drone/brand/3051b0d85318a2a20b62927ba19fc07e24c0d751/logos/png/white/drone-logo-png-white-256.png
-    color: "#e04414"
+    color: "#42f483"
     message: 2Bot successfully built and pushed. Build num {{build.number}}. {{build.link}}
     username: 2Bot CI
   environment:

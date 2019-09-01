@@ -1,0 +1,26 @@
+version: '3.7'
+services:
+  2bot:
+    image: strum355/2bot:latest
+    ports: 
+    - 8080:8080
+    volumes:
+    - ./emoji:/go/2Bot/emoji
+    - ./json:/go/2Bot/json
+    depends_on:
+      - minio
+  
+  minio:
+    image: minio/minio:RELEASE.2019-08-29T00-25-01Z
+    command: server /data
+    ports:
+      - 9000:9000
+    environment:
+      MINIO_ACCESS_KEY: sample_text
+      MINIO_SECRET_KEY: sample_text
+    volumes:
+      - minio_data:/data
+
+volumes:
+  minio_data:
+    driver: local
