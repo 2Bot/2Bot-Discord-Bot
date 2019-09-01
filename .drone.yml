@@ -1,33 +1,67 @@
-pipeline:
-  lint:
-    image: golang
-    commands:
-      - bash -c "if [[ \$(gofmt -l *.go) ]]; then gofmt -l *.go; exit 1; fi"
-    when:
-      event: [ push, pull_request ]
+kind: pipeline
+name: default
 
-  docker-image:
-    image: plugins/docker
-    tags: latest
-    dockerfile: Dockerfile
-    repo: docker.netsoc.co/strum355/2bot
-    registry: docker.netsoc.co
-    secrets: [ docker_username, docker_password ]
-    when:
-      branch: master
-      status: [ success ]
+stages:
+- name: lint
+  image: golang
+  commands:
+    - bash -c "if [[ \$(gofmt -l *.go) ]]; then gofmt -l *.go; exit 1; fi"
+  when:
+    event: 
+      - push
+      - pull_request
 
-  discord-notif:
-    image: appleboy/drone-discord
+- name: docker-image
+  image: plugins/docker
+  tags: latest
+  dockerfile: Dockerfile
+  repo: strum355/2bot
+  username:
+    from_secret: docker_username
+  password:
+    from_secret: docker_password
+  when:
+    branch: 
+      - master
+    status: 
+      - success
+
+- name: discord-notif
+  image: appleboy/drone-discord
+  environment:
+    WEBHOOK_ID:
+      from_secret: discord_webhook_id
+    WEBHOOK_TOKEN:
+      from_secret: discord_webhook_token    
+  settings:
     username: 2Bot CI
-    avatar_url: https://noahsc.xyz/public_images/drone.png
-    secrets: [discord_webhook_id, discord_webhook_token]
-    color: "#42f483"
-    message: >
-      {{#success build.status}}
-        2Bot successfully built and pushed. Build num {{build.number}}.
-      {{else}}
-        2Bot failed to build. Build num {{build.number}}.
-      {{/success}}    
-    when:
-      branch: master
+    avatar_url: https://raw.githubusercontent.com/drone/brand/3051b0d85318a2a20b62927ba19fc07e24c0d751/logos/png/white/drone-logo-png-white-256.png
+    color: "#e04414"
+    message: 2Bot successfully built and pushed. Build num {{build.number}}. {{build.link}}
+  when:
+    event: 
+      - push
+    branch: 
+      - master 
+    status:
+      - success
+
+- name: discord-notif
+  image: appleboy/drone-discord
+  environment:
+    WEBHOOK_ID:
+      from_secret: discord_webhook_id
+    WEBHOOK_TOKEN:
+      from_secret: discord_webhook_token    
+  settings:
+    username: 2Bot CI
+    avatar_url: https://raw.githubusercontent.com/drone/brand/3051b0d85318a2a20b62927ba19fc07e24c0d751/logos/png/white/drone-logo-png-white-256.png
+    color: "#e04414"
+    message: 2Bot failed to build. Build num {{build.number}}. {{build.link}}
+  when:
+    event: 
+      - push
+    branch: 
+      - master 
+    status:
+      - failure   

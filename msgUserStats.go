@@ -70,7 +70,8 @@ func msgUserStats(s *discordgo.Session, m *discordgo.MessageCreate, msglist []st
 	}
 
 	var joinString string
-	joinDate, err := time.Parse("2006-01-02T15:04:05.999999-07:00", memberStruct.JoinedAt)
+	joinDateParsed, _ := memberStruct.JoinedAt.Parse()
+	joinDate, err := time.Parse("2006-01-02T15:04:05.999999-07:00", joinDateParsed.String())
 	if err != nil {
 		log.Error("error parsing time", err)
 		joinString = "???"

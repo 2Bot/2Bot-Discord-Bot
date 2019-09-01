@@ -11,9 +11,9 @@ import (
 	"github.com/Strum355/go-queue/queue"
 
 	"github.com/Necroforger/dgwidgets"
-	"github.com/Strum355/ytdl"
 	"github.com/bwmarrin/discordgo"
 	"github.com/jonas747/dca"
+	"github.com/rylio/ytdl"
 )
 
 const (
