@@ -13,7 +13,7 @@ RUN apk update && apk add --no-cache git
 RUN go get -d -v ./... && \ 
     go install -v ./...
 
-FROM alpine3.10
+FROM alpine:3.10
 
 COPY --from=builder /go/2Bot /go/2Bot
 
