@@ -33,7 +33,7 @@ steps:
     status:
     - success
 
-- name: discord-notif
+- name: discord-notif-success
   image: appleboy/drone-discord
   settings:
     avatar_url: https://raw.githubusercontent.com/drone/brand/3051b0d85318a2a20b62927ba19fc07e24c0d751/logos/png/white/drone-logo-png-white-256.png
@@ -53,7 +53,7 @@ steps:
     status:
     - success
 
-- name: discord-notif
+- name: discord-notif-failure
   image: appleboy/drone-discord
   settings:
     avatar_url: https://raw.githubusercontent.com/drone/brand/3051b0d85318a2a20b62927ba19fc07e24c0d751/logos/png/white/drone-logo-png-white-256.png
