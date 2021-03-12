@@ -1,4 +1,4 @@
-FROM golang:1.12.9-alpine3.10 AS builder
+FROM golang:1.15-alpine AS builder
 LABEL maintainer="Noah Santschi-Cooney (noah@santschi-cooney.ch)"
 
 WORKDIR /go/src/github.com/Strum355/2Bot-Discord-Bot
@@ -10,10 +10,10 @@ COPY . .
 
 RUN apk update && apk add --no-cache git
 
-RUN go get -d -v ./... && \ 
+RUN go mod download && \ 
     go install -v ./...
 
-FROM alpine:3.10
+FROM alpine:3.11
 
 COPY --from=builder /go/2Bot /go/2Bot
 
