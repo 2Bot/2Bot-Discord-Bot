@@ -64,7 +64,7 @@ func parseCommand(s *discordgo.Session, m *discordgo.MessageCreate, guildDetails
 		return
 	}
 
-	activeCommands["bigmoji"].Exec(s, m, msglist)
+	//activeCommands["bigmoji"].Exec(s, m, msglist)
 }
 
 func (c command) add() command {

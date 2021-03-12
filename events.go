@@ -1,11 +1,18 @@
 package main
 
 import (
-	"fmt"
-	"strconv"
+	logg "log"
 	"strings"
+	"time"
 
+	"github.com/2Bot/2Bot-Discord-Bot/actors"
+
+	"github.com/2Bot/2Bot-Discord-Bot/actormodels"
 	"github.com/bwmarrin/discordgo"
+)
+
+var (
+	system *actors.ActorSystem
 )
 
 func messageCreateEvent(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -13,39 +20,41 @@ func messageCreateEvent(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	guildDetails, err := guildDetails(m.ChannelID, "", s)
+	/* prefix, err := activePrefix(m.ChannelID, s)
 	if err != nil {
 		return
+	} */
+
+	if !strings.HasPrefix(m.Content, conf.Prefix) ||
+		strings.TrimSpace(strings.TrimPrefix(m.Content, conf.Prefix)) == "" {
+		return
 	}
 
-	prefix, err := activePrefix(m.ChannelID, s)
+	resp, err := system.Root.RequestFuture(system.GuildRouter, actormodels.GuildEnvelope{GuildID: m.GuildID, Message: actormodels.MessageRecv{Content: "string"}}, time.Second*5).Result()
 	if err != nil {
+		logg.Println("guild router error", err)
 		return
 	}
 
-	if !strings.HasPrefix(m.Content, conf.Prefix) && !strings.HasPrefix(m.Content, prefix) {
-		return
-	}
+	logg.Println("response", resp)
+	//pidResp := resp.(actormodels.QueryGuildPIDResponse)
 
-	parseCommand(s, m, guildDetails, func() string {
-		if strings.HasPrefix(m.Content, conf.Prefix) {
-			return strings.TrimPrefix(m.Content, conf.Prefix)
-		}
-		return strings.TrimPrefix(m.Content, prefix)
-	}())
+	//system.Root.Send(pidResp.PID, nil)
+
+	//parseCommand(s, m, guildDetails, conf.Prefix)
 }
 
-func readyEvent(s *discordgo.Session, m *discordgo.Ready) {
+/* func readyEvent(s *discordgo.Session, m *discordgo.Ready) {
 	log.Trace("received ready event")
-	/* s.ChannelMessageSendEmbed(logChan, &discordgo.MessageEmbed{
+	s.ChannelMessageSendEmbed(logChan, &discordgo.MessageEmbed{
 		Fields: []*discordgo.MessageEmbedField{
 			{Name: "Info:", Value: "Received ready payload"},
 		},
-	}) */
+	})
 	setBotGame(s)
-}
+} */
 
-func guildJoinEvent(s *discordgo.Session, m *discordgo.GuildCreate) {
+/* func guildJoinEvent(s *discordgo.Session, m *discordgo.GuildCreate) {
 	if m.Unavailable {
 		log.Info("joined unavailable guild", m.Guild.ID)
 		s.ChannelMessageSendEmbed(logChan, &discordgo.MessageEmbed{
@@ -103,8 +112,8 @@ func guildJoinEvent(s *discordgo.Session, m *discordgo.GuildCreate) {
 	}
 
 	saveServers()
-}
-
+} */
+/*
 func guildKickedEvent(s *discordgo.Session, m *discordgo.GuildDelete) {
 	if m.Unavailable {
 		guild, err := guildDetails("", m.Guild.ID, s)
@@ -171,3 +180,4 @@ func memberJoinEvent(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 
 	s.ChannelMessageSend(guild.JoinMessage[2], strings.Replace(guild.JoinMessage[1], "%s", membStruct.Mention(), -1))
 }
+*/

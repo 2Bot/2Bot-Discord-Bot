@@ -2,8 +2,6 @@ package main
 
 import (
 	"sync"
-
-	"github.com/Strum355/go-queue/queue"
 )
 
 type servers struct {
@@ -35,13 +33,9 @@ type server struct {
 	//Enabled, Message, Channel
 	JoinMessage [3]string `json:"join"`
 
-	VoiceInst *voiceInst `json:"-"`
+	/* VoiceInst *voiceInst `json:"-"`
 
-	Playlists map[string][]song `json:"playlists"`
-}
-
-func (s *servers) getCount() int {
-	return s.Count
+	Playlists map[string][]song `json:"playlists"` */
 }
 
 /*
@@ -51,7 +45,7 @@ func (s *servers) validate() {
 	}
 } */
 
-func (s *server) newVoiceInstance() {
+/* func (s *server) newVoiceInstance() {
 	s.VoiceInst = &voiceInst{
 		Queue:   queue.New(),
 		Done:    make(chan error),
@@ -86,3 +80,4 @@ func (s server) iterateQueue() []song {
 	}
 	return ret
 }
+*/
