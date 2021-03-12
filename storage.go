@@ -11,7 +11,7 @@ var (
 )
 
 func saveJSON(path string, data interface{}) error {
-	f, err := os.OpenFile("json/"+path, os.O_WRONLY|os.O_CREATE, 0600)
+	f, err := os.OpenFile("json/"+path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		log.Error("error saving", path, err)
 		return err
